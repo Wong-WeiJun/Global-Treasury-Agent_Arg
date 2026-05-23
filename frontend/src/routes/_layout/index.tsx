@@ -88,6 +88,26 @@ function Dashboard() {
             </div>
           </Link>
 
+
+          <Link
+            to="/history"
+            className="block text-inherit no-underline group focus:outline-none"
+          >
+            <div className="bg-gray-200 dark:bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
+              <img
+                src="/assets/Dashboard/history.jpg"
+                alt="Placeholder illustration"
+                className="w-full block object-cover aspect-video"
+              />
+              <div className="p-5">
+                <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
+                  History
+                </h3>
+                <p className="text-zinc-400 text-sm">Review past uploaded documents.</p>
+              </div>
+            </div>
+          </Link>
+
           {/* SETTINGS ROUTE LINK */}
           <Link
             to="/settings"
