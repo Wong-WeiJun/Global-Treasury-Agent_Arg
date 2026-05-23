@@ -66,7 +66,7 @@ function Dashboard() {
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img 
-                src="/assets/Dashboard/document.png" 
+                src="/assets/Dashboard/document.jpg" 
                 alt="Placeholder illustration" 
                 className="w-full block object-cover aspect-video"
               />
