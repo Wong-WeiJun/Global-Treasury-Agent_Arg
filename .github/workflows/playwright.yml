@@ -77,6 +77,20 @@ jobs:
     - run: bun ci
       working-directory: frontend
     - run: bash scripts/generate-client.sh
+      env:
+        PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        FIRST_SUPERUSER: ${{ secrets.FIRST_SUPERUSER }}
+        FIRST_SUPERUSER_PASSWORD: ${{ secrets.FIRST_SUPERUSER_PASSWORD }}
+        POSTGRES_SERVER: db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        POSTGRES_DB: app
+        S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+        S3_REGION: ${{ secrets.S3_REGION }}
+        S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+        S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+        CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
     - run: docker compose build
     - run: docker compose down -v --remove-orphans
     - name: Run Playwright tests
