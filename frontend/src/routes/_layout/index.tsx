@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
@@ -25,7 +25,7 @@ function Dashboard() {
         }}
       >
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-[72px] md:leading-tight font-bold mb-5 uppercase tracking-wide">
+          <h1 className="text-4xl md:text-[72px] md:leading-tight font-bold mb-5 uppercase tracking-wide drop-shadow-md">
             MyAudit Dashboard
           </h1>
           <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto">
@@ -36,8 +36,8 @@ function Dashboard() {
       </section>
 
       {/* SHOWCASE SECTION */}
-      <section className="px-5 md:px-[60px] py-20 md:py-[100px] bg-[#181818]">
-        <h2 className="text-center text-3xl md:text-[42px] font-bold mb-[60px]">
+      <section className="px-6 md:px-12 py-20 md:py-[100px] bg-[#181818]">
+        <h2 className="text-center text-3xl md:text-[42px] font-bold mb-[60px] tracking-tight">
           Tools
         </h2>
 
@@ -54,13 +54,13 @@ function Dashboard() {
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
                   Chat
                 </h3>
                 <p className="text-zinc-400 text-sm">Use our Agent.</p>
               </div>
             </div>
-          </a>
+          </Link>
 
           <a
             href="http://localhost:5173/files"
@@ -76,10 +76,10 @@ function Dashboard() {
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
                   Documents
                 </h3>
-                <p className="text-zinc-400 text-sm">Upload Doucments.</p>
+                <p className="text-zinc-400 text-sm">Match a payment proof against bank statement entries using AI.</p>
               </div>
             </div>
-          </a>
+          </Link>
 
           <a
             href="http://localhost:5173/settings"
