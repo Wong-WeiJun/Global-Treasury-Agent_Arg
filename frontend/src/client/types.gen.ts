@@ -40,6 +40,9 @@ export type DocumentPublic = {
     extracted_data?: ({
     [key: string]: unknown;
 } | null);
+    reconciliation_result?: ({
+    [key: string]: unknown;
+} | null);
 };
 
 export type DocumentsPublic = {

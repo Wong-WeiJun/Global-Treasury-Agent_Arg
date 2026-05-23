@@ -9,7 +9,7 @@ const DeleteAccount = () => {
       <p className="text-sm text-muted-foreground text-center mb-6">
         Permanently delete your account and all associated data.
       </p>
-      
+
       <div className="flex flex-col items-center justify-center w-full">
         <DeleteConfirmation />
       </div>

@@ -24,7 +24,7 @@ function Layout() {
       <div className="hidden" aria-hidden="true">
         <AppSidebar />
       </div>
-      
+
       <SidebarInset className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
         {/* Modern Sticky Header hosting your TopNavbar */}
         <header className="sticky top-0 z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-all">
@@ -37,7 +37,7 @@ function Layout() {
             <Outlet />
           </div>
         </main>
-        
+
         <Footer />
       </SidebarInset>
     </SidebarProvider>

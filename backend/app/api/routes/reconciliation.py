@@ -91,5 +91,10 @@ async def reconcile_document(
         fx_result=fx_result,
     )
 
-    return ReconcileResponse(document_id=body.document_id, result=result)
+    # Save result to document for history
+    doc.reconciliation_result = result
+    flag_modified(doc, "reconciliation_result")
+    session.add(doc)
+    session.commit()
 
+    return ReconcileResponse(document_id=body.document_id, result=result)

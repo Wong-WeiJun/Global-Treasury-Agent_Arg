@@ -68,7 +68,6 @@ function Login() {
   }
 
   return (
-
     <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
       <AuthLayout>
         {/* Glassmorphic card containment layer for maximum readability */}
@@ -79,7 +78,9 @@ function Login() {
               className="flex flex-col gap-6"
             >
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Login to your account</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Login to your account
+                </h1>
               </div>
 
               <div className="grid gap-4">
@@ -128,8 +129,8 @@ function Login() {
                   )}
                 />
 
-                <LoadingButton 
-                  type="submit" 
+                <LoadingButton
+                  type="submit"
                   loading={loginMutation.isPending}
                   className="bg-[#1677c8] hover:bg-[#295375] text-white px-6 transition-colors duration-200"
                 >
@@ -139,7 +140,10 @@ function Login() {
 
               <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
                 Don't have an account yet?{" "}
-                <RouterLink to="/signup" className="text-[#1677c8] underline underline-offset-4 font-medium">
+                <RouterLink
+                  to="/signup"
+                  className="text-[#1677c8] underline underline-offset-4 font-medium"
+                >
                   Sign up
                 </RouterLink>
               </div>

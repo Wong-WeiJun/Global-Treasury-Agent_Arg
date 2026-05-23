@@ -1,17 +1,17 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
-import { FilesService, ReconciliationService } from "../../client"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { FilesService, ReconciliationService } from "../../client";
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
-})
+});
 
 interface BankEntry {
-  amount: string
-  date: string
-  description: string
-  payer: string
+  amount: string;
+  date: string;
+  description: string;
+  payer: string;
 }
 
 const emptyEntry = (): BankEntry => ({
@@ -19,99 +19,130 @@ const emptyEntry = (): BankEntry => ({
   date: "",
   description: "",
   payer: "",
-})
+});
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     matched: "bg-green-900 text-green-300 border border-green-700",
     fuzzy: "bg-yellow-900 text-yellow-300 border border-yellow-700",
     unmatched: "bg-red-900 text-red-300 border border-red-700",
-  }
+  };
   const labels: Record<string, string> = {
     matched: "✓ Matched",
     fuzzy: "~ Fuzzy Match",
     unmatched: "✗ Unmatched",
-  }
+  };
   return (
     <span
       className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  )
+  );
 }
 
 function ReconcilePage() {
-  const queryClient = useQueryClient()
-  const [selectedDocId, setSelectedDocId] = useState<string>("")
-  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()])
-  const [reconciling, setReconciling] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient();
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
+  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()]);
+  const [reconciling, setReconciling] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFileType, setSelectedFileType] = useState<string>("");
 
   // Fetch available documents
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  })
+  });
 
   // Find the currently selected document to show its pre-extraction details
-  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId)
+  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId);
 
   // Cast extracted_data to a usable record structure safely for TS rendering
   const extractedData = selectedDoc?.extracted_data as
     | Record<string, any>
     | null
-    | undefined
+    | undefined;
 
   // Combined Upload + Extract Mutation Flow
   const uploadAndExtractMutation = useMutation({
     mutationFn: async (file: File) => {
-      const uploadRes = await FilesService.uploadFile({ formData: { file } })
-      const docId = uploadRes.document.id
-
-      await FilesService.extractDocument({ documentId: docId })
-      return docId
+      const uploadRes = (await FilesService.uploadFile({
+        formData: { file },
+      })) as any;
+      const docId = uploadRes.document.id;
+      const fileType = uploadRes.document.file_type;
+      await FilesService.extractDocument({ documentId: docId });
+      return { docId, fileType };
     },
-    onSuccess: (docId) => {
-      queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-      setSelectedDocId(docId)
+    onSuccess: async ({ docId, fileType }) => {
+      queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+      setSelectedDocId(docId);
+      setSelectedFileType(fileType);
+      // Fetch presigned URL for preview
+      try {
+        const res = (await FilesService.getDownloadUrl({
+          documentId: docId,
+        })) as { url: string };
+        setPreviewUrl(res.url);
+      } catch {
+        /* preview unavailable */
+      }
     },
     onError: (err: any) => {
-      setError(err?.body?.detail ?? "Upload or extraction failed.")
+      setError(err?.body?.detail ?? "Upload or extraction failed.");
     },
-  })
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setError(null)
-      uploadAndExtractMutation.mutate(file)
+      setError(null);
+      uploadAndExtractMutation.mutate(file);
     }
-  }
+  };
 
-  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()])
+  const handleDocSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setSelectedDocId(id);
+    setPreviewUrl(null);
+    if (!id) return;
+    const doc = docs?.data.find((d: any) => d.id === id);
+    setSelectedFileType(doc?.file_type ?? "");
+    try {
+      const res = (await FilesService.getDownloadUrl({
+        documentId: id,
+      })) as { url: string };
+      setPreviewUrl(res.url);
+    } catch {
+      /* unavailable */
+    }
+  };
+
+  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()]);
   const removeEntry = (i: number) =>
-    setBankEntries((prev) => prev.filter((_, idx) => idx !== i))
+    setBankEntries((prev) => prev.filter((_, idx) => idx !== i));
   const updateEntry = (i: number, field: keyof BankEntry, value: string) =>
     setBankEntries((prev) =>
       prev.map((e, idx) => (idx === i ? { ...e, [field]: value } : e)),
-    )
+    );
 
   const handleReconcile = async () => {
     if (!selectedDocId) {
-      setError("Please select or upload a payment proof document.")
-      return
+      setError("Please select or upload a payment proof document.");
+      return;
     }
-    const validEntries = bankEntries.filter((e) => e.amount && e.date)
+    const validEntries = bankEntries.filter((e) => e.amount && e.date);
     if (validEntries.length === 0) {
-      setError("Please add at least one bank entry with amount and date.")
-      return
+      setError("Please add at least one bank entry with amount and date.");
+      return;
     }
 
-    setReconciling(true)
-    setError(null)
-    setResult(null)
+    setReconciling(true);
+    setError(null);
+    setResult(null);
 
     try {
       const res = (await ReconciliationService.reconcileDocument({
@@ -124,18 +155,18 @@ function ReconcilePage() {
             payer: e.payer || undefined,
           })),
         },
-      })) as any
-      setResult(res.result)
+      })) as any;
+      setResult(res.result);
     } catch (err: any) {
-      setError(err?.body?.detail ?? "Reconciliation failed")
+      setError(err?.body?.detail ?? "Reconciliation failed");
     } finally {
-      setReconciling(false)
+      setReconciling(false);
     }
-  }
+  };
 
-  const decision = result?.agent_decision
-  const proof = result?.proof
-  const fxResult = result?.fx_result
+  const decision = result?.agent_decision;
+  const proof = result?.proof;
+  const fxResult = result?.fx_result;
 
   return (
     <div className="max-w-4xl mx-auto p-6 flex flex-col gap-8">
@@ -180,7 +211,7 @@ function ReconcilePage() {
             <select
               id="doc-select"
               value={selectedDocId}
-              onChange={(e) => setSelectedDocId(e.target.value)}
+              onChange={handleDocSelect}
               className="border rounded-lg px-4 py-2 text-sm bg-background w-full"
             >
               <option value="">Select a document...</option>
@@ -223,6 +254,36 @@ function ReconcilePage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Image preview */}
+        {previewUrl && (
+          <div className="flex flex-col gap-2 mt-2">
+            {selectedFileType === "image" ? (
+              <img
+                src={previewUrl}
+                alt="Payment proof preview"
+                className="rounded-lg border border-gray-700 max-h-64 object-contain self-start"
+              />
+            ) : selectedFileType === "pdf" ? (
+              <div className="bg-gray-900 rounded-lg px-4 py-4 flex items-center gap-3">
+                <span className="text-3xl">📄</span>
+                <div>
+                  <p className="text-sm text-gray-300">
+                    PDF uploaded successfully
+                  </p>
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 text-xs hover:underline"
+                  >
+                    Open PDF ↗
+                  </a>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </section>
@@ -408,5 +469,5 @@ function ReconcilePage() {
         </section>
       )}
     </div>
-  )
+  );
 }

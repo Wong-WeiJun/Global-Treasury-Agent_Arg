@@ -16,26 +16,21 @@ function Dashboard() {
   const { user: currentUser } = useAuth()
 
   return (
-    /* FORCE FULL BREAKOUT:
-      - We completely neutralize layout paddings by matching your viewport metrics.
-      - w-screen + left-1/2 + -translate-x-1/2 completely yanks this element out of 
-        ANY parent container constraint, aligning it directly with the browser edges.
-    */
-    <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen min-h-screen bg-[#111111] text-white font-sans antialiased selection:bg-[#1677c8] overflow-x-hidden">
-
+    <div className="min-h-screen bg-[#111] text-white font-sans antialiased selection:bg-[#1677c8]">
       {/* HERO SECTION */}
-      <section 
-        className="min-h-[calc(100vh-4rem)] flex items-center justify-center text-center px-5 bg-cover bg-center bg-no-repeat relative"
+      <section
+        className="h-screen flex items-center justify-center text-center px-5 bg-cover bg-center bg-no-repeat relative"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/nightdashboard.gif')`
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/dashboard.gif')`,
         }}
       >
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-[72px] md:leading-tight font-bold mb-5 uppercase tracking-wide drop-shadow-md">
             MyAudit Dashboard
           </h1>
-          <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto drop-shadow">
-            Hi, {currentUser?.full_name || currentUser?.email || "User"}. Welcome back.
+          <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto">
+            Hi, {currentUser?.full_name || currentUser?.email || "User"} Welcome
+            back.
           </p>
         </div>
       </section>
@@ -47,14 +42,15 @@ function Dashboard() {
         </h2>
 
         {/* Responsive Grid Setup */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-7 max-w-7xl mx-auto">
-
-          {/* CHAT ROUTE LINK */}
-          <Link to="/chat" className="block text-inherit no-underline group focus:outline-none">
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/chat.png" 
-                alt="File system illustration" 
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap- tracking-normal gap-7 max-w-7xl mx-auto">
+          <a
+            href="http://localhost:5173/chat"
+            className="block text-inherit no-underline group"
+          >
+            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
+              <img
+                src="/assets/Dashboard/chat.png"
+                alt="File system illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
@@ -66,59 +62,45 @@ function Dashboard() {
             </div>
           </Link>
 
-          <Link to="/reconcile" className="block text-inherit no-underline group focus:outline-none">
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/document.jpg" 
-                alt="Placeholder illustration" 
+          <a
+            href="http://localhost:5173/files"
+            className="block text-inherit no-underline group"
+          >
+            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
+              <img
+                src="/assets/Dashboard/document.jpg"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
-                  Reconiliation
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
+                  Documents
                 </h3>
                 <p className="text-zinc-400 text-sm">Match a payment proof against bank statement entries using AI.</p>
               </div>
             </div>
           </Link>
 
-          <Link to="/history" className="block text-inherit no-underline group focus:outline-none">
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/history.jpg" 
-                alt="Placeholder illustration" 
+          <a
+            href="http://localhost:5173/settings"
+            className="block text-inherit no-underline group"
+          >
+            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
+              <img
+                src="/assets/Dashboard/editprofile.png"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
-                  Upload History
-                </h3>
-                <p className="text-zinc-400 text-sm">All previously uploaded payment proofs.</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* SETTINGS ROUTE LINK */}
-          <Link to="/settings" className="block text-inherit no-underline group focus:outline-none">
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/editprofile.png" 
-                alt="Placeholder illustration" 
-                className="w-full block object-cover aspect-video"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
                   Edit Profile
                 </h3>
                 <p className="text-zinc-400 text-sm">Edit Personal Profile.</p>
               </div>
             </div>
-          </Link>
-
+          </a>
         </div>
       </section>
     </div>
   )
 }
-
-export default Dashboard
