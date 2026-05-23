@@ -170,11 +170,10 @@ function SignUp() {
                   )}
                 />
 
-                {/* Styled with your custom brand color #27a495 */}
                 <LoadingButton
                   type="submit"
                   loading={signUpMutation.isPending}
-                  className="w-full bg-[#27a495] hover:bg-[#1f8578] text-white transition-colors duration-200"
+                  className="bg-[#1677c8] hover:bg-[#295375] text-white px-6 transition-colors duration-200"
                 >
                   Sign Up
                 </LoadingButton>
@@ -182,7 +181,7 @@ function SignUp() {
 
               <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
                 Already have an account?{" "}
-                <RouterLink to="/login" className="text-[#27a495] underline underline-offset-4 font-medium">
+                <RouterLink to="/login" className="text-[#1677c8] underline underline-offset-4 font-medium">
                   Log in
                 </RouterLink>
               </div>

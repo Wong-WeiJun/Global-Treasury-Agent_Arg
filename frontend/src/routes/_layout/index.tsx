@@ -16,7 +16,7 @@ function Dashboard() {
   const { user: currentUser } = useAuth()
 
   return (
-    <div className="min-h-screen bg-[#111] text-white font-sans antialiased selection:bg-[#27a495]">
+    <div className="min-h-screen bg-[#111] text-white font-sans antialiased selection:bg-[#1677c8]">
 
       {/* HERO SECTION */}
       <section 
@@ -52,7 +52,7 @@ function Dashboard() {
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#27a495] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
                   Chat
                 </h3>
                 <p className="text-zinc-400 text-sm">Use our Agent.</p>
@@ -71,10 +71,29 @@ function Dashboard() {
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#27a495] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
                  Documents
                 </h3>
                 <p className="text-zinc-400 text-sm">Upload Doucments.</p>
+              </div>
+            </div>
+          </a>
+
+          <a 
+            href="http://localhost:5173/settings" 
+            className="block text-inherit no-underline group"
+          >
+            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
+              <img 
+                src="/assets/Dashboard/editprofile.png" 
+                alt="Placeholder illustration" 
+                className="w-full block object-cover aspect-video"
+              />
+              <div className="p-5">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
+                 Edit Profile
+                </h3>
+                <p className="text-zinc-400 text-sm">Edit Personal Profile.</p>
               </div>
             </div>
           </a>
