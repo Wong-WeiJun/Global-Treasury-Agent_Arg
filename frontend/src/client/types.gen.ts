@@ -44,6 +44,8 @@ export type ExtractedData = {
     payer?: (string | null);
     payee?: (string | null);
     description?: (string | null);
+    myr_amount?: (number | null);
+    fx_rate?: (number | null);
 };
 
 export type ExtractionResponse = {
@@ -203,6 +205,42 @@ export type FilesExtractDocumentData = {
 };
 
 export type FilesExtractDocumentResponse = (ExtractionResponse);
+
+export type FxCurrenciesResponse = (unknown);
+
+export type FxCurrencyRateData = {
+    fromCurrency: string;
+    /**
+     * YYYY-MM-DD or 'latest'
+     */
+    onDate?: string;
+    toCurrency: string;
+};
+
+export type FxCurrencyRateResponse = (unknown);
+
+export type FxConvertCurrencyData = {
+    amount: number;
+    fromCurrency: string;
+    /**
+     * YYYY-MM-DD or 'latest'
+     */
+    onDate?: string;
+    toCurrency: string;
+};
+
+export type FxConvertCurrencyResponse = (unknown);
+
+export type FxConvertToMyrEndpointData = {
+    amount: number;
+    fromCurrency: string;
+    /**
+     * YYYY-MM-DD or 'latest'
+     */
+    onDate?: string;
+};
+
+export type FxConvertToMyrEndpointResponse = (unknown);
 
 export type ItemsReadItemsData = {
     limit?: number;

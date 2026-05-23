@@ -171,6 +171,8 @@ class ExtractedData(BaseModel):
     payer: str | None = None
     payee: str | None = None
     description: str | None = None
+    myr_amount: float | None = None
+    fx_rate: float | None = None
 
 
 class ExtractionResponse(BaseModel):

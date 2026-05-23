@@ -219,6 +219,28 @@ export const ExtractedDataSchema = {
                 }
             ],
             title: 'Description'
+        },
+        myr_amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Myr Amount'
+        },
+        fx_rate: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Fx Rate'
         }
     },
     type: 'object',
