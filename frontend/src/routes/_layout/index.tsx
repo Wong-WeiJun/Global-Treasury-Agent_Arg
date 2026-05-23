@@ -1,4 +1,4 @@
-import { createFileRoute, Link as RouterLink } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
@@ -38,14 +38,14 @@ function Dashboard() {
       {/* SHOWCASE SECTION */}
       <section className="px-5 md:px-[60px] py-20 md:py-[100px] bg-[#181818]">
         <h2 className="text-center text-3xl md:text-[42px] font-bold mb-[60px]">
-          Featured Projects
+          Tools
         </h2>
 
         {/* Responsive Grid Setup */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap- tracking-normal gap-7 max-w-7xl mx-auto">
           
           {/* Card 1 */}
-          <a href="/Serve/Web Pass Man/Index.html" className="block text-inherit no-underline group">
+          <a href="http://localhost:5173/items" className="block text-inherit no-underline group">
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img 
                 src="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=60" 
@@ -54,15 +54,15 @@ function Dashboard() {
               />
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#27a495] transition-colors">
-                  Document
+                  Items
                 </h3>
-                <p className="text-zinc-400 text-sm">Password Manager.</p>
+                <p className="text-zinc-400 text-sm">Store Items.</p>
               </div>
             </div>
           </a>
 
           {/* Card 2 */}
-          <a href="/Serve/Local Preview/index.html" className="block text-inherit no-underline group">
+          <a href="http://localhost:5173/chat" className="block text-inherit no-underline group">
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img 
                 src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60" 
@@ -80,9 +80,7 @@ function Dashboard() {
 
           {/* Card 3 - External Video Link */}
           <a 
-            href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
-            target="_blank" 
-            rel="noopener noreferrer" 
+            href="http://localhost:5173/files" 
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
@@ -93,9 +91,9 @@ function Dashboard() {
               />
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#27a495] transition-colors">
-                  nothing yet...
+                 Documents
                 </h3>
-                <p className="text-zinc-400 text-sm">Maybe one day.</p>
+                <p className="text-zinc-400 text-sm">Upload Doucments.</p>
               </div>
             </div>
           </a>
