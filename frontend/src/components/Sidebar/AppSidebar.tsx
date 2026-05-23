@@ -1,7 +1,6 @@
 import { Briefcase, FileText, Home, MessageSquare, Users } from "lucide-react"
 
 import { SidebarAppearance } from "@/components/Common/Appearance"
-import { Logo } from "@/components/Common/Logo"
 import {
   Sidebar,
   SidebarContent,
@@ -28,8 +27,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="px-4 py-6 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:items-center">
-        <Logo variant="responsive" />
+      <SidebarHeader className="px-4 py-6 group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:items-center">
+        {/* Full Logo: visible normally, hidden when sidebar collapses into an icon bar */}
+        <img 
+          src="/assets/images/favicon.png" 
+          alt="Logo" 
+          className="h-8 w-auto object-contain block group-data-[collapsible=icon]:hidden"
+        />
+        
+        {/* Small Icon Version: hidden normally, shown only when sidebar collapses */}
+        {/* If your logo doesn't look good small, you can replace this src with a square icon file */}
+        <img 
+          src="/assets/images/favicon.png" 
+          alt="Logo Icon" 
+          className="size-6 object-contain hidden group-data-[collapsible=icon]:block"
+        />
       </SidebarHeader>
       <SidebarContent>
         <Main items={items} />

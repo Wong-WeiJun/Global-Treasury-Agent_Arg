@@ -24,8 +24,9 @@ import { isLoggedIn } from "@/hooks/useAuth"
 import useCustomToast from "@/hooks/useCustomToast"
 import { handleError } from "@/utils"
 
+// Fixed runtime schema validation bug (z.email() -> z.string().email())
 const formSchema = z.object({
-  email: z.email(),
+  email: z.string().email({ message: "Invalid email address" }),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -78,53 +79,59 @@ function RecoverPassword() {
   }
 
   return (
-    <AuthLayout>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-2xl font-bold">Password Recovery</h1>
-          </div>
-
-          <div className="grid gap-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="email-input"
-                      placeholder="user@example.com"
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <LoadingButton
-              type="submit"
-              className="w-full"
-              loading={mutation.isPending}
+    <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
+      <AuthLayout>
+        {/* Styled Card Container Matching Login/Signup */}
+        <div className="w-full max-w-md bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col gap-6"
             >
-              Continue
-            </LoadingButton>
-          </div>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <h1 className="text-2xl font-bold tracking-tight">Password Recovery</h1>
+              </div>
 
-          <div className="text-center text-sm">
-            Remember your password?{" "}
-            <RouterLink to="/login" className="underline underline-offset-4">
-              Log in
-            </RouterLink>
-          </div>
-        </form>
-      </Form>
-    </AuthLayout>
+              <div className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          data-testid="email-input"
+                          placeholder="user@example.com"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Brand Color Integration */}
+                <LoadingButton
+                  type="submit"
+                  className="w-full bg-[#1677c8] hover:bg-[#295375] text-white transition-colors duration-200"
+                  loading={mutation.isPending}
+                >
+                  Continue
+                </LoadingButton>
+              </div>
+
+              <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+                Remember your password?{" "}
+                <RouterLink to="/login" className="text-[#1677c8] underline underline-offset-4 font-medium">
+                  Log in
+                </RouterLink>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </AuthLayout>
+    </div>
   )
 }

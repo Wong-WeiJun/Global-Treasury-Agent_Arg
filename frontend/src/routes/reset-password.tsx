@@ -97,70 +97,76 @@ function ResetPassword() {
   }
 
   return (
-    <AuthLayout>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-2xl font-bold">Reset Password</h1>
-          </div>
-
-          <div className="grid gap-4">
-            <FormField
-              control={form.control}
-              name="new_password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>New Password</FormLabel>
-                  <FormControl>
-                    <PasswordInput
-                      data-testid="new-password-input"
-                      placeholder="New Password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirm_password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <PasswordInput
-                      data-testid="confirm-password-input"
-                      placeholder="Confirm Password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <LoadingButton
-              type="submit"
-              className="w-full"
-              loading={mutation.isPending}
+    <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
+      <AuthLayout>
+        {/* Styled Card Container Matching Login/Signup */}
+        <div className="w-full max-w-md bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50">
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="flex flex-col gap-6"
             >
-              Reset Password
-            </LoadingButton>
-          </div>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <h1 className="text-2xl font-bold tracking-tight">Reset Password</h1>
+              </div>
 
-          <div className="text-center text-sm">
-            Remember your password?{" "}
-            <RouterLink to="/login" className="underline underline-offset-4">
-              Log in
-            </RouterLink>
-          </div>
-        </form>
-      </Form>
-    </AuthLayout>
+              <div className="grid gap-4">
+                <FormField
+                  control={form.control}
+                  name="new_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <PasswordInput
+                          data-testid="new-password-input"
+                          placeholder="New Password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="confirm_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <PasswordInput
+                          data-testid="confirm-password-input"
+                          placeholder="Confirm Password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Brand Color Integration */}
+                <LoadingButton
+                  type="submit"
+                  className="bg-[#1677c8] hover:bg-[#295375] text-white px-6 transition-colors duration-200"
+                  loading={mutation.isPending}
+                >
+                  Reset Password
+                </LoadingButton>
+              </div>
+
+              <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+                Remember your password?{" "}
+                <RouterLink to="/login" className="text-[#1677c8] underline underline-offset-4 font-medium">
+                  Log in
+                </RouterLink>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </AuthLayout>
+    </div>
   )
 }

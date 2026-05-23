@@ -1,5 +1,4 @@
 import { Appearance } from "@/components/Common/Appearance"
-import { Logo } from "@/components/Common/Logo"
 import { Footer } from "./Footer"
 
 interface AuthLayoutProps {
@@ -8,19 +7,23 @@ interface AuthLayoutProps {
 
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="bg-muted dark:bg-zinc-900 relative hidden lg:flex lg:items-center lg:justify-center">
-        <Logo variant="full" className="h-16" asLink={false} />
+    /* Removed 'bg-zinc-950' to make the layout wrapper background fully transparent */
+    <div className="flex min-h-svh flex-col gap-4 p-6 md:p-10 bg-transparent w-full">
+      <div className="flex justify-end">
+        <Appearance />
       </div>
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-end">
-          <Appearance />
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">{children}</div>
-        </div>
-        <Footer />
+      <div className="flex flex-1 flex-col items-center justify-center gap-6">
+        {/* Your custom brand logo */}
+        <img 
+          src="/assets/images/favicon.png" 
+          alt="Brand Logo" 
+          className="h-16 w-auto object-contain"
+        />
+        
+        {/* Removed 'max-w-xs' constraints here so that the card size can be controlled cleanly by the children templates */}
+        <div className="w-full flex justify-center">{children}</div>
       </div>
+      <Footer />
     </div>
   )
 }
