@@ -68,10 +68,7 @@ function Login() {
   }
 
   return (
-    /* 
-      1. Replace '/background-pattern.png' with your actual image path.
-      2. If AuthLayout already forces its own background, you might want to put these styles inside AuthLayout instead.
-    */
+
     <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
       <AuthLayout>
         {/* Glassmorphic card containment layer for maximum readability */}

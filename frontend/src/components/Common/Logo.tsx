@@ -18,6 +18,11 @@ export function Logo({
   className,
   asLink = true,
 }: LogoProps) {
+  // Return null so the component renders absolutely nothing
+  return null
+
+  // The rest of your code can stay here untouched so you don't get TypeScript errors 
+  // about unused variables, or you can delete it if you want to clean it up completely.
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
 

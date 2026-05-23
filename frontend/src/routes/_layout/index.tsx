@@ -43,29 +43,11 @@ function Dashboard() {
 
         {/* Responsive Grid Setup */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap- tracking-normal gap-7 max-w-7xl mx-auto">
-          
-          {/* Card 1 */}
-          <a href="http://localhost:5173/items" className="block text-inherit no-underline group">
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
-              <img 
-                src="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=600&auto=format&fit=crop&q=60" 
-                alt="Password Manager illustration" 
-                className="w-full block object-cover aspect-video"
-              />
-              <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#27a495] transition-colors">
-                  Items
-                </h3>
-                <p className="text-zinc-400 text-sm">Store Items.</p>
-              </div>
-            </div>
-          </a>
 
-          {/* Card 2 */}
           <a href="http://localhost:5173/chat" className="block text-inherit no-underline group">
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img 
-                src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=60" 
+                src="/assets/Dashboard/chat.png" 
                 alt="File system illustration" 
                 className="w-full block object-cover aspect-video"
               />
@@ -78,14 +60,13 @@ function Dashboard() {
             </div>
           </a>
 
-          {/* Card 3 - External Video Link */}
           <a 
             href="http://localhost:5173/files" 
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img 
-                src="https://images.unsplash.com/photo-1614741118887-7a4ee193a5fa?w=600&auto=format&fit=crop&q=60" 
+                src="/assets/Dashboard/document.png" 
                 alt="Placeholder illustration" 
                 className="w-full block object-cover aspect-video"
               />

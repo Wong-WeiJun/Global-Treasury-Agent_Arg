@@ -82,7 +82,7 @@ function SignUp() {
     /* 
       1. Replace '/background-pattern.png' with your actual image path.
     */
-    <div className="min-h-screen w-full bg-[url('/background-pattern.png')] bg-cover bg-center flex items-center justify-center p-4">
+    <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
       <AuthLayout>
         {/* Glassmorphic card containment layer for maximum readability */}
         <div className="w-full max-w-md bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50">
