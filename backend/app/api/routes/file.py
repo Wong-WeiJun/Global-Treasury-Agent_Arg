@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from app.api.deps import CurrentUser
 from app.file_utils import upload_document, delete_document
-from pydantic import BaseModel
 import boto3
 from app.core.config import settings
 from app.models import (
@@ -12,9 +11,10 @@ from app.models import (
     ExtractedData,
     ExtractionResponse,
 )
-from sqlmodel import Session, select, func
+from sqlmodel import select, func
+from app.fx import convert_to_myr
 import uuid
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import SessionDep
 from sqlalchemy import desc
 from typing import cast
 from sqlalchemy.sql.elements import ColumnElement
@@ -201,7 +201,6 @@ async def extract_document(
     if doc.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Download file from S3
     s3 = boto3.client(
         "s3",
         region_name=settings.s3_region,
@@ -215,25 +214,51 @@ async def extract_document(
     obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
     file_bytes = obj["Body"].read()
 
+    data = None
+
     try:
-        if doc.file_type == "image":
-            data = extract_from_image(file_bytes)
-            return ExtractionResponse(
-                document_id=document_id, extracted=ExtractedData(**data)
-            )
-
-        elif doc.file_type == "pdf":
-            data = extract_from_pdf(file_bytes)
-            return ExtractionResponse(
-                document_id=document_id, extracted=ExtractedData(**data)
-            )
-
-        elif doc.file_type == "excel":
+        if doc.file_type == "excel":
             rows = extract_from_excel(file_bytes, doc.original_filename)
+            converted_rows = []
+            for row in rows:
+                if row.get("amount") and row.get("currency"):
+                    fx = await convert_to_myr(
+                        amount=row["amount"],
+                        from_currency=row["currency"],
+                        on_date=row.get("date") or "latest",
+                    )
+                    row["myr_amount"] = fx["to_amount"]
+                    row["fx_rate"] = fx["rate"]
+                converted_rows.append(row)
             return ExtractionResponse(
                 document_id=document_id,
-                rows=[ExtractedData(**r) for r in rows],
+                rows=[ExtractedData(**r) for r in converted_rows],
             )
+
+        elif doc.file_type == "image":
+            data = extract_from_image(file_bytes)
+        elif doc.file_type == "pdf":
+            data = extract_from_pdf(file_bytes)
+        else:
+            return ExtractionResponse(
+                document_id=document_id, error="Unsupported file type"
+            )
+
+        if data:
+            if data.get("amount") and data.get("currency"):
+                fx_result = await convert_to_myr(
+                    amount=data["amount"],
+                    from_currency=data["currency"],
+                    on_date=data.get("date") or "latest",
+                )
+                data["myr_amount"] = fx_result["to_amount"]
+                data["fx_rate"] = fx_result["rate"]
+            return ExtractionResponse(
+                document_id=document_id, extracted=ExtractedData(**data)
+            )
+        return ExtractionResponse(
+            document_id=document_id, error="No data could be extracted"
+        )
 
     except Exception as e:
         return ExtractionResponse(document_id=document_id, error=str(e))

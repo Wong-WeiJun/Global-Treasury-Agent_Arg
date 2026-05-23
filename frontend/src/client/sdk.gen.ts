@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ChatService {
     /**
@@ -141,6 +141,100 @@ export class FilesService {
             url: '/api/v1/files/{document_id}/extract',
             path: {
                 document_id: data.documentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class FxService {
+    /**
+     * Currencies
+     * List all supported currencies.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static currencies(): CancelablePromise<FxCurrenciesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/fx/currencies'
+        });
+    }
+    
+    /**
+     * Currency Rate
+     * Get rate between two currencies. Supports historical dates back to 1948.
+     * @param data The data for the request.
+     * @param data.fromCurrency
+     * @param data.toCurrency
+     * @param data.onDate YYYY-MM-DD or 'latest'
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static currencyRate(data: FxCurrencyRateData): CancelablePromise<FxCurrencyRateResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/fx/rate/{from_currency}/{to_currency}',
+            path: {
+                from_currency: data.fromCurrency,
+                to_currency: data.toCurrency
+            },
+            query: {
+                on_date: data.onDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Convert Currency
+     * Convert amount between currencies on a specific date.
+     * @param data The data for the request.
+     * @param data.amount
+     * @param data.fromCurrency
+     * @param data.toCurrency
+     * @param data.onDate YYYY-MM-DD or 'latest'
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static convertCurrency(data: FxConvertCurrencyData): CancelablePromise<FxConvertCurrencyResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/fx/convert',
+            query: {
+                amount: data.amount,
+                from_currency: data.fromCurrency,
+                to_currency: data.toCurrency,
+                on_date: data.onDate
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Convert To Myr Endpoint
+     * Convert any currency to MYR using the rate on the transaction date.
+     * @param data The data for the request.
+     * @param data.amount
+     * @param data.fromCurrency
+     * @param data.onDate YYYY-MM-DD or 'latest'
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static convertToMyrEndpoint(data: FxConvertToMyrEndpointData): CancelablePromise<FxConvertToMyrEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/fx/convert-to-myr',
+            query: {
+                amount: data.amount,
+                from_currency: data.fromCurrency,
+                on_date: data.onDate
             },
             errors: {
                 422: 'Validation Error'
