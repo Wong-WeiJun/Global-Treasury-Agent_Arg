@@ -92,7 +92,9 @@ function SignUp() {
               className="flex flex-col gap-6"
             >
               <div className="flex flex-col items-center gap-2 text-center">
-                <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Create an account
+                </h1>
               </div>
 
               <div className="grid gap-4">
@@ -181,7 +183,10 @@ function SignUp() {
 
               <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
                 Already have an account?{" "}
-                <RouterLink to="/login" className="text-[#1677c8] underline underline-offset-4 font-medium">
+                <RouterLink
+                  to="/login"
+                  className="text-[#1677c8] underline underline-offset-4 font-medium"
+                >
                   Log in
                 </RouterLink>
               </div>

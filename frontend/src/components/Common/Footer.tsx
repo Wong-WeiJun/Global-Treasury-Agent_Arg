@@ -1,5 +1,4 @@
-import { FaGithub, FaInstagram} from "react-icons/fa"
-
+import { FaGithub, FaInstagram } from "react-icons/fa"
 
 const socialLinks = [
   {
@@ -7,11 +6,14 @@ const socialLinks = [
     href: "https://github.com/Wong-WeiJun/Global-Treasury-Agent_Arg",
     label: "GitHub",
   },
-  { icon: FaInstagram, href: "https://www.instagram.com/orhgee?igsh=N2ZhM20xcGYxY3ps", label: "Insta" },
+  {
+    icon: FaInstagram,
+    href: "https://www.instagram.com/orhgee?igsh=N2ZhM20xcGYxY3ps",
+    label: "Insta",
+  },
 ]
 
 export function Footer() {
-
   return (
     <footer className="border-t py-4 px-6">
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">

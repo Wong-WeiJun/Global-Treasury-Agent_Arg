@@ -1,22 +1,21 @@
 import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
-import { 
-  ChevronsUpDown, 
-  LogOut, 
-  Settings, 
-  Briefcase, 
-  FileText, 
-  Home, 
-  MessageSquare, 
-  Users,
+import {
+  Briefcase,
+  ChevronsUpDown,
+  FileText,
   GitMerge, // Added
-  History,  // Added
-  Sun, 
-  Moon, 
-  Monitor 
+  History, // Added
+  Home,
+  LogOut,
+  MessageSquare,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+  Users,
 } from "lucide-react"
-
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useTheme } from "@/components/theme-provider"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,7 +48,9 @@ function UserInfo({ fullName, email }: UserInfoProps) {
         <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px]">
           {fullName || "User"}
         </p>
-        <p className="text-xs text-muted-foreground truncate max-w-[140px]">{email}</p>
+        <p className="text-xs text-muted-foreground truncate max-w-[140px]">
+          {email}
+        </p>
       </div>
     </div>
   )
@@ -65,14 +66,16 @@ export function TopNavbar() {
   const leftSideItems: NavigationItem[] = [
     { icon: Briefcase, title: "Items", path: "/items" },
     { icon: MessageSquare, title: "Chat", path: "/chat" },
-    ...(currentUser?.is_superuser ? [{ icon: Users, title: "Admin", path: "/admin" }] : []),
+    ...(currentUser?.is_superuser
+      ? [{ icon: Users, title: "Admin", path: "/admin" }]
+      : []),
   ]
 
   // RIGHT SIDE: Dashboard, Documents
   const rightSideItems: NavigationItem[] = [
     { icon: Home, title: "Dashboard", path: "/" },
-        { icon: GitMerge, title: "Reconcile", path: "/reconcile" }, 
-    { icon: History, title: "History", path: "/history" },       
+    { icon: GitMerge, title: "Reconcile", path: "/reconcile" },
+    { icon: History, title: "History", path: "/history" },
     { icon: FileText, title: "Documents", path: "/files" },
   ]
 
@@ -80,8 +83,15 @@ export function TopNavbar() {
     <div className="flex h-16 w-full items-center justify-between max-w-7xl mx-auto px-4">
       {/* FAR LEFT: Clickable Logo */}
       <div className="flex items-center gap-8">
-        <RouterLink to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-          <img src="/assets/images/favicon.png" alt="Logo" className="h-8 w-auto object-contain" />
+        <RouterLink
+          to="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
+          <img
+            src="/assets/images/favicon.png"
+            alt="Logo"
+            className="h-8 w-auto object-contain"
+          />
         </RouterLink>
 
         {/* REST OF LEFT SIDE ITEMS */}
@@ -93,8 +103,8 @@ export function TopNavbar() {
                 key={item.title}
                 to={item.path}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive 
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]" 
+                  isActive
+                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]"
                     : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                 }`}
               >
@@ -116,8 +126,8 @@ export function TopNavbar() {
                 key={item.title}
                 to={item.path}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive 
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]" 
+                  isActive
+                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]"
                     : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
                 }`}
               >
@@ -138,13 +148,22 @@ export function TopNavbar() {
             <span className="sr-only">Toggle theme</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="rounded-xl mt-2">
-            <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer gap-2 py-2">
+            <DropdownMenuItem
+              onClick={() => setTheme("light")}
+              className="cursor-pointer gap-2 py-2"
+            >
               <Sun className="size-4 text-muted-foreground" /> Light
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer gap-2 py-2">
+            <DropdownMenuItem
+              onClick={() => setTheme("dark")}
+              className="cursor-pointer gap-2 py-2"
+            >
               <Moon className="size-4 text-muted-foreground" /> Dark
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer gap-2 py-2">
+            <DropdownMenuItem
+              onClick={() => setTheme("system")}
+              className="cursor-pointer gap-2 py-2"
+            >
               <Monitor className="size-4 text-muted-foreground" /> System
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -154,17 +173,27 @@ export function TopNavbar() {
         {currentUser && (
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl transition-colors focus:outline-none">
-              <UserInfo fullName={currentUser?.full_name} email={currentUser?.email} />
+              <UserInfo
+                fullName={currentUser?.full_name}
+                email={currentUser?.email}
+              />
               <ChevronsUpDown className="size-4 text-muted-foreground ml-1" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56 rounded-xl mt-2" align="end" sideOffset={6}>
+            <DropdownMenuContent
+              className="w-56 rounded-xl mt-2"
+              align="end"
+              sideOffset={6}
+            >
               <RouterLink to="/settings">
                 <DropdownMenuItem className="cursor-pointer gap-2 py-2">
                   <Settings className="size-4 text-muted-foreground" />
                   User Settings
                 </DropdownMenuItem>
               </RouterLink>
-              <DropdownMenuItem onClick={() => logout()} className="cursor-pointer gap-2 py-2 text-destructive focus:text-destructive">
+              <DropdownMenuItem
+                onClick={() => logout()}
+                className="cursor-pointer gap-2 py-2 text-destructive focus:text-destructive"
+              >
                 <LogOut className="size-4" />
                 Log Out
               </DropdownMenuItem>
