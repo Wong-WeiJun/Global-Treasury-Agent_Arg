@@ -43,6 +43,9 @@ export type DocumentPublic = {
     reconciliation_result?: ({
     [key: string]: unknown;
 } | null);
+    review_status?: (string | null);
+    review_note?: (string | null);
+    reviewed_at?: (string | null);
 };
 
 export type DocumentsPublic = {
@@ -122,6 +125,11 @@ export type ReconcileResponse = {
     result: {
         [key: string]: unknown;
     };
+};
+
+export type ReviewRequest = {
+    status: string;
+    note?: (string | null);
 };
 
 export type Token = {
@@ -231,6 +239,13 @@ export type FilesExtractDocumentData = {
 };
 
 export type FilesExtractDocumentResponse = (ExtractionResponse);
+
+export type FilesReviewDocumentData = {
+    documentId: string;
+    requestBody: ReviewRequest;
+};
+
+export type FilesReviewDocumentResponse = (unknown);
 
 export type FxCurrenciesResponse = (unknown);
 

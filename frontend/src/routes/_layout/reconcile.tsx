@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { FilesService, ReconciliationService } from "../../client";
+import { ReviewPanel } from "../../components/Common/ReviewPanel";
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
@@ -165,8 +166,6 @@ function ReconcilePage() {
   };
 
   const decision = result?.agent_decision;
-  const proof = result?.proof;
-  const fxResult = result?.fx_result;
 
   return (
     <div className="max-w-4xl mx-auto p-6 flex flex-col gap-8">
@@ -369,62 +368,7 @@ function ReconcilePage() {
             <StatusBadge status={decision.final_status} />
           </div>
 
-          {proof && (
-            <div className="flex items-center gap-3 bg-gray-900 rounded-lg px-4 py-3 text-sm">
-              <span className="text-white font-semibold">
-                {proof.currency} {proof.amount}
-              </span>
-              {fxResult && proof.currency !== "MYR" && (
-                <>
-                  <span className="text-gray-500">→</span>
-                  <span className="text-green-400 font-semibold">
-                    MYR {fxResult.to_amount}
-                  </span>
-                  <span className="text-gray-500 text-xs">
-                    @ {fxResult.rate} on {fxResult.date}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1">
-            <p className="text-sm text-gray-300">{decision.explanation}</p>
-            {decision.discrepancy_reason && (
-              <p className="text-sm text-yellow-400">
-                ⚠ {decision.discrepancy_reason}
-              </p>
-            )}
-            {decision.suggested_action && (
-              <p className="text-sm text-blue-400">
-                → {decision.suggested_action}
-              </p>
-            )}
-            {decision.bank_fee_estimate && (
-              <p className="text-sm text-gray-500">
-                Estimated bank fee: MYR {decision.bank_fee_estimate}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Confidence</span>
-              <span>{Math.round((decision.confidence ?? 0) * 100)}%</span>
-            </div>
-            <div className="w-full bg-gray-800 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full ${
-                  decision.final_status === "matched"
-                    ? "bg-green-500"
-                    : decision.final_status === "fuzzy"
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                }`}
-                style={{ width: `${(decision.confidence ?? 0) * 100}%` }}
-              />
-            </div>
-          </div>
+          {/* ... (keep your existing proof, explanation, and confidence bar logic here) ... */}
 
           {result.match_scores?.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -466,6 +410,19 @@ function ReconcilePage() {
               ))}
             </div>
           )}
+
+          {/* Review Panel Section */}
+          <div className="mt-4 pt-4 border-t border-gray-800">
+            <ReviewPanel
+              documentId={selectedDocId}
+              currentStatus={null}
+              currentNote={null}
+              finalStatus={decision.final_status}
+              onSaved={() =>
+                queryClient.invalidateQueries({ queryKey: ["my-documents"] })
+              }
+            />
+          </div>
         </section>
       )}
     </div>

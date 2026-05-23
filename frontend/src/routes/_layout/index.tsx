@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import useAuth from "@/hooks/useAuth";
+import { createFileRoute, Link } from "@tanstack/react-router"
+import useAuth from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -10,10 +10,10 @@ export const Route = createFileRoute("/_layout/")({
       },
     ],
   }),
-});
+})
 
 function Dashboard() {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser } = useAuth()
 
   return (
     /* FORCE FULL BREAKOUT:
@@ -110,7 +110,7 @@ function Dashboard() {
         </div>
       </section>
     </div>
-  );
+  )
 }
 
-export default Dashboard;
+export default Dashboard

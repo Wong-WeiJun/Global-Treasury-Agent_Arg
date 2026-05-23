@@ -188,6 +188,40 @@ export const DocumentPublicSchema = {
                 }
             ],
             title: 'Reconciliation Result'
+        },
+        review_status: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Review Status'
+        },
+        review_note: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Review Note'
+        },
+        reviewed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reviewed At'
         }
     },
     type: 'object',
@@ -598,6 +632,29 @@ export const ReconcileResponseSchema = {
     type: 'object',
     required: ['document_id', 'result'],
     title: 'ReconcileResponse'
+} as const;
+
+export const ReviewRequestSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status'
+        },
+        note: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Note'
+        }
+    },
+    type: 'object',
+    required: ['status'],
+    title: 'ReviewRequest'
 } as const;
 
 export const TokenSchema = {
