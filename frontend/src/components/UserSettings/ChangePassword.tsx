@@ -66,8 +66,11 @@ const ChangePassword = () => {
   }
 
   return (
-    <div className="max-w-md">
-      <h3 className="text-lg font-semibold py-4">Change Password</h3>
+    <div className="w-full bg-white dark:bg-zinc-950 p-6 md:p-10 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-200">
+      <h3 className="text-2xl font-bold tracking-tight text-center pb-6">
+        Change Password
+      </h3>
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -133,7 +136,7 @@ const ChangePassword = () => {
           <LoadingButton
             type="submit"
             loading={mutation.isPending}
-            className="self-start"
+            className="bg-[#1677c8] hover:bg-[#295375] text-white px-6 transition-colors duration-200"
           >
             Update Password
           </LoadingButton>

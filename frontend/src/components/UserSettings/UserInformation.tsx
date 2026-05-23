@@ -21,9 +21,10 @@ import useCustomToast from "@/hooks/useCustomToast"
 import { cn } from "@/lib/utils"
 import { handleError } from "@/utils"
 
+// Fixed validation schema string definition format
 const formSchema = z.object({
   full_name: z.string().max(30).optional(),
-  email: z.email({ message: "Invalid email address" }),
+  email: z.string().email({ message: "Invalid email address" }),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -81,12 +82,18 @@ const UserInformation = () => {
   }
 
   return (
-    <div className="max-w-md">
-      <h3 className="text-lg font-semibold py-4">User Information</h3>
+    /* Full Scalable Card Wrapper:
+       Matches the look, borders, padding, and smooth scaling behavior of your change password views.
+    */
+    <div className="w-full bg-white dark:bg-zinc-950 p-6 md:p-10 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all duration-200">
+      <h3 className="text-2xl font-bold tracking-tight text-center pb-6">
+        User Information
+      </h3>
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-5"
         >
           <FormField
             control={form.control}
@@ -105,7 +112,7 @@ const UserInformation = () => {
                   <FormLabel>Full name</FormLabel>
                   <p
                     className={cn(
-                      "py-2 truncate max-w-sm",
+                      "py-2 px-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-transparent truncate w-full",
                       !field.value && "text-muted-foreground",
                     )}
                   >
@@ -131,19 +138,23 @@ const UserInformation = () => {
               ) : (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
-                  <p className="py-2 truncate max-w-sm">{field.value}</p>
+                  <p className="py-2 px-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-transparent truncate w-full">
+                    {field.value}
+                  </p>
                 </FormItem>
               )
             }
           />
 
-          <div className="flex gap-3">
+          {/* Cleaned layout button mechanics with brand colors embedded */}
+          <div className="flex gap-3 mt-2 w-full justify-center md:justify-start">
             {editMode ? (
               <>
                 <LoadingButton
                   type="submit"
                   loading={mutation.isPending}
                   disabled={!form.formState.isDirty}
+                  className="bg-[#1677c8] hover:bg-[#295375] text-white px-6 transition-colors duration-200"
                 >
                   Save
                 </LoadingButton>
@@ -152,12 +163,17 @@ const UserInformation = () => {
                   variant="outline"
                   onClick={onCancel}
                   disabled={mutation.isPending}
+                  className="px-6"
                 >
                   Cancel
                 </Button>
               </>
             ) : (
-              <Button type="button" onClick={toggleEditMode}>
+              <Button
+                type="button"
+                onClick={toggleEditMode}
+                className="w-full md:w-auto bg-[#1677c8] hover:bg-[#295375] text-white px-8 transition-colors duration-200"
+              >
                 Edit
               </Button>
             )}

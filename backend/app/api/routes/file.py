@@ -1,16 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from app.api.deps import CurrentUser
 from app.file_utils import upload_document, delete_document
-from pydantic import BaseModel
 import boto3
 from app.core.config import settings
-from app.models import Document, DocumentPublic, DocumentsPublic, UploadResponse
-from sqlmodel import Session, select, func
+from app.models import (
+    Document,
+    DocumentPublic,
+    DocumentsPublic,
+    UploadResponse,
+    ExtractedData,
+    ExtractionResponse,
+)
+from sqlmodel import select, func
+from app.fx import convert_to_myr
 import uuid
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import SessionDep
 from sqlalchemy import desc
 from typing import cast
 from sqlalchemy.sql.elements import ColumnElement
+from app.extraction import extract_from_image, extract_from_pdf, extract_from_excel
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -179,3 +188,93 @@ def get_download_url(
         ExpiresIn=300,
     )
     return {"url": url, "filename": doc.original_filename}
+
+
+@router.post("/{document_id}/extract", response_model=ExtractionResponse)
+async def extract_document(
+    document_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: SessionDep,
+):
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Tip: You could import _get_s3_client from app.file_utils to avoid repeating this!
+    s3 = boto3.client(
+        "s3",
+        region_name=settings.s3_region,
+        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
+        if settings.s3_access_key_id
+        else None,
+        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
+        if settings.s3_secret_access_key
+        else None,
+    )
+    obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
+    file_bytes = obj["Body"].read()
+
+    data = None
+
+    try:
+        if doc.file_type == "excel":
+            rows = extract_from_excel(file_bytes, doc.original_filename)
+            converted_rows = []
+            for row in rows:
+                if row.get("amount") and row.get("currency"):
+                    fx = await convert_to_myr(
+                        amount=row["amount"],
+                        from_currency=row["currency"],
+                        on_date=row.get("date") or "latest",
+                    )
+                    row["myr_amount"] = fx["to_amount"]
+                    row["fx_rate"] = fx["rate"]
+                converted_rows.append(row)
+
+            doc.extracted_data = {"rows": converted_rows}
+            flag_modified(doc, "extracted_data")  # ← add this
+            session.add(doc)
+            session.commit()
+
+            return ExtractionResponse(
+                document_id=document_id,
+                rows=[ExtractedData(**r) for r in converted_rows],
+            )
+
+        elif doc.file_type == "image":
+            data = extract_from_image(file_bytes)
+        elif doc.file_type == "pdf":
+            data = extract_from_pdf(file_bytes)
+        else:
+            return ExtractionResponse(
+                document_id=document_id, error="Unsupported file type"
+            )
+
+        if data:
+            if data.get("amount") and data.get("currency"):
+                fx_result = await convert_to_myr(
+                    amount=data["amount"],
+                    from_currency=data["currency"],
+                    on_date=data.get("date") or "latest",
+                )
+                data["myr_amount"] = fx_result["to_amount"]
+                data["fx_rate"] = fx_result["rate"]
+
+            doc.extracted_data = data
+            flag_modified(doc, "extracted_data")  # ← add this
+            session.add(doc)
+            session.commit()
+            session.refresh(doc)
+
+            return ExtractionResponse(
+                document_id=document_id, extracted=ExtractedData(**data)
+            )
+
+        return ExtractionResponse(
+            document_id=document_id, error="No data could be extracted"
+        )
+
+    except Exception as e:
+        return ExtractionResponse(document_id=document_id, error=str(e))

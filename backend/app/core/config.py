@@ -127,5 +127,7 @@ class Settings(BaseSettings):
 
     max_upload_size_bytes: int = 15 * 1024 * 1024
 
+    morpheus_api_key: SecretStr | None = None
+
 
 settings = Settings()  # type: ignore
