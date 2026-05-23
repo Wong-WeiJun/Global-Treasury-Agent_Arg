@@ -19,6 +19,7 @@ from sqlalchemy import desc
 from typing import cast
 from sqlalchemy.sql.elements import ColumnElement
 from app.extraction import extract_from_image, extract_from_pdf, extract_from_excel
+from sqlalchemy.orm.attributes import flag_modified
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -201,6 +202,7 @@ async def extract_document(
     if doc.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    # Tip: You could import _get_s3_client from app.file_utils to avoid repeating this!
     s3 = boto3.client(
         "s3",
         region_name=settings.s3_region,
@@ -230,6 +232,12 @@ async def extract_document(
                     row["myr_amount"] = fx["to_amount"]
                     row["fx_rate"] = fx["rate"]
                 converted_rows.append(row)
+
+            doc.extracted_data = {"rows": converted_rows}
+            flag_modified(doc, "extracted_data")  # ← add this
+            session.add(doc)
+            session.commit()
+
             return ExtractionResponse(
                 document_id=document_id,
                 rows=[ExtractedData(**r) for r in converted_rows],
@@ -253,9 +261,17 @@ async def extract_document(
                 )
                 data["myr_amount"] = fx_result["to_amount"]
                 data["fx_rate"] = fx_result["rate"]
+
+            doc.extracted_data = data
+            flag_modified(doc, "extracted_data")  # ← add this
+            session.add(doc)
+            session.commit()
+            session.refresh(doc)
+
             return ExtractionResponse(
                 document_id=document_id, extracted=ExtractedData(**data)
             )
+
         return ExtractionResponse(
             document_id=document_id, error="No data could be extracted"
         )
