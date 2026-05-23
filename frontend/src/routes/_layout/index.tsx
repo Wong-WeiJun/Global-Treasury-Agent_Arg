@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import useAuth from "@/hooks/useAuth"
+import { createFileRoute, Link } from "@tanstack/react-router";
+import useAuth from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -10,10 +10,10 @@ export const Route = createFileRoute("/_layout/")({
       },
     ],
   }),
-})
+});
 
 function Dashboard() {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth();
 
   return (
     /* FORCE FULL BREAKOUT:
@@ -22,12 +22,11 @@ function Dashboard() {
         ANY parent container constraint, aligning it directly with the browser edges.
     */
     <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen min-h-screen bg-[#111111] text-white font-sans antialiased selection:bg-[#1677c8] overflow-x-hidden">
-
       {/* HERO SECTION */}
-      <section 
+      <section
         className="min-h-[calc(100vh-4rem)] flex items-center justify-center text-center px-5 bg-cover bg-center bg-no-repeat relative"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/nightdashboard.gif')`
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/nightdashboard.gif')`,
         }}
       >
         <div className="max-w-4xl mx-auto">
@@ -35,7 +34,8 @@ function Dashboard() {
             MyAudit Dashboard
           </h1>
           <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto drop-shadow">
-            Hi, {currentUser?.full_name || currentUser?.email || "User"}. Welcome back.
+            Hi, {currentUser?.full_name || currentUser?.email || "User"}.
+            Welcome back.
           </p>
         </div>
       </section>
@@ -48,13 +48,15 @@ function Dashboard() {
 
         {/* Responsive Grid Setup */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-7 max-w-7xl mx-auto">
-
           {/* CHAT ROUTE LINK */}
-          <Link to="/chat" className="block text-inherit no-underline group focus:outline-none">
+          <Link
+            to="/chat"
+            className="block text-inherit no-underline group focus:outline-none"
+          >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/chat.png" 
-                alt="File system illustration" 
+              <img
+                src="/assets/Dashboard/chat.png"
+                alt="File system illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
@@ -67,11 +69,14 @@ function Dashboard() {
           </Link>
 
           {/* DOCUMENTS ROUTE LINK */}
-          <Link to="/files" className="block text-inherit no-underline group focus:outline-none">
+          <Link
+            to="/reconcile"
+            className="block text-inherit no-underline group focus:outline-none"
+          >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/document.jpg" 
-                alt="Placeholder illustration" 
+              <img
+                src="/assets/Dashboard/document.jpg"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
@@ -84,11 +89,14 @@ function Dashboard() {
           </Link>
 
           {/* SETTINGS ROUTE LINK */}
-          <Link to="/settings" className="block text-inherit no-underline group focus:outline-none">
+          <Link
+            to="/settings"
+            className="block text-inherit no-underline group focus:outline-none"
+          >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
-              <img 
-                src="/assets/Dashboard/editprofile.png" 
-                alt="Placeholder illustration" 
+              <img
+                src="/assets/Dashboard/editprofile.png"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
@@ -99,11 +107,10 @@ function Dashboard() {
               </div>
             </div>
           </Link>
-
         </div>
       </section>
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;
