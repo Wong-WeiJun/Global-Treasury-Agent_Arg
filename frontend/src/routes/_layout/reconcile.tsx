@@ -178,7 +178,7 @@ function ReconcilePage() {
       </div>
 
       {/* Step 1: Select or Upload document */}
-      <section className="flex flex-col gap-3 border rounded-lg p-4 bg-gray-900/30">
+      <section className="flex flex-col gap-3 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
           Step 1 — Payment Proof Document
         </h2>

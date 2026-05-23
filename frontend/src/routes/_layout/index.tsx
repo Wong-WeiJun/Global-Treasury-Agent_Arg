@@ -41,8 +41,8 @@ function Dashboard() {
       </section>
 
       {/* SHOWCASE SECTION */}
-      <section className="px-6 md:px-12 py-20 md:py-[100px] bg-[#181818]">
-        <h2 className="text-center text-3xl md:text-[42px] font-bold mb-[60px] tracking-tight">
+      <section className="px-6 md:px-12 py-20 md:py-[100px] bg-gray-50 dark:bg-[#181818]">
+        <h2 className="text-center text-3xl md:text-[42px] text-black dark:text-white font-bold mb-[60px] tracking-tight">
           Tools
         </h2>
 
@@ -53,14 +53,14 @@ function Dashboard() {
             to="/chat"
             className="block text-inherit no-underline group focus:outline-none"
           >
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
+            <div className="bg-gray-200 dark:bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
               <img
                 src="/assets/Dashboard/chat.png"
                 alt="File system illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
                   Chat
                 </h3>
                 <p className="text-zinc-400 text-sm">Use our Agent.</p>
@@ -73,15 +73,15 @@ function Dashboard() {
             to="/reconcile"
             className="block text-inherit no-underline group focus:outline-none"
           >
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
+            <div className="bg-gray-200 dark:bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
               <img
                 src="/assets/Dashboard/document.jpg"
                 alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
-                  Documents
+                <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
+                  Reconcile
                 </h3>
                 <p className="text-zinc-400 text-sm">Upload Documents.</p>
               </div>
@@ -93,14 +93,14 @@ function Dashboard() {
             to="/settings"
             className="block text-inherit no-underline group focus:outline-none"
           >
-            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
+            <div className="bg-gray-200 dark:bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
               <img
                 src="/assets/Dashboard/editprofile.png"
                 alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
-                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
+                <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
                   Edit Profile
                 </h3>
                 <p className="text-zinc-400 text-sm">Edit Personal Profile.</p>

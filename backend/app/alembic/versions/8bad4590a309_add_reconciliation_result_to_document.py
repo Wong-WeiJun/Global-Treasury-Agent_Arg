@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('document', sa.Column('reconciliation_result', sa.JSON(), nullable=True))
+    pass
 
 def downgrade():
-    op.drop_column('document', 'reconciliation_result')
+    pass
