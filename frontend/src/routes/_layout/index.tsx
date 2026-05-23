@@ -16,9 +16,12 @@ function Dashboard() {
   const { user: currentUser } = useAuth()
 
   return (
-    /* Outer negative margins pull the content to the absolute edges of the viewport window, 
-       bypassing the layout wrapper padding seamlessly */
-    <div className="-mx-4 md:-mx-8 -mt-4 md:-mt-8 min-h-screen bg-[#111111] text-white font-sans antialiased selection:bg-[#1677c8]">
+    /* FORCE FULL BREAKOUT:
+      - We completely neutralize layout paddings by matching your viewport metrics.
+      - w-screen + left-1/2 + -translate-x-1/2 completely yanks this element out of 
+        ANY parent container constraint, aligning it directly with the browser edges.
+    */
+    <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen min-h-screen bg-[#111111] text-white font-sans antialiased selection:bg-[#1677c8] overflow-x-hidden">
 
       {/* HERO SECTION */}
       <section 
@@ -63,8 +66,7 @@ function Dashboard() {
             </div>
           </Link>
 
-          {/* DOCUMENTS ROUTE LINK */}
-          <Link to="/files" className="block text-inherit no-underline group focus:outline-none">
+          <Link to="/reconcile" className="block text-inherit no-underline group focus:outline-none">
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
               <img 
                 src="/assets/Dashboard/document.jpg" 
@@ -73,9 +75,25 @@ function Dashboard() {
               />
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
-                  Documents
+                  Reconiliation
                 </h3>
-                <p className="text-zinc-400 text-sm">Upload Documents.</p>
+                <p className="text-zinc-400 text-sm">Match a payment proof against bank statement entries using AI.</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/history" className="block text-inherit no-underline group focus:outline-none">
+            <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 group-focus:-translate-y-2 shadow-xl border border-zinc-800/40">
+              <img 
+                src="/assets/Dashboard/history.jpg" 
+                alt="Placeholder illustration" 
+                className="w-full block object-cover aspect-video"
+              />
+              <div className="p-5">
+                <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#65d4e8] transition-colors">
+                  Upload History
+                </h3>
+                <p className="text-zinc-400 text-sm">All previously uploaded payment proofs.</p>
               </div>
             </div>
           </Link>

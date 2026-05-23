@@ -4,12 +4,11 @@ import {
   LogOut, 
   Settings, 
   Briefcase, 
-  FileText, 
   Home, 
   MessageSquare, 
   Users,
-  GitMerge, // Added
-  History,  // Added
+  GitMerge, 
+  History, 
   Sun, 
   Moon, 
   Monitor 
@@ -73,7 +72,6 @@ export function TopNavbar() {
     { icon: Home, title: "Dashboard", path: "/" },
         { icon: GitMerge, title: "Reconcile", path: "/reconcile" }, 
     { icon: History, title: "History", path: "/history" },       
-    { icon: FileText, title: "Documents", path: "/files" },
   ]
 
   return (
