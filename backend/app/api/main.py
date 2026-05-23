@@ -8,7 +8,7 @@ api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(items.router)
-# api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
+api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(file.router)
 
 if settings.ENVIRONMENT == "local":
