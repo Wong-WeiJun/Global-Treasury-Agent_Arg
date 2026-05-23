@@ -147,6 +147,9 @@ class Document(SQLModel, table=True):
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
     reconciliation_result: dict | None = Field(default=None, sa_column=Column(JSON))
+    review_status: str | None = Field(default=None)
+    review_note: str | None = Field(default=None)
+    reviewed_at: datetime | None = Field(default=None)
 
 
 class DocumentPublic(SQLModel):
@@ -157,6 +160,9 @@ class DocumentPublic(SQLModel):
     uploaded_at: datetime
     extracted_data: dict | None = None
     reconciliation_result: dict | None = None
+    review_status: str | None = None
+    review_note: str | None = None
+    reviewed_at: datetime | None = None
 
 
 class DocumentsPublic(SQLModel):
@@ -216,3 +222,8 @@ class ReconcileRequest(BaseModel):
 class ReconcileResponse(BaseModel):
     document_id: uuid.UUID
     result: dict
+
+
+class ReviewRequest(BaseModel):
+    status: str  # "approved" | "flagged" | "exception"
+    note: str | None = None

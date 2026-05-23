@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ReviewPanel } from "../../components/Common/ReviewPanel";
 import { FilesService } from "../../client";
 
 export const Route = createFileRoute("/_layout/history")({
@@ -319,6 +320,21 @@ function DocumentRow({ doc }: { doc: any }) {
                             </span>
                           </div>
                         ))}
+                        {decision && (
+                          <div className="mt-4 pt-4 border-t border-gray-800">
+                            <ReviewPanel
+                              documentId={doc.id}
+                              currentStatus={doc.review_status}
+                              currentNote={doc.review_note}
+                              finalStatus={decision.final_status}
+                              onSaved={() =>
+                                queryClient.invalidateQueries({
+                                  queryKey: ["my-documents"],
+                                })
+                              }
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
