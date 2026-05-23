@@ -2,7 +2,6 @@ import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import {
   Briefcase,
   ChevronsUpDown,
-  FileText,
   GitMerge, // Added
   History, // Added
   Home,
@@ -76,7 +75,6 @@ export function TopNavbar() {
     { icon: Home, title: "Dashboard", path: "/" },
     { icon: GitMerge, title: "Reconcile", path: "/reconcile" },
     { icon: History, title: "History", path: "/history" },
-    { icon: FileText, title: "Documents", path: "/files" },
   ]
 
   return (
