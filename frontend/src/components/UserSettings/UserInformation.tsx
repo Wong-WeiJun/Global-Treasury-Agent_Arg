@@ -89,7 +89,7 @@ const UserInformation = () => {
       <h3 className="text-2xl font-bold tracking-tight text-center pb-6">
         User Information
       </h3>
-      
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -169,8 +169,8 @@ const UserInformation = () => {
                 </Button>
               </>
             ) : (
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={toggleEditMode}
                 className="w-full md:w-auto bg-[#1677c8] hover:bg-[#295375] text-white px-8 transition-colors duration-200"
               >

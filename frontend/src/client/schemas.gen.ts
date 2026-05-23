@@ -176,6 +176,18 @@ export const DocumentPublicSchema = {
                 }
             ],
             title: 'Extracted Data'
+        },
+        reconciliation_result: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reconciliation Result'
         }
     },
     type: 'object',

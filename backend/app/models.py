@@ -143,9 +143,10 @@ class Document(SQLModel, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     original_filename: str
     s3_key: str
-    file_type: str  # "image" | "pdf" | "excel"
+    file_type: str
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
+    reconciliation_result: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class DocumentPublic(SQLModel):
@@ -155,6 +156,7 @@ class DocumentPublic(SQLModel):
     file_type: str
     uploaded_at: datetime
     extracted_data: dict | None = None
+    reconciliation_result: dict | None = None
 
 
 class DocumentsPublic(SQLModel):

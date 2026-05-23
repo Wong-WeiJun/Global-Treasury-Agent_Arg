@@ -17,12 +17,11 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#111] text-white font-sans antialiased selection:bg-[#1677c8]">
-
       {/* HERO SECTION */}
-      <section 
+      <section
         className="h-screen flex items-center justify-center text-center px-5 bg-cover bg-center bg-no-repeat relative"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/dashboard.gif')`
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.55)), url('/assets/Dashboard/dashboard.gif')`,
         }}
       >
         <div className="max-w-4xl mx-auto">
@@ -30,7 +29,8 @@ function Dashboard() {
             MyAudit Dashboard
           </h1>
           <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto">
-            Hi, {currentUser?.full_name || currentUser?.email || "User"}  Welcome back.
+            Hi, {currentUser?.full_name || currentUser?.email || "User"} Welcome
+            back.
           </p>
         </div>
       </section>
@@ -43,12 +43,14 @@ function Dashboard() {
 
         {/* Responsive Grid Setup */}
         <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap- tracking-normal gap-7 max-w-7xl mx-auto">
-
-          <a href="http://localhost:5173/chat" className="block text-inherit no-underline group">
+          <a
+            href="http://localhost:5173/chat"
+            className="block text-inherit no-underline group"
+          >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
-              <img 
-                src="/assets/Dashboard/chat.png" 
-                alt="File system illustration" 
+              <img
+                src="/assets/Dashboard/chat.png"
+                alt="File system illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
@@ -60,44 +62,43 @@ function Dashboard() {
             </div>
           </a>
 
-          <a 
-            href="http://localhost:5173/files" 
+          <a
+            href="http://localhost:5173/files"
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
-              <img 
-                src="/assets/Dashboard/document.jpg" 
-                alt="Placeholder illustration" 
+              <img
+                src="/assets/Dashboard/document.jpg"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
-                 Documents
+                  Documents
                 </h3>
                 <p className="text-zinc-400 text-sm">Upload Doucments.</p>
               </div>
             </div>
           </a>
 
-          <a 
-            href="http://localhost:5173/settings" 
+          <a
+            href="http://localhost:5173/settings"
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
-              <img 
-                src="/assets/Dashboard/editprofile.png" 
-                alt="Placeholder illustration" 
+              <img
+                src="/assets/Dashboard/editprofile.png"
+                alt="Placeholder illustration"
                 className="w-full block object-cover aspect-video"
               />
               <div className="p-5">
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
-                 Edit Profile
+                  Edit Profile
                 </h3>
                 <p className="text-zinc-400 text-sm">Edit Personal Profile.</p>
               </div>
             </div>
           </a>
-
         </div>
       </section>
     </div>

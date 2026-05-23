@@ -70,7 +70,7 @@ const ChangePassword = () => {
       <h3 className="text-2xl font-bold tracking-tight text-center pb-6">
         Change Password
       </h3>
-      
+
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
