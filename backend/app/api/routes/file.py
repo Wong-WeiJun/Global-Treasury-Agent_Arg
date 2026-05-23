@@ -4,13 +4,21 @@ from app.file_utils import upload_document, delete_document
 from pydantic import BaseModel
 import boto3
 from app.core.config import settings
-from app.models import Document, DocumentPublic, DocumentsPublic, UploadResponse
+from app.models import (
+    Document,
+    DocumentPublic,
+    DocumentsPublic,
+    UploadResponse,
+    ExtractedData,
+    ExtractionResponse,
+)
 from sqlmodel import Session, select, func
 import uuid
 from app.api.deps import CurrentUser, SessionDep
 from sqlalchemy import desc
 from typing import cast
 from sqlalchemy.sql.elements import ColumnElement
+from app.extraction import extract_from_image, extract_from_pdf, extract_from_excel
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -179,3 +187,53 @@ def get_download_url(
         ExpiresIn=300,
     )
     return {"url": url, "filename": doc.original_filename}
+
+
+@router.post("/{document_id}/extract", response_model=ExtractionResponse)
+async def extract_document(
+    document_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: SessionDep,
+):
+    doc = session.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if doc.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Download file from S3
+    s3 = boto3.client(
+        "s3",
+        region_name=settings.s3_region,
+        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
+        if settings.s3_access_key_id
+        else None,
+        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
+        if settings.s3_secret_access_key
+        else None,
+    )
+    obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
+    file_bytes = obj["Body"].read()
+
+    try:
+        if doc.file_type == "image":
+            data = extract_from_image(file_bytes)
+            return ExtractionResponse(
+                document_id=document_id, extracted=ExtractedData(**data)
+            )
+
+        elif doc.file_type == "pdf":
+            data = extract_from_pdf(file_bytes)
+            return ExtractionResponse(
+                document_id=document_id, extracted=ExtractedData(**data)
+            )
+
+        elif doc.file_type == "excel":
+            rows = extract_from_excel(file_bytes, doc.original_filename)
+            return ExtractionResponse(
+                document_id=document_id,
+                rows=[ExtractedData(**r) for r in rows],
+            )
+
+    except Exception as e:
+        return ExtractionResponse(document_id=document_id, error=str(e))

@@ -37,6 +37,22 @@ export type DocumentsPublic = {
     count: number;
 };
 
+export type ExtractedData = {
+    amount?: (number | null);
+    currency?: (string | null);
+    date?: (string | null);
+    payer?: (string | null);
+    payee?: (string | null);
+    description?: (string | null);
+};
+
+export type ExtractionResponse = {
+    document_id: string;
+    extracted?: (ExtractedData | null);
+    rows?: (Array<ExtractedData> | null);
+    error?: (string | null);
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -181,6 +197,12 @@ export type FilesGetDownloadUrlData = {
 };
 
 export type FilesGetDownloadUrlResponse = (unknown);
+
+export type FilesExtractDocumentData = {
+    documentId: string;
+};
+
+export type FilesExtractDocumentResponse = (ExtractionResponse);
 
 export type ItemsReadItemsData = {
     limit?: number;

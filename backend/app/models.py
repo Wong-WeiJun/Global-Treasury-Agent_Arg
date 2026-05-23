@@ -162,3 +162,19 @@ class DocumentsPublic(SQLModel):
 
 class UploadResponse(BaseModel):
     document: DocumentPublic
+
+
+class ExtractedData(BaseModel):
+    amount: float | None = None
+    currency: str | None = None
+    date: str | None = None
+    payer: str | None = None
+    payee: str | None = None
+    description: str | None = None
+
+
+class ExtractionResponse(BaseModel):
+    document_id: uuid.UUID
+    extracted: ExtractedData | None = None
+    rows: list[ExtractedData] | None = None  # for Excel with multiple rows
+    error: str | None = None

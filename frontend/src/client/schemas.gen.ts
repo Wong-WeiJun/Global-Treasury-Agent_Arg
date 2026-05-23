@@ -152,6 +152,127 @@ export const DocumentsPublicSchema = {
     title: 'DocumentsPublic'
 } as const;
 
+export const ExtractedDataSchema = {
+    properties: {
+        amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Amount'
+        },
+        currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Currency'
+        },
+        date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date'
+        },
+        payer: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Payer'
+        },
+        payee: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Payee'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        }
+    },
+    type: 'object',
+    title: 'ExtractedData'
+} as const;
+
+export const ExtractionResponseSchema = {
+    properties: {
+        document_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Document Id'
+        },
+        extracted: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ExtractedData'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        rows: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/ExtractedData'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rows'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['document_id'],
+    title: 'ExtractionResponse'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
