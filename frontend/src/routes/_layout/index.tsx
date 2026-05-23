@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import useAuth from "@/hooks/useAuth"
+import { createFileRoute, Link } from "@tanstack/react-router";
+import useAuth from "@/hooks/useAuth";
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -10,10 +10,10 @@ export const Route = createFileRoute("/_layout/")({
       },
     ],
   }),
-})
+});
 
 function Dashboard() {
-  const { user: currentUser } = useAuth()
+  const { user: currentUser } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#111] text-white font-sans antialiased selection:bg-[#1677c8]">
@@ -42,11 +42,8 @@ function Dashboard() {
         </h2>
 
         {/* Responsive Grid Setup */}
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap- tracking-normal gap-7 max-w-7xl mx-auto">
-          <a
-            href="http://localhost:5173/chat"
-            className="block text-inherit no-underline group"
-          >
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] tracking-normal gap-7 max-w-7xl mx-auto">
+          <Link to="/chat" className="block text-inherit no-underline group">
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
               <img
                 src="/assets/Dashboard/chat.png"
@@ -62,8 +59,8 @@ function Dashboard() {
             </div>
           </Link>
 
-          <a
-            href="http://localhost:5173/files"
+          <Link
+            to="/reconcile"
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
@@ -76,13 +73,15 @@ function Dashboard() {
                 <h3 className="text-xl font-bold mb-2 text-white group-hover:text-[#1677c8] transition-colors">
                   Documents
                 </h3>
-                <p className="text-zinc-400 text-sm">Match a payment proof against bank statement entries using AI.</p>
+                <p className="text-zinc-400 text-sm">
+                  Match a payment proof against bank statement entries using AI.
+                </p>
               </div>
             </div>
           </Link>
 
-          <a
-            href="http://localhost:5173/settings"
+          <Link
+            to="/settings"
             className="block text-inherit no-underline group"
           >
             <div className="bg-[#222] rounded-xl overflow-hidden transition-all duration-300 transform group-hover:-translate-y-2 shadow-lg">
@@ -98,9 +97,9 @@ function Dashboard() {
                 <p className="text-zinc-400 text-sm">Edit Personal Profile.</p>
               </div>
             </div>
-          </a>
+          </Link>
         </div>
       </section>
     </div>
-  )
+  );
 }
