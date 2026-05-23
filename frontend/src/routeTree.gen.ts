@@ -17,6 +17,7 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutFilesRouteImport } from './routes/_layout/files'
 import { Route as LayoutChatRouteImport } from './routes/_layout/chat'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
@@ -59,6 +60,11 @@ const LayoutItemsRoute = LayoutItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutFilesRoute = LayoutFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutChatRoute = LayoutChatRouteImport.update({
   id: '/chat',
   path: '/chat',
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/chat': typeof LayoutChatRoute
+  '/files': typeof LayoutFilesRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
 }
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
   '/chat': typeof LayoutChatRoute
+  '/files': typeof LayoutFilesRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/chat': typeof LayoutChatRoute
+  '/_layout/files': typeof LayoutFilesRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/chat'
+    | '/files'
     | '/items'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin'
     | '/chat'
+    | '/files'
     | '/items'
     | '/settings'
     | '/'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_layout/admin'
     | '/_layout/chat'
+    | '/_layout/files'
     | '/_layout/items'
     | '/_layout/settings'
     | '/_layout/'
@@ -208,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutItemsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/files': {
+      id: '/_layout/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof LayoutFilesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/chat': {
       id: '/_layout/chat'
       path: '/chat'
@@ -228,6 +247,7 @@ declare module '@tanstack/react-router' {
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutChatRoute: typeof LayoutChatRoute
+  LayoutFilesRoute: typeof LayoutFilesRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -236,6 +256,7 @@ interface LayoutRouteChildren {
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutChatRoute: LayoutChatRoute,
+  LayoutFilesRoute: LayoutFilesRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,

@@ -1,28 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ChatService } from "../../client";
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import { ChatService } from "../../client"
 
 export const Route = createFileRoute("/_layout/chat")({
   component: ChatPage,
-});
+})
 
 interface Message {
-  role: "user" | "assistant";
-  content: string;
+  role: "user" | "assistant"
+  content: string
 }
 
 function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState("")
+  const [loading, setLoading] = useState(false)
 
   const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: Message = { role: "user", content: input };
-    const newHistory = [...messages, userMsg];
-    setMessages(newHistory);
-    setInput("");
-    setLoading(true);
+    if (!input.trim() || loading) return
+    const userMsg: Message = { role: "user", content: input }
+    const newHistory = [...messages, userMsg]
+    setMessages(newHistory)
+    setInput("")
+    setLoading(true)
     try {
       const res = await ChatService.chat({
         requestBody: {
@@ -32,17 +32,17 @@ function ChatPage() {
             content: m.content,
           })),
         },
-      });
-      setMessages([...newHistory, { role: "assistant", content: res.reply }]);
+      })
+      setMessages([...newHistory, { role: "assistant", content: res.reply }])
     } catch {
       setMessages([
         ...newHistory,
         { role: "assistant", content: "Error reaching AI." },
-      ]);
+      ])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="flex flex-col h-[80vh] max-w-2xl mx-auto p-4 gap-4">
@@ -90,5 +90,5 @@ function ChatPage() {
         </button>
       </div>
     </div>
-  );
+  )
 }

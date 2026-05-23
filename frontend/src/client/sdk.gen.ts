@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChatChatData, ChatChatResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ChatService {
     /**
@@ -19,6 +19,109 @@ export class ChatService {
             url: '/api/v1/chat/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class FilesService {
+    /**
+     * Generate Presigned Url
+     * @param data The data for the request.
+     * @param data.filename
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static generatePresignedUrl(data: FilesGeneratePresignedUrlData): CancelablePromise<FilesGeneratePresignedUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/files/presigned-url',
+            query: {
+                filename: data.filename
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Upload File
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns UploadResponse Successful Response
+     * @throws ApiError
+     */
+    public static uploadFile(data: FilesUploadFileData): CancelablePromise<FilesUploadFileResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/files/upload',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List My Documents
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns DocumentsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMyDocuments(data: FilesListMyDocumentsData = {}): CancelablePromise<FilesListMyDocumentsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/files/my-documents',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete File
+     * @param data The data for the request.
+     * @param data.documentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deleteFile(data: FilesDeleteFileData): CancelablePromise<FilesDeleteFileResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/files/{document_id}',
+            path: {
+                document_id: data.documentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Download Url
+     * @param data The data for the request.
+     * @param data.documentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getDownloadUrl(data: FilesGetDownloadUrlData): CancelablePromise<FilesGetDownloadUrlResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/files/{document_id}/download-url',
+            path: {
+                document_id: data.documentId
+            },
             errors: {
                 422: 'Validation Error'
             }
