@@ -136,3 +136,29 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+class Document(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    original_filename: str
+    s3_key: str
+    file_type: str  # "image" | "pdf" | "excel"
+    uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class DocumentPublic(SQLModel):
+    id: uuid.UUID
+    original_filename: str
+    s3_key: str
+    file_type: str
+    uploaded_at: datetime
+
+
+class DocumentsPublic(SQLModel):
+    data: list[DocumentPublic]
+    count: int
+
+
+class UploadResponse(BaseModel):
+    document: DocumentPublic
