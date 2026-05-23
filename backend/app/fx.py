@@ -107,4 +107,3 @@ async def convert_to_myr(
             "date": on_date,
         }
     return await convert(amount, from_currency, "MYR", on_date)
-

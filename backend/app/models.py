@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from pydantic import EmailStr, BaseModel
-from sqlalchemy import DateTime
+from pydantic import EmailStr, BaseModel, field_validator
+from sqlalchemy import DateTime, JSON, Column
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -145,6 +145,7 @@ class Document(SQLModel, table=True):
     s3_key: str
     file_type: str  # "image" | "pdf" | "excel"
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
+    extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
 
 
 class DocumentPublic(SQLModel):
@@ -153,6 +154,7 @@ class DocumentPublic(SQLModel):
     s3_key: str
     file_type: str
     uploaded_at: datetime
+    extracted_data: dict | None = None
 
 
 class DocumentsPublic(SQLModel):
@@ -180,3 +182,35 @@ class ExtractionResponse(BaseModel):
     extracted: ExtractedData | None = None
     rows: list[ExtractedData] | None = None  # for Excel with multiple rows
     error: str | None = None
+
+
+class BankEntry(BaseModel):
+    amount: float
+    date: str
+    description: str | None = None
+    payer: str | None = None
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def clean_amount(cls, v: any) -> float:
+        if isinstance(v, str):
+            # Remove spaces and commas (e.g. "1,000.50" -> "1000.50")
+            clean_v = v.replace(",", "").strip()
+            if not clean_v:
+                raise ValueError("Amount cannot be empty.")
+            try:
+                return float(clean_v)
+            except ValueError:
+                raise ValueError(f"'{v}' is not a valid numeric amount.")
+        return float(v)
+
+
+class ReconcileRequest(BaseModel):
+    document_id: uuid.UUID
+    bank_entries: list[BankEntry]
+    override_date: str | None = None
+
+
+class ReconcileResponse(BaseModel):
+    document_id: uuid.UUID
+    result: dict

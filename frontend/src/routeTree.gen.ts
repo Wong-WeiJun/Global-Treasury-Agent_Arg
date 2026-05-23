@@ -16,7 +16,9 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutReconcileRouteImport } from './routes/_layout/reconcile'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutHistoryRouteImport } from './routes/_layout/history'
 import { Route as LayoutFilesRouteImport } from './routes/_layout/files'
 import { Route as LayoutChatRouteImport } from './routes/_layout/chat'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
@@ -55,9 +57,19 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutReconcileRoute = LayoutReconcileRouteImport.update({
+  id: '/reconcile',
+  path: '/reconcile',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutHistoryRoute = LayoutHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutFilesRoute = LayoutFilesRouteImport.update({
@@ -85,7 +97,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof LayoutAdminRoute
   '/chat': typeof LayoutChatRoute
   '/files': typeof LayoutFilesRoute
+  '/history': typeof LayoutHistoryRoute
   '/items': typeof LayoutItemsRoute
+  '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
 }
 export interface FileRoutesByTo {
@@ -96,7 +110,9 @@ export interface FileRoutesByTo {
   '/admin': typeof LayoutAdminRoute
   '/chat': typeof LayoutChatRoute
   '/files': typeof LayoutFilesRoute
+  '/history': typeof LayoutHistoryRoute
   '/items': typeof LayoutItemsRoute
+  '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
 }
@@ -110,7 +126,9 @@ export interface FileRoutesById {
   '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/chat': typeof LayoutChatRoute
   '/_layout/files': typeof LayoutFilesRoute
+  '/_layout/history': typeof LayoutHistoryRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/reconcile': typeof LayoutReconcileRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
 }
@@ -125,7 +143,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/chat'
     | '/files'
+    | '/history'
     | '/items'
+    | '/reconcile'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -136,7 +156,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/chat'
     | '/files'
+    | '/history'
     | '/items'
+    | '/reconcile'
     | '/settings'
     | '/'
   id:
@@ -149,7 +171,9 @@ export interface FileRouteTypes {
     | '/_layout/admin'
     | '/_layout/chat'
     | '/_layout/files'
+    | '/_layout/history'
     | '/_layout/items'
+    | '/_layout/reconcile'
     | '/_layout/settings'
     | '/_layout/'
   fileRoutesById: FileRoutesById
@@ -213,11 +237,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/reconcile': {
+      id: '/_layout/reconcile'
+      path: '/reconcile'
+      fullPath: '/reconcile'
+      preLoaderRoute: typeof LayoutReconcileRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof LayoutItemsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/history': {
+      id: '/_layout/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof LayoutHistoryRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/files': {
@@ -248,7 +286,9 @@ interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutChatRoute: typeof LayoutChatRoute
   LayoutFilesRoute: typeof LayoutFilesRoute
+  LayoutHistoryRoute: typeof LayoutHistoryRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutReconcileRoute: typeof LayoutReconcileRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
@@ -257,7 +297,9 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
   LayoutChatRoute: LayoutChatRoute,
   LayoutFilesRoute: LayoutFilesRoute,
+  LayoutHistoryRoute: LayoutHistoryRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutReconcileRoute: LayoutReconcileRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }

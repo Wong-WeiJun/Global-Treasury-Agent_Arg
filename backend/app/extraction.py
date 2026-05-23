@@ -292,4 +292,3 @@ def _normalize_excel_row(row: dict) -> dict:
         "payee": find(["payee", "recipient", "beneficiary", "to"]),
         "description": find(["description", "narration", "details", "remarks", "ref"]),
     }
-
