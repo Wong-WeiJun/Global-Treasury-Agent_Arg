@@ -194,7 +194,7 @@ export function TopNavbar() {
               <RouterLink to="/team">
                 <DropdownMenuItem className="cursor-pointer gap-2 py-2">
                   <Settings className="size-4 text-muted-foreground" />
-                  Team
+                  Team Settings
                 </DropdownMenuItem>
               </RouterLink>
               <DropdownMenuItem
