@@ -53,6 +53,8 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
+    organization_id: uuid.UUID | None = Field(default=None, foreign_key="organization.id")
+    display_currency: str | None = Field(default="MYR")  # User preference for viewing
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
@@ -60,6 +62,8 @@ class User(UserBase, table=True):
 class UserPublic(UserBase):
     id: uuid.UUID
     created_at: datetime | None = None
+    organization_id: uuid.UUID | None = None
+    display_currency: str | None = "MYR"
 
 
 class UsersPublic(SQLModel):
@@ -129,6 +133,107 @@ class NewPassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class Organization(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str
+    slug: str | None = None  # URL-friendly identifier
+    base_currency: str = Field(default="MYR")  # Company operates in this currency
+    timezone: str = Field(default="Asia/Kuala_Lumpur")
+    fx_provider: str = Field(default="frankfurter")
+    created_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class OrganizationPublic(SQLModel):
+    id: uuid.UUID
+    name: str
+    base_currency: str
+    timezone: str
+    fx_provider: str
+    created_at: datetime
+
+
+class OrganizationCreate(SQLModel):
+    name: str = Field(min_length=1, max_length=255)
+    base_currency: str = Field(default="MYR", max_length=3)
+    timezone: str = Field(default="Asia/Kuala_Lumpur", max_length=100)
+    fx_provider: str = Field(default="frankfurter", max_length=50)
+
+
+class OrganizationUpdate(SQLModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    base_currency: str | None = Field(default=None, max_length=3)
+    timezone: str | None = Field(default=None, max_length=100)
+    fx_provider: str | None = Field(default=None, max_length=50)
+
+
+class OrganizationsPublic(SQLModel):
+    data: list[OrganizationPublic]
+    count: int
+
+
+# Membership roles for RBAC
+class MembershipRole(str):
+    OWNER = "OWNER"
+    ADMIN = "ADMIN"
+    FINANCE_MANAGER = "FINANCE_MANAGER"
+    ANALYST = "ANALYST"
+    VIEWER = "VIEWER"
+
+
+class Membership(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
+    role: str = Field(default="VIEWER")  # OWNER, ADMIN, FINANCE_MANAGER, ANALYST, VIEWER
+    joined_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class MembershipPublic(SQLModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    organization_id: uuid.UUID
+    role: str
+    joined_at: datetime
+
+
+class MembershipCreate(SQLModel):
+    user_id: uuid.UUID
+    organization_id: uuid.UUID
+    role: str = Field(default="VIEWER")
+
+
+class MembershipUpdate(SQLModel):
+    role: str
+
+
+class MembershipsPublic(SQLModel):
+    data: list[MembershipPublic]
+    count: int
+
+
+class MemberWithUser(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    organization_id: uuid.UUID
+    role: str
+    joined_at: datetime
+    user_email: str
+    user_full_name: str | None
+    user_is_active: bool
+
+
+class MembersWithUsersPublic(BaseModel):
+    data: list[MemberWithUser]
+    count: int
+
+
 class ChatRequest(BaseModel):
     message: str
     history: list[dict] = []  # [{"role": "user", "content": "..."}, ...]
@@ -141,12 +246,26 @@ class ChatResponse(BaseModel):
 class Document(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
     original_filename: str
     s3_key: str
     file_type: str
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
     reconciliation_result: dict | None = Field(default=None, sa_column=Column(JSON))
+
+    # Multi-Currency Architecture
+    # 1. Original Currency (what customer actually paid - NEVER overwrite)
+    original_amount: float | None = None
+    original_currency: str | None = None
+    transaction_date: str | None = None  # YYYY-MM-DD format
+
+    # 2. Base Currency (normalized for reconciliation - company operates in this)
+    base_amount: float | None = None
+    base_currency: str | None = Field(default="MYR")
+    fx_rate_used: float | None = None
+    fx_rate_date: str | None = None  # Date used for historical FX lookup
+    fx_rate_timestamp: datetime | None = None  # When FX conversion was performed
 
     # AI Result (machine-generated, never overwritten by human action)
     ai_result: str | None = Field(default=None)  # "MATCHED" | "FUZZY_MATCH" | "UNMATCHED"
@@ -170,12 +289,23 @@ class Document(SQLModel, table=True):
 
 class DocumentPublic(SQLModel):
     id: uuid.UUID
+    organization_id: uuid.UUID
     original_filename: str
     s3_key: str
     file_type: str
     uploaded_at: datetime
     extracted_data: dict | None = None
     reconciliation_result: dict | None = None
+
+    # Multi-Currency fields
+    original_amount: float | None = None
+    original_currency: str | None = None
+    transaction_date: str | None = None
+    base_amount: float | None = None
+    base_currency: str | None = "MYR"
+    fx_rate_used: float | None = None
+    fx_rate_date: str | None = None
+    fx_rate_timestamp: datetime | None = None
 
     # AI Result (immutable after AI processing)
     ai_result: str | None = None
@@ -258,6 +388,7 @@ class ReconcileResponse(BaseModel):
 class ReconciliationRecord(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     document_id: uuid.UUID = Field(foreign_key="document.id", nullable=False)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     reviewed_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
 
@@ -266,11 +397,13 @@ class ReconciliationRecord(SQLModel, table=True):
     risk_score: int
     risk_level: str | None = None  # "LOW" | "MEDIUM" | "HIGH"
     fx_rate: float | None = None
-    normalized_amount_myr: float | None = None
+    normalized_amount_myr: float | None = None  # Deprecated: use base_amount
+    base_currency: str | None = Field(default="MYR")  # Currency used for reconciliation
+    base_amount: float | None = None  # Amount in base currency
 
     # Decision
     action: str  # "approved" | "flagged" | "exception" | "rejected"
-    exception_type: str | None = None  # "BANK_FEE" | "PARTIAL_PAYMENT" etc.
+    exception_type: str | None = None  # "BANK_FEE" | "PARTIAL_PAYMENT" | "FX_SPREAD" etc.
     note: str | None = None
     ai_explanation: str | None = None
 
@@ -293,7 +426,9 @@ class ReconciliationRecordPublic(SQLModel):
     risk_score: int
     risk_level: str | None
     fx_rate: float | None
-    normalized_amount_myr: float | None
+    normalized_amount_myr: float | None  # Deprecated
+    base_currency: str | None
+    base_amount: float | None
     action: str
     exception_type: str | None
     note: str | None
@@ -320,3 +455,39 @@ class ReviewRequest(BaseModel):
 
 class AskAIRequest(BaseModel):
     question: str
+
+
+class Invitation(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    email: str = Field(index=True)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
+    role: str = Field(default="VIEWER")
+    invited_by: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    token: str = Field(unique=True, index=True)
+    expires_at: datetime
+    accepted_at: datetime | None = None
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class InvitationPublic(SQLModel):
+    id: uuid.UUID
+    email: str
+    organization_id: uuid.UUID
+    role: str
+    invited_by: uuid.UUID
+    expires_at: datetime
+    accepted_at: datetime | None
+    created_at: datetime
+
+
+class InvitationCreate(SQLModel):
+    email: EmailStr
+    role: str = Field(default="VIEWER")
+
+
+class InvitationAccept(SQLModel):
+    token: str
+    password: str = Field(min_length=8, max_length=128)

@@ -1,14 +1,28 @@
 from fastapi import APIRouter, HTTPException
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Document, ReconcileRequest, ReconcileResponse
+from app.models import Document, ReconcileRequest, ReconcileResponse, Organization, User
 from app.reconciliation import reconcile
-from app.fx import convert_to_myr
+from app.fx import convert_to_myr, convert
 from app.extraction import extract_from_image, extract_from_pdf
 from sqlalchemy.orm.attributes import flag_modified
 import boto3
 from app.core.config import settings
+import uuid
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
+
+
+def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
+    """Get the base currency for a user's organization. Defaults to MYR."""
+    user = session.get(User, user_id)
+    if not user or not user.organization_id:
+        return "MYR"
+
+    org = session.get(Organization, user.organization_id)
+    if not org:
+        return "MYR"
+
+    return org.base_currency
 
 
 @router.post("/reconcile", response_model=ReconcileResponse)
@@ -17,10 +31,19 @@ async def reconcile_document(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, body.document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     session.refresh(doc)
@@ -52,12 +75,14 @@ async def reconcile_document(
                 )
 
             if data.get("amount") and data.get("currency"):
-                fx = await convert_to_myr(
+                base_currency = get_user_base_currency(session, current_user.id)
+                fx = await convert(
                     amount=data["amount"],
                     from_currency=data["currency"],
+                    to_currency=base_currency,
                     on_date=data.get("date") or "latest",
                 )
-                data["myr_amount"] = fx["to_amount"]
+                data["myr_amount"] = fx["to_amount"]  # Legacy field
                 data["fx_rate"] = fx["rate"]
 
             doc.extracted_data = data
@@ -75,14 +100,16 @@ async def reconcile_document(
             )
 
     proof = doc.extracted_data
+    base_currency = get_user_base_currency(session, current_user.id)
 
-    # FX conversion
+    # FX conversion - use organization's base currency
     fx_result = None
-    if proof.get("currency") and proof["currency"].upper() != "MYR":
+    if proof.get("currency") and proof["currency"].upper() != base_currency:
         fx_date = body.override_date or proof.get("date") or "latest"
-        fx_result = await convert_to_myr(
+        fx_result = await convert(
             amount=proof["amount"],
             from_currency=proof["currency"],
+            to_currency=base_currency,
             on_date=fx_date,
         )
 
@@ -142,6 +169,7 @@ async def reconcile_document(
         # Create audit record for auto-approval
         record = ReconciliationRecord(
             document_id=doc.id,
+            organization_id=doc.organization_id,
             reviewed_by=current_user.id,
             confidence=doc.ai_confidence,
             risk_score=risk_score,

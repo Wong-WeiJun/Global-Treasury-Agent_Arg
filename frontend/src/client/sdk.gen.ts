@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, InvitationsInviteMemberData, InvitationsInviteMemberResponse, InvitationsListInvitationsData, InvitationsListInvitationsResponse, InvitationsCancelInvitationData, InvitationsCancelInvitationResponse, InvitationsAcceptInvitationData, InvitationsAcceptInvitationResponse, InvitationsVerifyInvitationData, InvitationsVerifyInvitationResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MembershipsListMyOrganizationsResponse, MembershipsListOrganizationMembersData, MembershipsListOrganizationMembersResponse, MembershipsAddOrganizationMemberData, MembershipsAddOrganizationMemberResponse, MembershipsUpdateMembershipData, MembershipsUpdateMembershipResponse, MembershipsRemoveMembershipData, MembershipsRemoveMembershipResponse, OrganizationsListOrganizationsData, OrganizationsListOrganizationsResponse, OrganizationsCreateOrganizationData, OrganizationsCreateOrganizationResponse, OrganizationsGetOrganizationData, OrganizationsGetOrganizationResponse, OrganizationsUpdateOrganizationData, OrganizationsUpdateOrganizationResponse, OrganizationsDeleteOrganizationData, OrganizationsDeleteOrganizationResponse, OrganizationsGetOrganizationSettingsData, OrganizationsGetOrganizationSettingsResponse, OrganizationsUpdateOrganizationSettingsData, OrganizationsUpdateOrganizationSettingsResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ChatService {
     /**
@@ -243,6 +243,120 @@ export class FxService {
     }
 }
 
+export class InvitationsService {
+    /**
+     * Invite Member
+     * Invite a new member to the organization.
+     * Only OWNER or ADMIN can invite members.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @param data.requestBody
+     * @returns InvitationPublic Successful Response
+     * @throws ApiError
+     */
+    public static inviteMember(data: InvitationsInviteMemberData): CancelablePromise<InvitationsInviteMemberResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/invitations/{organization_id}/invite',
+            path: {
+                organization_id: data.organizationId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Invitations
+     * List all pending invitations for an organization.
+     * Only OWNER or ADMIN can view invitations.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @returns InvitationPublic Successful Response
+     * @throws ApiError
+     */
+    public static listInvitations(data: InvitationsListInvitationsData): CancelablePromise<InvitationsListInvitationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/invitations/{organization_id}/invitations',
+            path: {
+                organization_id: data.organizationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Cancel Invitation
+     * Cancel a pending invitation.
+     * Only OWNER or ADMIN can cancel invitations.
+     * @param data The data for the request.
+     * @param data.invitationId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static cancelInvitation(data: InvitationsCancelInvitationData): CancelablePromise<InvitationsCancelInvitationResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/invitations/{invitation_id}',
+            path: {
+                invitation_id: data.invitationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Accept Invitation
+     * Accept an invitation and create a new user account.
+     * Public endpoint - no authentication required.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static acceptInvitation(data: InvitationsAcceptInvitationData): CancelablePromise<InvitationsAcceptInvitationResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/invitations/accept',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Verify Invitation
+     * Verify if an invitation token is valid.
+     * Public endpoint - returns invitation details without accepting.
+     * @param data The data for the request.
+     * @param data.token
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static verifyInvitation(data: InvitationsVerifyInvitationData): CancelablePromise<InvitationsVerifyInvitationResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/invitations/verify/{token}',
+            path: {
+                token: data.token
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class ItemsService {
     /**
      * Read Items
@@ -444,6 +558,283 @@ export class LoginService {
             path: {
                 email: data.email
             },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class MembershipsService {
+    /**
+     * List My Organizations
+     * List all organizations the current user belongs to.
+     * Returns memberships with organization details.
+     * @returns MembershipsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listMyOrganizations(): CancelablePromise<MembershipsListMyOrganizationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/memberships/my-organizations'
+        });
+    }
+    
+    /**
+     * List Organization Members
+     * List all members of an organization with user details.
+     * User must be a member of the organization to view this.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @returns MembersWithUsersPublic Successful Response
+     * @throws ApiError
+     */
+    public static listOrganizationMembers(data: MembershipsListOrganizationMembersData): CancelablePromise<MembershipsListOrganizationMembersResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/memberships/organization/{organization_id}/members',
+            path: {
+                organization_id: data.organizationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add Organization Member
+     * Add a new member to an organization.
+     * Only OWNER or ADMIN can add members.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @param data.requestBody
+     * @returns MembershipPublic Successful Response
+     * @throws ApiError
+     */
+    public static addOrganizationMember(data: MembershipsAddOrganizationMemberData): CancelablePromise<MembershipsAddOrganizationMemberResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/memberships/organization/{organization_id}/members',
+            path: {
+                organization_id: data.organizationId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Membership
+     * Update a membership (change role).
+     * Only OWNER can change roles.
+     * @param data The data for the request.
+     * @param data.membershipId
+     * @param data.requestBody
+     * @returns MembershipPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateMembership(data: MembershipsUpdateMembershipData): CancelablePromise<MembershipsUpdateMembershipResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/memberships/memberships/{membership_id}',
+            path: {
+                membership_id: data.membershipId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Membership
+     * Remove a member from an organization.
+     * Only OWNER or ADMIN can remove members.
+     * Cannot remove the last OWNER.
+     * @param data The data for the request.
+     * @param data.membershipId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static removeMembership(data: MembershipsRemoveMembershipData): CancelablePromise<MembershipsRemoveMembershipResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/memberships/memberships/{membership_id}',
+            path: {
+                membership_id: data.membershipId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class OrganizationsService {
+    /**
+     * List Organizations
+     * List all organizations.
+     * Regular users can only see their own organization.
+     * Superusers can see all organizations.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns OrganizationsPublic Successful Response
+     * @throws ApiError
+     */
+    public static listOrganizations(data: OrganizationsListOrganizationsData = {}): CancelablePromise<OrganizationsListOrganizationsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/organizations',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Organization
+     * Create a new organization.
+     * Regular users can create their first organization (onboarding flow).
+     * Users with existing organizations need superuser permission to create additional ones.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns OrganizationPublic Successful Response
+     * @throws ApiError
+     */
+    public static createOrganization(data: OrganizationsCreateOrganizationData): CancelablePromise<OrganizationsCreateOrganizationResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/organizations',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Organization
+     * Get organization by ID.
+     * Regular users can only access their own organization.
+     * Superusers can access any organization.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @returns OrganizationPublic Successful Response
+     * @throws ApiError
+     */
+    public static getOrganization(data: OrganizationsGetOrganizationData): CancelablePromise<OrganizationsGetOrganizationResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/organizations/{organization_id}',
+            path: {
+                organization_id: data.organizationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Organization
+     * Update organization settings.
+     * Only superusers can update organizations.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @param data.requestBody
+     * @returns OrganizationPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateOrganization(data: OrganizationsUpdateOrganizationData): CancelablePromise<OrganizationsUpdateOrganizationResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/organizations/{organization_id}',
+            path: {
+                organization_id: data.organizationId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Organization
+     * Delete an organization.
+     * Only superusers can delete organizations.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deleteOrganization(data: OrganizationsDeleteOrganizationData): CancelablePromise<OrganizationsDeleteOrganizationResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/organizations/{organization_id}',
+            path: {
+                organization_id: data.organizationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Organization Settings
+     * Get organization settings (alias for get_organization).
+     * Useful for frontend to distinguish settings endpoint.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @returns OrganizationPublic Successful Response
+     * @throws ApiError
+     */
+    public static getOrganizationSettings(data: OrganizationsGetOrganizationSettingsData): CancelablePromise<OrganizationsGetOrganizationSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/organizations/{organization_id}/settings',
+            path: {
+                organization_id: data.organizationId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Organization Settings
+     * Update organization settings.
+     * Only superusers can update organization settings.
+     * @param data The data for the request.
+     * @param data.organizationId
+     * @param data.requestBody
+     * @returns OrganizationPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateOrganizationSettings(data: OrganizationsUpdateOrganizationSettingsData): CancelablePromise<OrganizationsUpdateOrganizationSettingsResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/organizations/{organization_id}/settings',
+            path: {
+                organization_id: data.organizationId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }

@@ -11,6 +11,9 @@ from app.api.routes import (
     fx,
     reconciliation,
     review,
+    organizations,
+    memberships,
+    invitations,
 )
 from app.core.config import settings
 
@@ -24,6 +27,9 @@ api_router.include_router(file.router)
 api_router.include_router(fx.router)
 api_router.include_router(reconciliation.router)
 api_router.include_router(review.router)
+api_router.include_router(organizations.router)
+api_router.include_router(memberships.router)
+api_router.include_router(invitations.router)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

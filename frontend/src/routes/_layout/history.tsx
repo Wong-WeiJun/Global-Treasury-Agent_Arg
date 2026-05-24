@@ -1,33 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { useState, useEffect} from "react"
-import { FilesService } from "../../client"
-import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { FilesService } from "../../client";
+import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel";
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
-})
+});
 
 function AIResultBadge({ result }: { result: string | null }) {
-  if (!result) return <span className="text-gray-500 text-xs">—</span>
+  if (!result) return <span className="text-gray-500 text-xs">—</span>;
 
   const styles: Record<string, string> = {
     MATCHED: "bg-green-900/50 text-green-300 border border-green-700",
     FUZZY_MATCH: "bg-amber-900/50 text-amber-300 border border-amber-700",
     UNMATCHED: "bg-red-900/50 text-red-300 border border-red-700",
-  }
+  };
   const labels: Record<string, string> = {
     MATCHED: "✓ Match",
     FUZZY_MATCH: "~ Fuzzy",
     UNMATCHED: "✗ No Match",
-  }
+  };
   return (
     <span
       className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap inline-block ${styles[result] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[result] ?? result}
     </span>
-  )
+  );
 }
 
 function WorkflowStatusBadge({ status }: { status: string }) {
@@ -39,7 +39,7 @@ function WorkflowStatusBadge({ status }: { status: string }) {
     UNDER_REVIEW: "bg-orange-900/50 text-orange-300 border border-orange-700",
     EXCEPTION_APPROVED: "bg-cyan-900/50 text-cyan-300 border border-cyan-700",
     REJECTED: "bg-rose-900/50 text-rose-300 border border-rose-700",
-  }
+  };
   const labels: Record<string, string> = {
     PENDING_EXTRACTION: "Pending",
     EXTRACTED: "Extracted",
@@ -48,24 +48,24 @@ function WorkflowStatusBadge({ status }: { status: string }) {
     UNDER_REVIEW: "⚠ Under Review",
     EXCEPTION_APPROVED: "Exception OK",
     REJECTED: "✗ Rejected",
-  }
+  };
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  )
+  );
 }
 
 function RiskBadge({ level }: { level: string | null }) {
-  if (!level) return null
+  if (!level) return null;
 
   const styles: Record<string, string> = {
     LOW: "bg-green-950/40 text-green-400 border border-green-800/60",
     MEDIUM: "bg-yellow-950/40 text-yellow-400 border border-yellow-800/60",
     HIGH: "bg-red-950/40 text-red-400 border border-red-800/60",
-  }
+  };
 
   return (
     <span
@@ -73,67 +73,70 @@ function RiskBadge({ level }: { level: string | null }) {
     >
       {level}
     </span>
-  )
+  );
 }
 
 interface DocumentRowProps {
-  doc: any
-  isSelected: boolean
-  onSelectToggle: () => void
-  onTriggerModalPreview: (url: string) => void
+  doc: any;
+  isSelected: boolean;
+  onSelectToggle: () => void;
+  onTriggerModalPreview: (url: string) => void;
 }
 
-function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }: DocumentRowProps) {
-  const [expanded, setExpanded] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [loadingPreview, setLoadingPreview] = useState(false)
-  const queryClient = useQueryClient()
+function DocumentRow({
+  doc,
+  isSelected,
+  onSelectToggle,
+  onTriggerModalPreview,
+}: DocumentRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleRowClick = async () => {
-    const nextExpanded = !expanded
-    setExpanded(nextExpanded)
+    const nextExpanded = !expanded;
+    setExpanded(nextExpanded);
 
     if (nextExpanded && !previewUrl && doc.file_type !== "excel") {
-      setLoadingPreview(true)
+      setLoadingPreview(true);
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: doc.id,
-        })) as { url: string }
-        setPreviewUrl(res.url)
+        })) as { url: string };
+        setPreviewUrl(res.url);
       } catch {
         /* fail gracefully */
       } finally {
-        setLoadingPreview(false)
+        setLoadingPreview(false);
       }
     }
-  }
+  };
 
-  const recon = doc.reconciliation_result
-  const decision = recon?.agent_decision
-  const fxResult = recon?.fx_result
-  const proof = recon?.proof
+  const recon = doc.reconciliation_result;
+  const decision = recon?.agent_decision;
+  const fxResult = recon?.fx_result;
+  const proof = recon?.proof;
 
   const riskColorMap: Record<string, string> = {
     HIGH: "bg-red-950/20 border-l-2 border-l-red-500",
     MEDIUM: "bg-yellow-950/10 border-l-2 border-l-yellow-500",
     LOW: "bg-green-950/10 border-l-2 border-l-green-500",
-  }
-  const computedRowStyle = riskColorMap[doc.risk_level] ?? ""
+  };
+  const computedRowStyle = riskColorMap[doc.risk_level] ?? "";
 
   return (
     <>
       <tr
         onClick={(e) => {
           // Don't expand if clicking the checkbox
-          if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return
-          handleRowClick()
+          if ((e.target as HTMLElement).closest('input[type="checkbox"]'))
+            return;
+          handleRowClick();
         }}
         className={`border-t transition-colors duration-150 cursor-pointer select-none
           ${computedRowStyle}
-          ${expanded
-            ? "bg-gray-800/60"
-            : "hover:bg-gray-50/5"
-          }`}
+          ${expanded ? "bg-gray-800/60" : "hover:bg-gray-50/5"}`}
       >
         <td className="px-4 py-3 text-center">
           <input
@@ -167,13 +170,16 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
       </tr>
 
       {/* Accordion expand panel — animates via max-height */}
-      <tr className={`border-x border-gray-800 transition-all duration-300 ease-in-out ${expanded ? "border-t" : ""}`}>
+      <tr
+        className={`border-x border-gray-800 transition-all duration-300 ease-in-out ${expanded ? "border-t" : ""}`}
+      >
         <td colSpan={6} className="p-0 overflow-hidden">
           <div
             style={{
               maxHeight: expanded ? "800px" : "0px",
               opacity: expanded ? 1 : 0,
-              transition: "max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 220ms ease",
+              transition:
+                "max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 220ms ease",
               overflow: "hidden",
             }}
           >
@@ -186,13 +192,22 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
                   </p>
                   {loadingPreview && (
                     <div className="w-full h-40 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center">
-                      <span className="text-gray-500 text-xs">Loading Asset...</span>
+                      <span className="text-gray-500 text-xs">
+                        Loading Asset...
+                      </span>
                     </div>
                   )}
                   {previewUrl && doc.file_type === "pdf" && (
                     <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
-                      <span className="text-xs text-gray-400 truncate max-w-full">{doc.original_filename}</span>
-                      <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline">
+                      <span className="text-xs text-gray-400 truncate max-w-full">
+                        {doc.original_filename}
+                      </span>
+                      <a
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 text-xs hover:underline"
+                      >
                         Open PDF ↗
                       </a>
                     </div>
@@ -209,64 +224,141 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
                         className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">Expand Size</span>
+                        <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">
+                          Expand Size
+                        </span>
                       </div>
                     </button>
                   )}
                   {doc.file_type === "excel" && (
                     <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
                       <span className="text-4xl">📊</span>
-                      <span className="text-xs text-gray-400">{doc.original_filename}</span>
+                      <span className="text-xs text-gray-400">
+                        {doc.original_filename}
+                      </span>
                     </div>
                   )}
-                  {doc.extracted_data && !doc.extracted_data.rows && (
-                    <div className="flex flex-col gap-1 mt-2 bg-gray-900/50 p-2 rounded border border-gray-800/60">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Extracted</p>
-                      {(["amount", "currency", "date", "payer", "payee"] as const).map((k) =>
-                        doc.extracted_data[k] ? (
-                          <div key={k} className="flex justify-between text-xs py-0.5 border-b border-gray-800/30 last:border-0">
-                            <span className="text-gray-500 capitalize">{k}</span>
-                            <span className="text-gray-300 font-mono truncate max-w-[140px]">{String(doc.extracted_data[k])}</span>
+
+                  {/* Multi-Currency Display */}
+                  {(doc.original_amount || doc.extracted_data) &&
+                    !doc.extracted_data?.rows && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                          Payment Details
+                        </p>
+
+                        {/* Original Currency (what customer paid) */}
+                        {doc.original_amount && doc.original_currency && (
+                          <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg px-3 py-2">
+                            <p className="text-xs text-blue-400 mb-1">
+                              Original Amount
+                            </p>
+                            <p className="text-lg font-bold text-white">
+                              {doc.original_currency}{" "}
+                              {doc.original_amount.toFixed(2)}
+                            </p>
+                            {doc.transaction_date && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                Date: {doc.transaction_date}
+                              </p>
+                            )}
                           </div>
-                        ) : null,
-                      )}
-                      {doc.extracted_data.myr_amount && doc.extracted_data.currency !== "MYR" && (
-                        <div className="flex justify-between text-xs pt-1 mt-0.5 border-t border-gray-700/50">
-                          <span className="text-gray-400">MYR Equiv.</span>
-                          <span className="text-green-400 font-semibold">MYR {doc.extracted_data.myr_amount}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Base Currency (normalized for reconciliation) */}
+                        {doc.base_amount &&
+                          doc.original_currency !== doc.base_currency && (
+                            <div className="bg-green-950/30 border border-green-800/50 rounded-lg px-3 py-2">
+                              <p className="text-xs text-green-400 mb-1 flex items-center gap-2">
+                                <span>Base Currency (Reconciliation)</span>
+                                {doc.fx_rate_used && (
+                                  <span
+                                    className="text-gray-500"
+                                    title={`Historical FX rate used on ${doc.fx_rate_date || "transaction date"}`}
+                                  >
+                                    @ {doc.fx_rate_used.toFixed(4)}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-lg font-bold text-green-300">
+                                {doc.base_currency} {doc.base_amount.toFixed(2)}
+                              </p>
+                              {doc.fx_rate_date && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  FX Rate Date: {doc.fx_rate_date}
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                        {/* Additional fields */}
+                        {doc.extracted_data && (
+                          <div className="flex flex-col gap-1">
+                            {doc.extracted_data.payer && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Payer:</span>
+                                <span className="text-gray-300">
+                                  {doc.extracted_data.payer}
+                                </span>
+                              </div>
+                            )}
+                            {doc.extracted_data.payee && (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Payee:</span>
+                                <span className="text-gray-300">
+                                  {doc.extracted_data.payee}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                 </div>
 
                 {/* === RIGHT COLUMN: timeline + recon === */}
                 <div className="flex-1 flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Processing Timeline</p>
-                    <Timeline status={doc.workflow_status} caseId={doc.case_id} />
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                      Processing Timeline
+                    </p>
+                    <Timeline
+                      status={doc.workflow_status}
+                      caseId={doc.case_id}
+                    />
                   </div>
                   {!recon ? (
-                    <p className="text-gray-500 text-sm italic">No reconciliation has been executed for this profile yet.</p>
+                    <p className="text-gray-500 text-sm italic">
+                      No reconciliation has been executed for this profile yet.
+                    </p>
                   ) : (
                     <>
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-3 flex-wrap">
                           <AIResultBadge result={doc.ai_result} />
                           <WorkflowStatusBadge status={doc.workflow_status} />
-                          {doc.risk_level && <RiskBadge level={doc.risk_level} />}
+                          {doc.risk_level && (
+                            <RiskBadge level={doc.risk_level} />
+                          )}
                           <span className="text-xs text-gray-400 font-mono">
-                            Confidence: {Math.round((doc.ai_confidence ?? 0) * 100)}%
+                            Confidence:{" "}
+                            {Math.round((doc.ai_confidence ?? 0) * 100)}%
                           </span>
                         </div>
                         {proof && (
                           <div className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg px-3 py-2 border border-gray-800">
-                            <span className="text-white font-semibold font-mono">{proof.currency} {proof.amount}</span>
+                            <span className="text-white font-semibold font-mono">
+                              {proof.currency} {proof.amount}
+                            </span>
                             {fxResult && proof.currency !== "MYR" && (
                               <>
                                 <span className="text-gray-600">→</span>
-                                <span className="text-green-400 font-semibold font-mono">MYR {fxResult.to_amount}</span>
-                                <span className="text-gray-500 text-xs font-mono">@ {fxResult.rate}</span>
+                                <span className="text-green-400 font-semibold font-mono">
+                                  MYR {fxResult.to_amount}
+                                </span>
+                                <span className="text-gray-500 text-xs font-mono">
+                                  @ {fxResult.rate}
+                                </span>
                               </>
                             )}
                           </div>
@@ -276,23 +368,33 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
                         <div className="w-full bg-gray-800 rounded-full h-1.5">
                           <div
                             className={`h-1.5 rounded-full transition-all duration-300 ${
-                              decision?.final_status === "matched" ? "bg-green-500"
-                              : decision?.final_status === "fuzzy" ? "bg-yellow-500"
-                              : "bg-red-500"
+                              decision?.final_status === "matched"
+                                ? "bg-green-500"
+                                : decision?.final_status === "fuzzy"
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
                             }`}
-                            style={{ width: `${(decision?.confidence ?? 0) * 100}%` }}
+                            style={{
+                              width: `${(decision?.confidence ?? 0) * 100}%`,
+                            }}
                           />
                         </div>
                       </div>
                       {doc.ai_explanation && (
                         <div className="bg-blue-950/20 border border-blue-900/40 rounded-lg px-4 py-3 flex flex-col gap-1">
-                          <p className="text-xs text-blue-400 font-semibold">AI Analysis (Original)</p>
-                          <p className="text-xs text-gray-300 italic leading-relaxed">"{doc.ai_explanation}"</p>
+                          <p className="text-xs text-blue-400 font-semibold">
+                            AI Analysis (Original)
+                          </p>
+                          <p className="text-xs text-gray-300 italic leading-relaxed">
+                            "{doc.ai_explanation}"
+                          </p>
                         </div>
                       )}
                       {recon.match_scores?.length > 0 && (
                         <div className="flex flex-col gap-1.5">
-                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Match Scores</p>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                            Match Scores
+                          </p>
                           {recon.match_scores.map((s: any, i: number) => (
                             <div
                               key={i}
@@ -302,12 +404,28 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
                                   : "bg-gray-900/60 border border-transparent"
                               }`}
                             >
-                              <span className="text-gray-400 font-medium">Entry {i + 1}</span>
-                              <span className={s.amount_match ? "text-green-400" : "text-red-400"}>
-                                Amt {s.amount_match ? "✓" : "✗"} ({s.amount_diff_pct}%)
+                              <span className="text-gray-400 font-medium">
+                                Entry {i + 1}
                               </span>
-                              <span className={s.date_match ? "text-green-400" : "text-red-400"}>
-                                Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d)
+                              <span
+                                className={
+                                  s.amount_match
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                                }
+                              >
+                                Amt {s.amount_match ? "✓" : "✗"} (
+                                {s.amount_diff_pct}%)
+                              </span>
+                              <span
+                                className={
+                                  s.date_match
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                                }
+                              >
+                                Date {s.date_match ? "✓" : "✗"} ({s.days_apart}
+                                d)
                               </span>
                             </div>
                           ))}
@@ -321,7 +439,11 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
                                 currentReviewStatus={doc.review_status}
                                 currentCaseId={doc.case_id}
                                 currentRiskScore={doc.risk_score}
-                                onSaved={() => queryClient.invalidateQueries({ queryKey: ["my-documents"] })}
+                                onSaved={() =>
+                                  queryClient.invalidateQueries({
+                                    queryKey: ["my-documents"],
+                                  })
+                                }
                               />
                             </div>
                           )}
@@ -336,144 +458,180 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
         </td>
       </tr>
     </>
-  )
+  );
 }
 
 function HistoryPage() {
-  const [filter, setFilter] = useState<string>("all")
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
-  const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null)
-  const queryClient = useQueryClient()
+  const [filter, setFilter] = useState<string>("all");
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
+  const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  })
+  });
 
   useEffect(() => {
-    setSelectedDocIds([])
-  }, [filter])
+    setSelectedDocIds([]);
+  }, []);
 
   useEffect(() => {
-    if (!activeModalUrl) return
+    if (!activeModalUrl) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveModalUrl(null)
-    }
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [activeModalUrl])
+      if (e.key === "Escape") setActiveModalUrl(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeModalUrl]);
 
   const deleteMultipleMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => FilesService.deleteFile({ documentId: id })))
+      await Promise.all(
+        ids.map((id) => FilesService.deleteFile({ documentId: id })),
+      );
     },
     onSuccess: () => {
-      setSelectedDocIds([])
-      queryClient.invalidateQueries({ queryKey: ["my-documents"] })
+      setSelectedDocIds([]);
+      queryClient.invalidateQueries({ queryKey: ["my-documents"] });
     },
-  })
+  });
 
-  const docDataList = data?.data || []
+  const docDataList = data?.data || [];
 
   const filters = [
     { key: "all", label: "All orders", count: docDataList.length },
-    { key: "needs_review", label: "Needs Review", count: docDataList.filter((d: any) => d.workflow_status === "PENDING_ACTION").length },
-    { key: "high_risk", label: "High Risk", count: docDataList.filter((d: any) => d.risk_level === "HIGH").length },
-    { key: "exceptions", label: "Exceptions", count: docDataList.filter((d: any) => d.workflow_status === "EXCEPTION_APPROVED").length },
-    { key: "approved", label: "Approved", count: docDataList.filter((d: any) => d.workflow_status === "APPROVED").length },
-    { key: "under_review", label: "Under Review", count: docDataList.filter((d: any) => d.workflow_status === "UNDER_REVIEW").length },
-  ]
+    {
+      key: "needs_review",
+      label: "Needs Review",
+      count: docDataList.filter(
+        (d: any) => d.workflow_status === "PENDING_ACTION",
+      ).length,
+    },
+    {
+      key: "high_risk",
+      label: "High Risk",
+      count: docDataList.filter((d: any) => d.risk_level === "HIGH").length,
+    },
+    {
+      key: "exceptions",
+      label: "Exceptions",
+      count: docDataList.filter(
+        (d: any) => d.workflow_status === "EXCEPTION_APPROVED",
+      ).length,
+    },
+    {
+      key: "approved",
+      label: "Approved",
+      count: docDataList.filter((d: any) => d.workflow_status === "APPROVED")
+        .length,
+    },
+    {
+      key: "under_review",
+      label: "Under Review",
+      count: docDataList.filter(
+        (d: any) => d.workflow_status === "UNDER_REVIEW",
+      ).length,
+    },
+  ];
 
   const filteredDocs = docDataList.filter((doc: any) => {
-    if (filter === "all") return true
-    if (filter === "needs_review") return doc.workflow_status === "PENDING_ACTION"
-    if (filter === "high_risk") return doc.risk_level === "HIGH"
-    if (filter === "exceptions") return doc.workflow_status === "EXCEPTION_APPROVED"
-    if (filter === "approved") return doc.workflow_status === "APPROVED"
-    if (filter === "under_review") return doc.workflow_status === "UNDER_REVIEW"
-    return true
-  })
+    if (filter === "all") return true;
+    if (filter === "needs_review")
+      return doc.workflow_status === "PENDING_ACTION";
+    if (filter === "high_risk") return doc.risk_level === "HIGH";
+    if (filter === "exceptions")
+      return doc.workflow_status === "EXCEPTION_APPROVED";
+    if (filter === "approved") return doc.workflow_status === "APPROVED";
+    if (filter === "under_review")
+      return doc.workflow_status === "UNDER_REVIEW";
+    return true;
+  });
 
   const toggleSelectAll = () => {
     if (selectedDocIds.length === filteredDocs.length) {
-      setSelectedDocIds([])
+      setSelectedDocIds([]);
     } else {
-      setSelectedDocIds(filteredDocs.map((d: any) => d.id))
+      setSelectedDocIds(filteredDocs.map((d: any) => d.id));
     }
-  }
+  };
 
   const toggleSelectRow = (id: string) => {
     setSelectedDocIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    )
-  }
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
+    );
+  };
 
   const handleDeleteTriggered = () => {
-    if (selectedDocIds.length === 0) return
-    const confirmationMessage = `Are you sure you want to permanently delete the ${selectedDocIds.length} selected document(s)?`
+    if (selectedDocIds.length === 0) return;
+    const confirmationMessage = `Are you sure you want to permanently delete the ${selectedDocIds.length} selected document(s)?`;
     if (window.confirm(confirmationMessage)) {
-      deleteMultipleMutation.mutate(selectedDocIds)
+      deleteMultipleMutation.mutate(selectedDocIds);
     }
-  }
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-6 flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Treasury Operations Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Autonomous cross-border payment reconciliation, discrepancy investigation, and exception management.
+          Autonomous cross-border payment reconciliation, discrepancy
+          investigation, and exception management.
         </p>
       </div>
 
-<div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-zinc-800 gap-4 pt-4">
-  <div className="flex flex-wrap -mb-[1px] gap-1 z-10">
-    {filters.map((f) => {
-      const isActive = filter === f.key
-      return (
-        <button
-          key={f.key}
-          type="button"
-          onClick={() => setFilter(f.key)}
-          className={`relative px-5 py-3 text-sm font-medium rounded-t-xl transition-all duration-200 flex items-center gap-2.5 border border-b-0
-            ${isActive
-              ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-gray-200 dark:border-zinc-700 shadow-md font-semibold z-20 -translate-y-0.5"
-              : "bg-gray-100/50 dark:bg-zinc-900/40 text-gray-500 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800/70 hover:text-gray-700 dark:hover:text-zinc-300 hover:-translate-y-px"
-            }`}
-        >
-          <span>{f.label}</span>
-          <span
-            className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              isActive
-                ? "bg-blue-600 text-white"
-                : "bg-gray-200 dark:bg-zinc-800 text-gray-500"
+      <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-zinc-800 gap-4 pt-4">
+        <div className="flex flex-wrap -mb-[1px] gap-1 z-10">
+          {filters.map((f) => {
+            const isActive = filter === f.key;
+            return (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                className={`relative px-5 py-3 text-sm font-medium rounded-t-xl transition-all duration-200 flex items-center gap-2.5 border border-b-0
+                  ${
+                    isActive
+                      ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-gray-200 dark:border-zinc-700 shadow-md font-semibold z-20 -translate-y-0.5"
+                      : "bg-gray-100/50 dark:bg-zinc-900/40 text-gray-500 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800/70 hover:text-gray-700 dark:hover:text-zinc-300 hover:-translate-y-px"
+                  }`}
+              >
+                <span>{f.label}</span>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 dark:bg-zinc-800 text-gray-500"
+                  }`}
+                >
+                  {f.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pb-2.5">
+          <button
+            type="button"
+            disabled={
+              selectedDocIds.length === 0 || deleteMultipleMutation.isPending
+            }
+            onClick={handleDeleteTriggered}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
+              selectedDocIds.length > 0
+                ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
+                : "bg-gray-800/40 text-gray-500 border-gray-800 cursor-not-allowed"
             }`}
           >
-            {f.count}
-          </span>
-        </button>
-      )
-    })}
-  </div>
-
-  <div className="pb-2.5">
-    <button
-      type="button"
-      disabled={selectedDocIds.length === 0 || deleteMultipleMutation.isPending}
-      onClick={handleDeleteTriggered}
-      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
-        selectedDocIds.length > 0
-          ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
-          : "bg-gray-800/40 text-gray-500 border-gray-800 cursor-not-allowed"
-      }`}
-    >
-      {deleteMultipleMutation.isPending
-        ? "Deleting..."
-        : selectedDocIds.length > 0
-          ? `Delete Selected (${selectedDocIds.length})`
-          : "Delete Selected"}
-    </button>
-  </div>
-</div>
+            {deleteMultipleMutation.isPending
+              ? "Deleting..."
+              : selectedDocIds.length > 0
+                ? `Delete Selected (${selectedDocIds.length})`
+                : "Delete Selected"}
+          </button>
+        </div>
+      </div>
 
       {isLoading ? (
         <p className="text-gray-400 text-sm">Loading asset pipelines...</p>
@@ -493,7 +651,10 @@ function HistoryPage() {
                 <th className="px-4 py-3 text-center w-12">
                   <input
                     type="checkbox"
-                    checked={selectedDocIds.length === filteredDocs.length && filteredDocs.length > 0}
+                    checked={
+                      selectedDocIds.length === filteredDocs.length &&
+                      filteredDocs.length > 0
+                    }
                     onChange={toggleSelectAll}
                     className="rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 h-4 w-4"
                   />
@@ -541,10 +702,11 @@ function HistoryPage() {
             Close
           </button>
 
-          <div 
-            onClick={() => setActiveModalUrl(null)} 
-            className="absolute top-0 left-0 bottom-0 w-1/5 z-[101] cursor-zoom-out"
-            title="Click to dismiss"
+          <button
+            type="button"
+            onClick={() => setActiveModalUrl(null)}
+            className="absolute top-0 left-0 bottom-0 w-1/5 z-[101] cursor-zoom-out bg-transparent border-0 p-0"
+            aria-label="Close preview"
           />
           <div className="relative z-[105] max-w-full max-h-screen p-4 flex items-center justify-center">
             <img
@@ -553,13 +715,14 @@ function HistoryPage() {
               className="max-w-full max-h-[94vh] object-contain rounded border border-zinc-800 shadow-2xl"
             />
           </div>
-          <div 
-            onClick={() => setActiveModalUrl(null)} 
-            className="absolute top-0 right-0 bottom-0 w-1/5 z-[101] cursor-zoom-out"
-            title="Click to dismiss"
+          <button
+            type="button"
+            onClick={() => setActiveModalUrl(null)}
+            className="absolute top-0 right-0 bottom-0 w-1/5 z-[101] cursor-zoom-out bg-transparent border-0 p-0"
+            aria-label="Close preview"
           />
         </div>
       )}
     </div>
-  )
+  );
 }
