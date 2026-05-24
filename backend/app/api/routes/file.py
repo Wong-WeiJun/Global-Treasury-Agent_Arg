@@ -1,34 +1,34 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
-from app.api.deps import CurrentUser
-from app.file_utils import upload_document, delete_document
+import uuid
+from datetime import datetime, timezone
+from typing import cast
+
 import boto3
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from sqlalchemy import desc
+from sqlalchemy.orm.attributes import flag_modified
+from sqlalchemy.sql.elements import ColumnElement
+from sqlmodel import func, select
+
+from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
+from app.extraction import extract_from_excel, extract_from_image, extract_from_pdf
+from app.file_utils import delete_document, upload_document
+from app.fx import convert
 from app.models import (
     Document,
     DocumentPublic,
     DocumentsPublic,
-    UploadResponse,
     ExtractedData,
     ExtractionResponse,
     Organization,
+    UploadResponse,
 )
-from sqlmodel import select, func
-from app.fx import convert_to_myr, convert
-import uuid
-from app.api.deps import SessionDep
-from sqlalchemy import desc
-from typing import cast
-from sqlalchemy.sql.elements import ColumnElement
-from app.extraction import extract_from_image, extract_from_pdf, extract_from_excel
-from sqlalchemy.orm.attributes import flag_modified
-from datetime import datetime, timezone
 
 router = APIRouter(prefix="/files", tags=["files"])
 
 
 def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
     """Get the base currency for a user's organization. Defaults to MYR."""
-    from sqlmodel import select
     from app.models import User
 
     user = session.get(User, user_id)
@@ -149,8 +149,7 @@ def list_my_documents(
 
     # CRITICAL: Filter by organization_id for multi-tenant isolation
     count = session.exec(
-        select(func.count())
-        .where(Document.organization_id == org.id)
+        select(func.count()).where(Document.organization_id == org.id)
     ).one()
 
     docs = session.exec(
@@ -191,7 +190,9 @@ async def delete_file(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -219,7 +220,9 @@ def get_download_url(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -258,7 +261,9 @@ async def extract_document(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -385,5 +390,3 @@ async def extract_document(
 
     except Exception as e:
         return ExtractionResponse(document_id=document_id, error=str(e))
-
-

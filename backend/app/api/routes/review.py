@@ -6,11 +6,11 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    AskAIRequest,
     Document,
     ReconciliationRecord,
     ReconciliationRecordPublic,
     ReviewActionRequest,
-    AskAIRequest,
 )
 from app.reconciliation import _call_morpheus
 from app.risk import calculate_risk_score, generate_case_id, generate_journal_entry
@@ -114,7 +114,9 @@ async def review_document(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -225,12 +227,15 @@ def get_audit_trail(
 ):
     """Return all review records for a document — full audit trail."""
     from sqlmodel import select
+
     from app.utils.org_context import get_user_primary_organization
 
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -263,7 +268,9 @@ async def ask_ai_question(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:

@@ -657,6 +657,7 @@ export class MembershipsService {
      * Remove a member from an organization.
      * Only OWNER or ADMIN can remove members.
      * Cannot remove the last OWNER.
+     * When a user is removed, their account is also deleted.
      * @param data The data for the request.
      * @param data.membershipId
      * @returns unknown Successful Response
@@ -1014,6 +1015,8 @@ export class UsersService {
     /**
      * Delete User Me
      * Delete own user.
+     * If the user is an OWNER of an organization, the entire organization
+     * and all its members will be deleted.
      * @returns Message Successful Response
      * @throws ApiError
      */

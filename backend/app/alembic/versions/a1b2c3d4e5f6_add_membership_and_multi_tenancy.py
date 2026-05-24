@@ -44,7 +44,7 @@ def upgrade():
     # Migrate existing users to membership table as OWNER
     op.execute("""
         INSERT INTO membership (id, user_id, organization_id, role, joined_at)
-        SELECT 
+        SELECT
             gen_random_uuid(),
             u.id,
             u.organization_id,

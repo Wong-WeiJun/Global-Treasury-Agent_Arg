@@ -1,14 +1,16 @@
+import uuid
+
 from fastapi import APIRouter, HTTPException
+from sqlmodel import func, select
+
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Organization,
     OrganizationCreate,
-    OrganizationUpdate,
     OrganizationPublic,
     OrganizationsPublic,
+    OrganizationUpdate,
 )
-from sqlmodel import select, func
-import uuid
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 
@@ -31,11 +33,11 @@ def list_organizations(
     else:
         if not current_user.organization_id:
             return OrganizationsPublic(data=[], count=0)
-        
+
         org = session.get(Organization, current_user.organization_id)
         if not org:
             return OrganizationsPublic(data=[], count=0)
-        
+
         return OrganizationsPublic(
             data=[OrganizationPublic.model_validate(org)],
             count=1,
@@ -99,6 +101,7 @@ def create_organization(
 
     # Create membership for creator as OWNER
     from app.models import Membership
+
     membership = Membership(
         user_id=current_user.id,
         organization_id=org.id,

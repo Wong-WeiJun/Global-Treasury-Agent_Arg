@@ -1,10 +1,12 @@
-import uuid
 import mimetypes
+import uuid
 from io import BytesIO
-from app.core.config import settings
+
 import boto3
 from PIL import Image, ImageOps
 from starlette.concurrency import run_in_threadpool
+
+from app.core.config import settings
 
 
 def _get_s3_client():

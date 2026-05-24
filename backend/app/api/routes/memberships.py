@@ -1,18 +1,24 @@
+import uuid
+
 from fastapi import APIRouter, HTTPException
+from sqlmodel import delete, select
+
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
+    Document,
+    Invitation,
+    Item,
     Membership,
+    MembershipCreate,
     MembershipPublic,
     MembershipsPublic,
-    MembershipCreate,
     MembershipUpdate,
-    Organization,
-    User,
-    MemberWithUser,
     MembersWithUsersPublic,
+    MemberWithUser,
+    Organization,
+    ReconciliationRecord,
+    User,
 )
-from sqlmodel import select
-import uuid
 
 router = APIRouter(prefix="/memberships", tags=["memberships"])
 
@@ -36,7 +42,9 @@ def list_my_organizations(
     )
 
 
-@router.get("/organization/{organization_id}/members", response_model=MembersWithUsersPublic)
+@router.get(
+    "/organization/{organization_id}/members", response_model=MembersWithUsersPublic
+)
 def list_organization_members(
     organization_id: uuid.UUID,
     session: SessionDep,
@@ -184,6 +192,7 @@ def remove_membership(
     Remove a member from an organization.
     Only OWNER or ADMIN can remove members.
     Cannot remove the last OWNER.
+    When a user is removed, their account is also deleted.
     """
     membership = session.get(Membership, membership_id)
     if not membership:
@@ -203,6 +212,13 @@ def remove_membership(
                 detail="Only OWNER or ADMIN can remove members",
             )
 
+    # Prevent removing yourself
+    if membership.user_id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot remove yourself from the organization",
+        )
+
     # Check if this is the last OWNER
     if membership.role == "OWNER":
         owner_count = session.exec(
@@ -217,7 +233,63 @@ def remove_membership(
                 detail="Cannot remove the last OWNER of an organization",
             )
 
-    session.delete(membership)
+    # Get the user before deleting membership
+    user_to_delete = session.get(User, membership.user_id)
+
+    # Delete the user account and all related data
+    if user_to_delete and not user_to_delete.is_superuser:
+        # Use no_autoflush to prevent premature flushes while updating foreign key references
+        with session.no_autoflush:
+            # Clear created_by references in organizations (set to NULL)
+            organizations_created = session.exec(
+                select(Organization).where(
+                    Organization.created_by == user_to_delete.id
+                )
+            ).all()
+            for org in organizations_created:
+                org.created_by = None
+                session.add(org)
+
+            # Delete user's owned documents
+            session.exec(
+                delete(Document).where(Document.owner_id == user_to_delete.id)
+            )
+
+            # Clear reviewed_by references in documents (set to NULL)
+            documents_reviewed = session.exec(
+                select(Document).where(Document.reviewed_by == user_to_delete.id)
+            ).all()
+            for doc in documents_reviewed:
+                doc.reviewed_by = None
+                session.add(doc)
+
+            # Clear reviewed_by references in reconciliation records (set to NULL)
+            recon_records = session.exec(
+                select(ReconciliationRecord).where(
+                    ReconciliationRecord.reviewed_by == user_to_delete.id
+                )
+            ).all()
+            for record in recon_records:
+                record.reviewed_by = None
+                session.add(record)
+
+            # Delete user's items
+            session.exec(delete(Item).where(Item.owner_id == user_to_delete.id))
+
+            # Delete invitations sent by this user
+            session.exec(
+                delete(Invitation).where(Invitation.invited_by == user_to_delete.id)
+            )
+
+            # Delete the membership
+            session.delete(membership)
+
+            # Delete the user account
+            session.delete(user_to_delete)
+    else:
+        # Just delete the membership if user is superuser or doesn't exist
+        session.delete(membership)
+
     session.commit()
 
-    return {"message": "Member removed successfully"}
+    return {"message": "Member removed and user account deleted successfully"}

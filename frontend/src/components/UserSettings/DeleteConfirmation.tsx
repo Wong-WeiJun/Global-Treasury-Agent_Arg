@@ -1,7 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 
-import { UsersService } from "@/client"
+import { MembershipsService, UsersService } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,7 +22,16 @@ const DeleteConfirmation = () => {
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
   const { handleSubmit } = useForm()
-  const { logout } = useAuth()
+  const { logout, user: currentUser } = useAuth()
+
+  // Check if user is an OWNER
+  const { data: memberships } = useQuery({
+    queryKey: ["memberships"],
+    queryFn: () => MembershipsService.listMyOrganizations(),
+    enabled: !!currentUser,
+  })
+
+  const isOwner = memberships?.data?.some((m) => m.role === "OWNER")
 
   const mutation = useMutation({
     mutationFn: () => UsersService.deleteUserMe(),
@@ -50,12 +59,34 @@ const DeleteConfirmation = () => {
       <DialogContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
-            <DialogTitle>Confirmation Required</DialogTitle>
-            <DialogDescription>
-              All your account data will be{" "}
-              <strong>permanently deleted.</strong> If you are sure, please
-              click <strong>"Confirm"</strong> to proceed. This action cannot be
-              undone.
+            <DialogTitle>⚠️ Confirmation Required</DialogTitle>
+            <DialogDescription className="space-y-2">
+              {isOwner ? (
+                <>
+                  <p className="text-red-600 dark:text-red-400 font-bold">
+                    WARNING: You are an ORGANIZATION OWNER
+                  </p>
+                  <p>
+                    Deleting your account will{" "}
+                    <strong>permanently delete your entire organization</strong>{" "}
+                    and <strong>ALL member accounts</strong>.
+                  </p>
+                  <p>
+                    All documents, reconciliation records, and organization data
+                    will be <strong>permanently lost</strong>.
+                  </p>
+                  <p className="text-red-600 dark:text-red-400 font-semibold">
+                    This action cannot be undone!
+                  </p>
+                </>
+              ) : (
+                <p>
+                  All your account data will be{" "}
+                  <strong>permanently deleted.</strong> If you are sure, please
+                  click <strong>"Confirm"</strong> to proceed. This action
+                  cannot be undone.
+                </p>
+              )}
             </DialogDescription>
           </DialogHeader>
 

@@ -6,8 +6,6 @@ Historical rates back to 1948 — works for old receipts.
 
 import httpx
 
-from app.core.config import settings
-
 BASE_URL = "https://api.frankfurter.dev/v2"
 
 

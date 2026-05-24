@@ -4,11 +4,11 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     AnyUrl,
-    SecretStr,
     BeforeValidator,
     EmailStr,
     HttpUrl,
     PostgresDsn,
+    SecretStr,
     computed_field,
     model_validator,
 )

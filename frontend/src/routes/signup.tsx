@@ -79,7 +79,7 @@ function SignUp() {
   }
 
   return (
-    /* 
+    /*
       1. Replace '/background-pattern.png' with your actual image path.
     */
     <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
