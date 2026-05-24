@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { FilesService } from "../../client"
 import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
 import useCurrency from "../../hooks/useCurrency"
+import { useUserRole } from "../../hooks/useUserRole"
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
@@ -131,6 +132,7 @@ function DocumentRow({
   const decision = recon?.agent_decision
   const fxResult = recon?.fx_result
   const proof = recon?.proof
+  const { isViewer} = useUserRole()
 
   const riskColorMap: Record<string, string> = {
     HIGH: "bg-red-50 border-l-2 border-l-red-500 dark:bg-red-950/20",
@@ -141,6 +143,7 @@ function DocumentRow({
   const computedRowStyle = riskColorMap[doc.risk_level] ?? ""
 
   return (
+    
     <>
       <tr
         onClick={(e) => {
@@ -152,6 +155,7 @@ function DocumentRow({
           ${computedRowStyle}
           ${expanded ? "bg-gray-100 dark:bg-gray-800/60" : "hover:bg-gray-50 dark:hover:bg-gray-50/5"}`}
       >
+        {!isViewer && (
         <td className="px-4 py-3 text-center">
           <input
             type="checkbox"
@@ -160,7 +164,8 @@ function DocumentRow({
             onClick={(e) => e.stopPropagation()}
             className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
           />
-        </td>
+        </td>)}
+
         <td className="px-4 py-3 font-medium text-sm flex items-center gap-2 text-gray-800 dark:text-gray-200">
           <span
             className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 text-xs ${expanded ? "rotate-90" : ""}`}
@@ -187,7 +192,7 @@ function DocumentRow({
       <tr
         className={`border-x border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${expanded ? "border-t border-gray-200 dark:border-gray-800" : ""}`}
       >
-        <td colSpan={6} className="p-0 overflow-hidden">
+        <td colSpan={isViewer ? 5 : 6} className="p-0 overflow-hidden">
           <div
             style={{
               maxHeight: expanded ? "2000px" : "0px",
@@ -481,6 +486,7 @@ function DocumentRow({
 }
 
 function HistoryPage() {
+  const { isViewer} = useUserRole()
   const [filter, setFilter] = useState<string>("all")
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
   const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null)
@@ -490,10 +496,6 @@ function HistoryPage() {
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
   })
-
-  useEffect(() => {
-    setSelectedDocIds([])
-  }, [])
 
   useEffect(() => {
     if (!activeModalUrl) return
@@ -631,26 +633,28 @@ function HistoryPage() {
           })}
         </div>
 
-        <div className="pb-2.5">
-          <button
-            type="button"
-            disabled={
-              selectedDocIds.length === 0 || deleteMultipleMutation.isPending
-            }
-            onClick={handleDeleteTriggered}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
-              selectedDocIds.length > 0
-                ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
-                : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800/40 dark:text-gray-500 dark:border-gray-800"
-            }`}
-          >
-            {deleteMultipleMutation.isPending
-              ? "Deleting..."
-              : selectedDocIds.length > 0
-                ? `Delete Selected (${selectedDocIds.length})`
-                : "Delete Selected"}
-          </button>
-        </div>
+        {!isViewer && (
+  <div className="pb-2.5">
+    <button
+      type="button"
+      disabled={
+        selectedDocIds.length === 0 || deleteMultipleMutation.isPending
+      }
+      onClick={handleDeleteTriggered}
+      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
+        selectedDocIds.length > 0
+          ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
+          : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800/40 dark:text-gray-500 dark:border-gray-800"
+      }`}
+    >
+      {deleteMultipleMutation.isPending
+        ? "Deleting..."
+        : selectedDocIds.length > 0
+          ? `Delete Selected (${selectedDocIds.length})`
+          : "Delete Selected"}
+    </button>
+  </div>
+)}
       </div>
 
       {isLoading ? (
@@ -670,7 +674,8 @@ function HistoryPage() {
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-gray-100 dark:bg-gray-800/40 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
               <tr>
-                <th className="px-4 py-3 text-center w-12">
+                {!isViewer && (
+  <th className="px-4 py-3 text-center w-12">
                   <input
                     type="checkbox"
                     checked={
@@ -680,7 +685,7 @@ function HistoryPage() {
                     onChange={toggleSelectAll}
                     className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
                   />
-                </th>
+                </th>)}
                 <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">
                   Filename
                 </th>

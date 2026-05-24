@@ -67,7 +67,7 @@ function Layout() {
         <AppSidebar />
       </div>
 
-      <SidebarInset className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950">
+      <SidebarInset className="min-h-screen flex flex-col bg-zinc-50/85 dark:bg-zinc-950/85 backdrop-blur-sm">
         {/* Modern Sticky Header hosting your TopNavbar */}
         <header className="sticky top-0 z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-all">
           <TopNavbar />

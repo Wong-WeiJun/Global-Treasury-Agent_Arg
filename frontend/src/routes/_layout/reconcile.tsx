@@ -13,6 +13,8 @@ export const Route = createFileRoute("/_layout/reconcile")({
 });
 
 interface BankEntry {
+  // ✅ KEPT from main — id is needed for CSV import (crypto.randomUUID())
+  id: string;
   amount: string;
   date: string;
   description: string;
@@ -25,15 +27,20 @@ interface DocumentWithEntries {
   extractedData: any;
   bankEntries: BankEntry[];
   collapsed: boolean;
+  // ✅ KEPT from main — for document preview feature
+  previewUrl?: string | null;
+  loadingPreview?: boolean;
 }
 
 const emptyEntry = (defaultPayer = ""): BankEntry => ({
+  id: crypto.randomUUID(),
   amount: "",
   date: "",
   description: "",
   payer: defaultPayer,
 });
 
+// ✅ KEPT from backfront — light/dark mode support
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     matched:
@@ -50,7 +57,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   return (
     <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}
+      className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
@@ -67,6 +74,7 @@ function ReconcilePage() {
   const defaultUserIdentity =
     currentUser?.full_name || currentUser?.email || "";
 
+  // ✅ KEPT from backfront — semicolon style
   const [documentsWithEntries, setDocumentsWithEntries] = useState<
     DocumentWithEntries[]
   >([]);
@@ -80,16 +88,71 @@ function ReconcilePage() {
   const [error, setError] = useState<string | null>(null);
   const [_csvImporting, setCsvImporting] = useState(false);
 
+  // Document preview modal state
+  const [previewModal, setPreviewModal] = useState<{ url: string; name: string; fileType: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Fetch available history documents
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
   });
 
+  // Close preview modal on Escape
+  useEffect(() => {
+    if (!previewModal) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewModal(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [previewModal]);
+
+  // Redirect viewers to dashboard safely via hooks pipeline
   useEffect(() => {
     if (role && !canReconcile) {
       navigate({ to: "/" });
     }
   }, [role, canReconcile, navigate]);
+
+  // ── Date format helpers ────────────────────────────────────────────────────
+  const toInputDate = (ddmmyyyy: string): string => {
+    if (!ddmmyyyy) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(ddmmyyyy)) return ddmmyyyy;
+    const [dd, mm, yyyy] = ddmmyyyy.split("/");
+    if (!dd || !mm || !yyyy) return "";
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const fromInputDate = (yyyymmdd: string): string => {
+    if (!yyyymmdd) return "";
+    const [yyyy, mm, dd] = yyyymmdd.split("-");
+    if (!yyyy || !mm || !dd) return yyyymmdd;
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  const formatDisplayDate = (raw: string): string => {
+    if (!raw) return "N/A";
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw;
+    const [yyyy, mm, dd] = raw.split("-");
+    if (yyyy && mm && dd) return `${dd}/${mm}/${yyyy}`;
+    return raw;
+  };
+  // ──────────────────────────────────────────────────────────────────────────
+
+  // Open document preview modal
+  const handleOpenPreview = async (docId: string, docName: string, fileType: string) => {
+    if (fileType === "excel") return;
+    setPreviewLoading(true);
+    try {
+      const res = (await FilesService.getDownloadUrl({ documentId: docId })) as { url: string };
+      setPreviewModal({ url: res.url, name: docName, fileType });
+    } catch {
+      /* fail gracefully */
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   if (isViewer) {
     return (
@@ -123,6 +186,7 @@ function ReconcilePage() {
     );
   }
 
+  // ✅ KEPT from backfront — semicolon style
   const handleDropdownSelectHistory = async (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
@@ -139,9 +203,9 @@ function ReconcilePage() {
       return;
     }
     const extractedRows = targetDoc.extracted_data?.rows as any[] | undefined;
-
     const normalizedExtractedData =
       extractedRows?.[0] || targetDoc.extracted_data || null;
+
     setDocumentsWithEntries((prev) => [
       ...prev,
       {
@@ -155,6 +219,7 @@ function ReconcilePage() {
     e.target.value = "";
   };
 
+  // ✅ KEPT from backfront — semicolon style
   const handleBulkFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -184,9 +249,7 @@ function ReconcilePage() {
 
         setUploadedFiles((prev) =>
           prev.map((f) =>
-            f.id === tempId
-              ? { id: docId, name: file.name, status: "extracted" }
-              : f,
+            f.id === tempId ? { id: docId, name: file.name, status: "extracted" } : f,
           ),
         );
         const normalizedExtractedData =
@@ -220,6 +283,7 @@ function ReconcilePage() {
     queryClient.invalidateQueries({ queryKey: ["my-documents"] });
   };
 
+  // Bulk Reconciliation Call
   const handleBulkReconcile = async () => {
     if (documentsWithEntries.length === 0) {
       setError("Please upload or select documents for bulk reconciliation.");
@@ -230,6 +294,7 @@ function ReconcilePage() {
       (doc) => doc.bankEntries.filter((e) => e.amount && e.date).length === 0,
     );
 
+    // ✅ KEPT from backfront — semicolon style
     if (invalidDocs.length > 0) {
       setError(
         `Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`,
@@ -242,6 +307,7 @@ function ReconcilePage() {
     setBulkResults([]);
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
+      // ✅ KEPT from backfront — semicolon style
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
       );
@@ -252,7 +318,7 @@ function ReconcilePage() {
             document_id: docWithEntries.docId,
             bank_entries: validEntries.map((e) => ({
               amount: parseFloat(e.amount),
-              date: e.date,
+              date: toInputDate(e.date),
               description: e.description || undefined,
               payer: e.payer || undefined,
             })),
@@ -300,6 +366,7 @@ function ReconcilePage() {
     setBulkReconciling(true);
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
+      // ✅ KEPT from backfront — semicolon style
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
       );
@@ -309,7 +376,7 @@ function ReconcilePage() {
             document_id: docWithEntries.docId,
             bank_entries: validEntries.map((e) => ({
               amount: parseFloat(e.amount),
-              date: e.date,
+              date: toInputDate(e.date),
               description: e.description || undefined,
               payer: e.payer || undefined,
             })),
@@ -341,6 +408,7 @@ function ReconcilePage() {
     queryClient.invalidateQueries({ queryKey: ["my-documents"] });
   };
 
+  // ✅ KEPT from main — CSV date normalization (CSV change)
   const handleCSVImport = (
     docIndex: number,
     e: React.ChangeEvent<HTMLInputElement>,
@@ -363,9 +431,11 @@ function ReconcilePage() {
             const [amount, date, payer, description] = line
               .split(",")
               .map((s) => s.trim());
+            // ✅ Normalise CSV date to dd/mm/yyyy (CSV change from main)
             return {
+              id: crypto.randomUUID(),
               amount: amount || "",
-              date: date || "",
+              date: date ? fromInputDate(date) : "",
               payer: payer || "",
               description: description || "",
             };
@@ -414,13 +484,7 @@ function ReconcilePage() {
     setDocumentsWithEntries((prev) =>
       prev.map((doc, idx) =>
         idx === docIndex
-          ? {
-              ...doc,
-              bankEntries: [
-                ...doc.bankEntries,
-                emptyEntry(defaultUserIdentity),
-              ],
-            }
+          ? { ...doc, bankEntries: [...doc.bankEntries, emptyEntry(defaultUserIdentity)] }
           : doc,
       ),
     );
@@ -430,12 +494,7 @@ function ReconcilePage() {
     setDocumentsWithEntries((prev) =>
       prev.map((doc, idx) =>
         idx === docIndex
-          ? {
-              ...doc,
-              bankEntries: doc.bankEntries.filter(
-                (_, eIdx) => eIdx !== entryIndex,
-              ),
-            }
+          ? { ...doc, bankEntries: doc.bankEntries.filter((_, eIdx) => eIdx !== entryIndex) }
           : doc,
       ),
     );
@@ -481,7 +540,7 @@ function ReconcilePage() {
             : "N/A",
           proof?.amount || "N/A",
           proof?.currency || "N/A",
-          proof?.date || "N/A",
+          proof?.date ? formatDisplayDate(proof.date) : "N/A",
           r.error ? "Error" : "Success",
           r.error || decision?.explanation?.replace(/,/g, ";") || "",
         ]
@@ -507,8 +566,7 @@ function ReconcilePage() {
       <div>
         <h1 className="text-2xl font-bold">Bulk Reconciliation</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Match multiple payment proofs concurrently against bank statement
-          entries using AI pipelines.
+          Match multiple payment proofs concurrently against bank statement entries using AI pipelines.
         </p>
       </div>
 
@@ -535,8 +593,7 @@ function ReconcilePage() {
               className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
             <p className="text-xs text-gray-500">
-              Supports continuous native file uploads: Images, PDF, or XLSX
-              spreadsheets.
+              Supports continuous native file uploads: Images, PDF, or XLSX spreadsheets.
             </p>
           </div>
 
@@ -560,14 +617,12 @@ function ReconcilePage() {
                 .filter((d: any) => d.file_type !== "excel")
                 .map((doc: any) => (
                   <option key={doc.id} value={doc.id}>
-                    {doc.original_filename} (
-                    {new Date(doc.uploaded_at).toLocaleDateString()})
+                    {doc.original_filename} ({new Date(doc.uploaded_at).toLocaleDateString("en-GB")})
                   </option>
                 ))}
             </select>
             <p className="text-xs text-gray-500">
-              Selecting a document instantly appends it to your current
-              workbench session below.
+              Selecting a document instantly appends it to your current workbench session below.
             </p>
           </div>
         </div>
@@ -580,6 +635,7 @@ function ReconcilePage() {
             </p>
             <div className="flex flex-col gap-1">
               {uploadedFiles.map((file) => (
+                // ✅ KEPT from backfront — light/dark mode classes
                 <div
                   key={file.id}
                   className="flex items-center justify-between px-3 py-2 bg-gray-200 dark:bg-gray-950 rounded-lg text-xs"
@@ -590,10 +646,10 @@ function ReconcilePage() {
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       file.status === "extracted"
-                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        ? "bg-green-900 text-green-300"
                         : file.status === "uploading"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 animate-pulse"
-                          : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                          ? "bg-blue-900 text-blue-300 animate-pulse"
+                          : "bg-red-900 text-red-300"
                     }`}
                   >
                     {file.status === "extracted"
@@ -616,141 +672,177 @@ function ReconcilePage() {
             <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
               Step 2 — Configure Bank Entries for Each Document
             </h2>
-            <span className="text-xs text-blue-500 dark:text-blue-400 font-medium">
+            <span className="text-xs text-blue-400 font-medium">
               {documentsWithEntries.length} Active Workbench Profiles
             </span>
           </div>
 
           <div className="flex flex-col gap-4">
-            {documentsWithEntries.map((docWithEntries, docIdx) => (
-              <div
-                key={docWithEntries.docId}
-                className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white/50 dark:bg-gray-900/10"
-              >
-                {/* Header Profile Info Bar */}
-                <div className="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-b border-gray-300 dark:border-gray-800">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleDocumentCollapse(docIdx)}
-                      className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-mono"
-                    >
-                      {docWithEntries.collapsed ? "▶" : "▼"}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">
-                        {docWithEntries.docName}
-                      </p>
-                      {docWithEntries.extractedData && (
-                        <p className="text-xs text-gray-500">
-                          Extracted: {docWithEntries.extractedData.currency}{" "}
-                          {docWithEntries.extractedData.amount}
-                          {docWithEntries.extractedData.myr_amount &&
-                            docWithEntries.extractedData.currency !==
-                              baseCurrency && (
-                              <>
-                                {" "}
-                                →{" "}
-                                {formatAmount(
-                                  docWithEntries.extractedData.myr_amount,
-                                  baseCurrency,
-                                )}
-                              </>
-                            )}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeDocument(docIdx)}
-                    className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs px-2 py-1 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
-                  >
-                    Remove Target
-                  </button>
-                </div>
+            {documentsWithEntries.map((docWithEntries, docIdx) => {
+              const docMeta = docs?.data.find((d: any) => d.id === docWithEntries.docId);
+              const fileType = docMeta?.file_type ?? "";
 
-                {/* Main Collapse Sub-Panels Block */}
-                {!docWithEntries.collapsed && (
-                  <div className="p-4 flex flex-col gap-4 bg-black/10">
-                    {docWithEntries.extractedData && (
-                      <div className="bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40 rounded-lg p-3">
-                        <p className="text-xs text-blue-600 dark:text-blue-300 font-semibold mb-2">
-                          💡 AI Extracted Content Preview
+              return (
+                <div
+                  key={docWithEntries.docId}
+                  // ✅ KEPT from backfront — light/dark mode classes
+                  className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white/50 dark:bg-gray-900/10"
+                >
+                  {/* Header Profile Info Bar */}
+                  {/* ✅ KEPT from backfront — light/dark mode classes */}
+                  <div className="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-b border-gray-300 dark:border-gray-800">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => toggleDocumentCollapse(docIdx)}
+                        className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-mono"
+                      >
+                        {docWithEntries.collapsed ? "▶" : "▼"}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">
+                          {docWithEntries.docName}
                         </p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                          <div>
-                            <span className="text-gray-500 block">Amount</span>
-                            <span className="text-gray-700 dark:text-gray-300 font-medium font-mono">
-                              {docWithEntries.extractedData.currency}{" "}
-                              {docWithEntries.extractedData.amount}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-500 block">Date</span>
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">
-                              {docWithEntries.extractedData.date || "N/A"}
-                            </span>
-                          </div>
-                          {docWithEntries.extractedData.payer && (
-                            <div>
-                              <span className="text-gray-500 block">
-                                Extracted Payer
-                              </span>
-                              <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">
-                                {docWithEntries.extractedData.payer}
-                              </span>
-                            </div>
-                          )}
-                          {docWithEntries.extractedData.myr_amount &&
-                            docWithEntries.extractedData.currency !==
-                              baseCurrency && (
-                              <div>
-                                <span className="text-gray-500 block">
-                                  Converted to Base Currency
-                                </span>
-                                <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
+                        {docWithEntries.extractedData && (
+                          <p className="text-xs text-gray-500">
+                            Extracted: {docWithEntries.extractedData.currency}{" "}
+                            {docWithEntries.extractedData.amount}
+                            {docWithEntries.extractedData.myr_amount &&
+                              docWithEntries.extractedData.currency !== baseCurrency && (
+                                <>
+                                  {" "}→{" "}
                                   {formatAmount(
                                     docWithEntries.extractedData.myr_amount,
                                     baseCurrency,
                                   )}
+                                </>
+                              )}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* ✅ KEPT from main — preview button feature */}
+                      {fileType !== "excel" && (
+                        <button
+                          type="button"
+                          disabled={previewLoading}
+                          onClick={() =>
+                            handleOpenPreview(docWithEntries.docId, docWithEntries.docName, fileType)
+                          }
+                          className="text-blue-400 hover:text-blue-300 text-xs px-2.5 py-1 hover:bg-blue-950/40 border border-blue-900/50 rounded transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {previewLoading ? (
+                            <span className="animate-pulse">Loading…</span>
+                          ) : (
+                            <>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-3 h-3"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                              </svg>
+                              Preview
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeDocument(docIdx)}
+                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 hover:bg-red-950/40 rounded transition-colors"
+                      >
+                        Remove Target
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Main Collapse Sub-Panels Block */}
+                  {/* ✅ KEPT from backfront — simple show/hide */}
+                  {!docWithEntries.collapsed && (
+                    <div className="p-4 flex flex-col gap-4 bg-black/10">
+                      {docWithEntries.extractedData && (
+                        // ✅ KEPT from backfront — light/dark mode classes
+                        <div className="bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40 rounded-lg p-3">
+                          <p className="text-xs text-blue-600 dark:text-blue-300 font-semibold mb-2">
+                            💡 AI Extracted Content Preview
+                          </p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            <div>
+                              <span className="text-gray-500 block">Amount</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium font-mono">
+                                {docWithEntries.extractedData.currency}{" "}
+                                {docWithEntries.extractedData.amount}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500 block">Date</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                {formatDisplayDate(docWithEntries.extractedData.date)}
+                              </span>
+                            </div>
+                            {docWithEntries.extractedData.payer && (
+                              <div>
+                                <span className="text-gray-500 block">Extracted Payer</span>
+                                <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">
+                                  {docWithEntries.extractedData.payer}
                                 </span>
                               </div>
                             )}
+                            {docWithEntries.extractedData.myr_amount &&
+                              docWithEntries.extractedData.currency !== baseCurrency && (
+                                <div>
+                                  <span className="text-gray-500 block">Converted to Base Currency</span>
+                                  <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
+                                    {formatAmount(
+                                      docWithEntries.extractedData.myr_amount,
+                                      baseCurrency,
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Target Bank Statement Entry Allocation */}
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
-                          Bank Statement Entry Allocation
-                        </p>
-                        <div className="flex gap-3 text-xs">
-                          <label className="text-blue-500 dark:text-blue-400 hover:underline cursor-pointer">
-                            Import Entry CSV
-                            <input
-                              type="file"
-                              accept=".csv"
-                              onChange={(e) => handleCSVImport(docIdx, e)}
-                              className="hidden"
-                            />
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => addDocumentEntry(docIdx)}
-                            className="text-blue-500 dark:text-blue-400 hover:underline"
-                          >
-                            + Add Entry Row
-                          </button>
-                        </div>
-                      </div>
-
+                      {/* Target Bank Statement Entry Allocation */}
                       <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
+                            Bank Statement Entry Allocation
+                          </p>
+                          <div className="flex gap-3 text-xs">
+                            <label className="text-blue-500 dark:text-blue-400 hover:underline cursor-pointer">
+                              Import Entry CSV
+                              <input
+                                type="file"
+                                accept=".csv"
+                                onChange={(e) => handleCSVImport(docIdx, e)}
+                                className="hidden"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => addDocumentEntry(docIdx)}
+                              className="text-blue-500 dark:text-blue-400 hover:underline"
+                            >
+                              + Add Entry Row
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* ✅ key={entry.id} from main — needed for CSV-imported entries */}
                         {docWithEntries.bankEntries.map((entry, entryIdx) => (
                           <div
-                            key={entryIdx}
+                            key={entry.id}
                             className="grid grid-cols-12 gap-2 items-center"
                           >
                             <input
@@ -758,24 +850,19 @@ function ReconcilePage() {
                               placeholder={`Amount (${getSymbol(baseCurrency)})`}
                               value={entry.amount}
                               onChange={(e) =>
-                                updateDocumentEntry(
-                                  docIdx,
-                                  entryIdx,
-                                  "amount",
-                                  e.target.value,
-                                )
+                                updateDocumentEntry(docIdx, entryIdx, "amount", e.target.value)
                               }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background font-mono"
                             />
                             <input
                               type="date"
-                              value={entry.date}
+                              value={toInputDate(entry.date)}
                               onChange={(e) =>
                                 updateDocumentEntry(
                                   docIdx,
                                   entryIdx,
                                   "date",
-                                  e.target.value,
+                                  fromInputDate(e.target.value),
                                 )
                               }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
@@ -785,12 +872,7 @@ function ReconcilePage() {
                               placeholder="Payer Identity"
                               value={entry.payer}
                               onChange={(e) =>
-                                updateDocumentEntry(
-                                  docIdx,
-                                  entryIdx,
-                                  "payer",
-                                  e.target.value,
-                                )
+                                updateDocumentEntry(docIdx, entryIdx, "payer", e.target.value)
                               }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
                             />
@@ -799,20 +881,13 @@ function ReconcilePage() {
                               placeholder="Memo Description"
                               value={entry.description}
                               onChange={(e) =>
-                                updateDocumentEntry(
-                                  docIdx,
-                                  entryIdx,
-                                  "description",
-                                  e.target.value,
-                                )
+                                updateDocumentEntry(docIdx, entryIdx, "description", e.target.value)
                               }
                               className="col-span-2 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
                             />
                             <button
                               type="button"
-                              onClick={() =>
-                                removeDocumentEntry(docIdx, entryIdx)
-                              }
+                              onClick={() => removeDocumentEntry(docIdx, entryIdx)}
                               disabled={docWithEntries.bankEntries.length === 1}
                               className="col-span-1 text-red-500 dark:text-red-400 text-sm hover:text-red-700 dark:hover:text-red-300 disabled:opacity-20 text-center font-bold"
                             >
@@ -822,10 +897,10 @@ function ReconcilePage() {
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -848,10 +923,11 @@ function ReconcilePage() {
           : `Run Bulk Reconciliation (${documentsWithEntries.length} docs)`}
       </button>
 
-      {/* Bulk Results Visual Dashboard Displays */}
+      {/* Bulk Results Visual Dashboard */}
       {bulkResults.length > 0 && (
         <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center justify-between flex-wrap gap-2">
+            {/* ✅ KEPT from backfront — light/dark mode classes */}
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
               Bulk Reconciliation Results
             </h2>
@@ -868,151 +944,149 @@ function ReconcilePage() {
                     `bulk-reconciliation-${Date.now()}.csv`,
                   )
                 }
+                // ✅ KEPT from backfront — light/dark mode classes
                 className="text-blue-500 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
                 Download Results Sheet (CSV)
               </button>
+              {bulkResults.some((r) => r.error) && (
+                <button
+                  type="button"
+                  onClick={handleRetryFailed}
+                  disabled={bulkReconciling}
+                  className="text-yellow-500 dark:text-yellow-400 hover:underline text-xs"
+                >
+                  Retry Failed
+                </button>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col gap-3">
-            {bulkResults.map((result) => {
-              const decision = result.result?.agent_decision;
-              const hasError = !!result.error;
+            {bulkResults.map((r) => {
+              const decision = r.result?.agent_decision;
+              const proof = r.result?.proof;
+              const fxResult = r.result?.fx_result;
 
               return (
                 <div
-                  key={result.docId}
-                  className={`border rounded-lg p-4 transition-all ${
-                    hasError
-                      ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/10"
-                      : "border-gray-300 bg-white/30 dark:border-gray-800 dark:bg-gray-900/30"
-                  }`}
+                  key={r.docId}
+                  className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-3 bg-white/50 dark:bg-gray-900/20"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-gray-700 dark:text-gray-300">
-                        {result.docName}
-                      </p>
-                      {hasError ? (
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-mono">
-                          ✗ Error Details: {result.error}
-                        </p>
-                      ) : (
-                        <div className="flex items-center gap-4 mt-2">
-                          <StatusBadge
-                            status={decision?.final_status || "unknown"}
-                          />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                            Confidence Index:{" "}
-                            {Math.round((decision?.confidence ?? 0) * 100)}%
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {!hasError && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.location.href = "/history";
-                        }}
-                        className="text-blue-500 dark:text-blue-400 hover:underline text-xs"
-                      >
-                        Auditing File →
-                      </button>
-                    )}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="font-medium text-sm text-gray-800 dark:text-gray-200 truncate">
+                      {r.docName}
+                    </p>
+                    {r.error ? (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
+                        ✗ Error
+                      </span>
+                    ) : decision ? (
+                      <StatusBadge status={decision.final_status} />
+                    ) : null}
                   </div>
 
-                  {!hasError && decision?.explanation && (
-                    <div className="mt-3 bg-gray-100 dark:bg-black/40 rounded-lg px-3 py-2 border border-gray-300 dark:border-gray-800/60">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-                        "{decision.explanation}"
-                      </p>
-                    </div>
+                  {r.error && (
+                    <p className="text-xs text-red-600 dark:text-red-400">{r.error}</p>
                   )}
 
-                  {!hasError && result.result?.match_scores?.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-800">
-                      <ReviewPanel
-                        documentId={result.docId}
-                        finalStatus={decision.final_status}
-                        matchScores={result.result.match_scores}
-                        confidence={decision.confidence}
-                        currentReviewStatus={null}
-                        currentCaseId={null}
-                        currentRiskScore={null}
-                        onSaved={() =>
-                          queryClient.invalidateQueries({
-                            queryKey: ["my-documents"],
-                          })
-                        }
-                      />
-                    </div>
+                  {!r.error && decision && (
+                    <>
+                      {proof && (
+                        <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm">
+                          <span className="font-semibold text-gray-800 dark:text-white">
+                            {proof.currency} {proof.amount}
+                          </span>
+                          {fxResult && proof.currency !== "MYR" && (
+                            <>
+                              <span className="text-gray-400">→</span>
+                              <span className="text-green-600 dark:text-green-400 font-semibold">
+                                {formatAmount(fxResult.to_amount, baseCurrency)}
+                              </span>
+                              <span className="text-gray-400 text-xs">
+                                @ {fxResult.rate} on {formatDisplayDate(fxResult.date)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {decision.explanation}
+                      </p>
+
+                      {decision.discrepancy_reason && (
+                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                          ⚠ {decision.discrepancy_reason}
+                        </p>
+                      )}
+
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>Confidence</span>
+                          <span>{Math.round((decision.confidence ?? 0) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              decision.final_status === "matched"
+                                ? "bg-green-500"
+                                : decision.final_status === "fuzzy"
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
+                            }`}
+                            style={{ width: `${(decision.confidence ?? 0) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
               );
             })}
           </div>
+        </section>
+      )}
 
-          {/* Aggregate Operations Stats Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-            <div className="bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-green-600 dark:text-green-400 font-semibold tracking-wide uppercase">
-                Auto-Approved Matching
+      {/* Document Preview Modal */}
+      {previewModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          onClick={() => setPreviewModal(null)}
+        >
+          <div
+            className="relative bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <p className="text-sm font-medium truncate text-gray-800 dark:text-gray-200">
+                {previewModal.name}
               </p>
-              <p className="text-3xl font-bold text-green-600 dark:text-green-400 font-mono mt-1">
-                {
-                  bulkResults.filter(
-                    (r) => r.result?.agent_decision?.final_status === "matched",
-                  ).length
-                }
-              </p>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold tracking-wide uppercase">
-                Requires Verification Review
-              </p>
-              <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 font-mono mt-1">
-                {
-                  bulkResults.filter((r) => {
-                    const status = r.result?.agent_decision?.final_status;
-                    return status === "fuzzy" || status === "unmatched";
-                  }).length
-                }
-              </p>
-            </div>
-            <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-red-600 dark:text-red-400 font-semibold tracking-wide uppercase">
-                Failed Processing Pipeline Exception
-              </p>
-              <p className="text-3xl font-bold text-red-600 dark:text-red-400 font-mono mt-1">
-                {bulkResults.filter((r) => r.error).length}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-2">
-            {bulkResults.filter((r) => r.error).length > 0 && (
               <button
                 type="button"
-                onClick={handleRetryFailed}
-                disabled={bulkReconciling}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                onClick={() => setPreviewModal(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg font-bold"
               >
-                Retry Failed Nodes ({bulkResults.filter((r) => r.error).length})
+                ✕
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = "/history";
-              }}
-              className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-            >
-              View All in History Dashboard →
-            </button>
+            </div>
+            <div className="overflow-auto max-h-[80vh] p-2">
+              {previewModal.fileType === "pdf" ? (
+                <iframe
+                  src={previewModal.url}
+                  className="w-full h-[75vh] rounded"
+                  title={previewModal.name}
+                />
+              ) : (
+                <img
+                  src={previewModal.url}
+                  alt={previewModal.name}
+                  className="max-w-full mx-auto rounded"
+                />
+              )}
+            </div>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );
