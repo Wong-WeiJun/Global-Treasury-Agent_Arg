@@ -1,8 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
-import { FilesService } from "../../client"
-import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { ReviewPanel } from "../../components/Common/ReviewPanel";
+import { FilesService } from "../../client";
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
@@ -77,10 +77,24 @@ function RiskBadge({ level }: { level: string | null }) {
 }
 
 function DocumentRow({ doc }: { doc: any }) {
-  const [expanded, setExpanded] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [loadingPreview, setLoadingPreview] = useState(false)
-  const queryClient = useQueryClient()
+  const [expanded, setExpanded] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  
+  // Modal states for full-screen preview
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const queryClient = useQueryClient();
+
+  // Esc key listener to close full screen modal easily
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen]);
 
   const deleteMutation = useMutation({
     mutationFn: (documentId: string) => FilesService.deleteFile({ documentId }),
@@ -89,8 +103,8 @@ function DocumentRow({ doc }: { doc: any }) {
   })
 
   const handleToggle = async () => {
-    if (!expanded && !previewUrl && doc.file_type !== "excel") {
-      setLoadingPreview(true)
+    if (!expanded && !previewUrl) {
+      setLoadingPreview(true);
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: doc.id,
@@ -102,8 +116,18 @@ function DocumentRow({ doc }: { doc: any }) {
         setLoadingPreview(false)
       }
     }
-    setExpanded((p) => !p)
-  }
+    setExpanded((p) => !p);
+  };
+
+  // NATIVE CONFIRMATION ROUTINE BEFORE TRIGGERS
+  const handleDeleteClick = () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${doc.original_filename}"? This action cannot be undone.`
+    );
+    if (confirmed) {
+      deleteMutation.mutate(doc.id);
+    }
+  };
 
   const recon = doc.reconciliation_result
   const decision = recon?.agent_decision
@@ -118,9 +142,6 @@ function DocumentRow({ doc }: { doc: any }) {
         </td>
         <td className="px-4 py-3 text-sm">
           <AIResultBadge result={doc.ai_result} />
-        </td>
-        <td className="px-4 py-3 text-sm">
-          <WorkflowStatusBadge status={doc.workflow_status} />
         </td>
         <td className="px-4 py-3 text-sm">
           <RiskBadge level={doc.risk_level} />
@@ -139,7 +160,7 @@ function DocumentRow({ doc }: { doc: any }) {
             </button>
             <button
               type="button"
-              onClick={() => deleteMutation.mutate(doc.id)}
+              onClick={handleDeleteClick}
               className="text-red-400 hover:underline text-xs"
             >
               Delete
@@ -153,7 +174,7 @@ function DocumentRow({ doc }: { doc: any }) {
         <tr className="border-t bg-gray-950">
           <td colSpan={6} className="px-6 py-5">
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-              {/* Image preview */}
+              {/* Image/File preview panel */}
               <div className="flex flex-col gap-2 min-w-0 lg:w-64">
                 <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
                   Document Preview
@@ -163,10 +184,11 @@ function DocumentRow({ doc }: { doc: any }) {
                     <span className="text-gray-500 text-xs">Loading...</span>
                   </div>
                 )}
+                
                 {previewUrl && doc.file_type === "pdf" && (
                   <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2">
                     <span className="text-4xl">📄</span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 truncate max-w-full">
                       {doc.original_filename}
                     </span>
                     <a
@@ -179,19 +201,44 @@ function DocumentRow({ doc }: { doc: any }) {
                     </a>
                   </div>
                 )}
+                
+                {/* INTERACTIVE THUMBNAIL CLICK EMITTER */}
                 {previewUrl && doc.file_type === "image" && (
-                  <img
-                    src={previewUrl}
-                    alt={doc.original_filename}
-                    className="rounded-lg border border-gray-700 max-w-full object-contain max-h-64"
-                  />
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(true)}
+                    className="group relative block w-full text-left focus:outline-none rounded-lg overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors cursor-zoom-in"
+                  >
+                    <img
+                      src={previewUrl}
+                      alt={doc.original_filename}
+                      className="w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.02]"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                      <span className="bg-black/70 text-white text-xs font-medium px-2.5 py-1.5 rounded-md">View Full Size</span>
+                    </div>
+                  </button>
                 )}
+                
+                {/* SIMPLE EXCEL PREVIEW LINK GENERATOR */}
                 {doc.file_type === "excel" && (
                   <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2">
                     <span className="text-4xl">📊</span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-400 truncate max-w-full">
                       {doc.original_filename}
                     </span>
+                    {previewUrl ? (
+                      <a
+                        href={previewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-400 text-xs hover:underline font-medium"
+                      >
+                        Open Spreadsheet ↗
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-500">Processing URL...</span>
+                    )}
                   </div>
                 )}
 
@@ -374,12 +421,9 @@ function DocumentRow({ doc }: { doc: any }) {
                           <div className="mt-4 pt-4 border-t border-gray-800">
                             <ReviewPanel
                               documentId={doc.id}
+                              currentStatus={doc.review_status}
+                              currentNote={doc.review_note}
                               finalStatus={decision.final_status}
-                              matchScores={recon.match_scores}
-                              confidence={decision.confidence}
-                              currentReviewStatus={doc.review_status}
-                              currentCaseId={doc.case_id}
-                              currentRiskScore={doc.risk_score}
                               onSaved={() =>
                                 queryClient.invalidateQueries({
                                   queryKey: ["my-documents"],
@@ -397,8 +441,46 @@ function DocumentRow({ doc }: { doc: any }) {
           </td>
         </tr>
       )}
+
+      {/* FULL-SCREEN DECRYPTOR DECOUPLED MODAL */}
+      {isModalOpen && previewUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 select-none backdrop-blur-sm animate-fade-in">
+          
+          {/* Close Action Trigger Anchor */}
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 z-[110] bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white px-4 py-2 text-sm font-medium rounded-md shadow-lg transition-colors border border-zinc-700/60"
+          >
+            Close
+          </button>
+
+          {/* Left Deadzone Touch Panel dismiss layer */}
+          <div 
+            onClick={() => setIsModalOpen(false)} 
+            className="absolute top-0 left-0 bottom-0 w-1/4 z-[101] cursor-zoom-out"
+            title="Click to close"
+          />
+
+          {/* Core Content Media Frame */}
+          <div className="relative z-[105] max-w-full max-h-screen p-4 flex items-center justify-center">
+            <img
+              src={previewUrl}
+              alt={doc.original_filename}
+              className="max-w-full max-h-[92vh] object-contain rounded border border-zinc-800 shadow-2xl pointer-events-auto"
+            />
+          </div>
+
+          {/* Right Deadzone Touch Panel dismiss layer */}
+          <div 
+            onClick={() => setIsModalOpen(false)} 
+            className="absolute top-0 right-0 bottom-0 w-1/4 z-[101] cursor-zoom-out"
+            title="Click to close"
+          />
+        </div>
+      )}
     </>
-  )
+  );
 }
 
 function HistoryPage() {
@@ -517,9 +599,6 @@ function HistoryPage() {
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                 AI Result
-              </th>
-              <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
-                Workflow Status
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                 Risk
