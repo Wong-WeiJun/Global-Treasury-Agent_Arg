@@ -236,21 +236,21 @@ function DocumentRow({
                   )}
                   {previewUrl && doc.file_type === "image" && (
                     <button
-                      type="button"
-                      onClick={() => onTriggerModalPreview(previewUrl)}
-                      className="group relative block text-left focus:outline-none rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-zoom-in"
-                    >
-                      <img
-                        src={previewUrl}
-                        alt={doc.original_filename}
-                        className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                        <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">
-                          Expand Size
-                        </span>
-                      </div>
-                    </button>
+  type="button"
+  onClick={() => onTriggerModalPreview(previewUrl)}
+  className="group relative flex items-center justify-center w-full text-left focus:outline-none rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-zoom-in"
+>
+  <img
+    src={previewUrl}
+    alt={doc.original_filename}
+    className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
+  />
+  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+    <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">
+      Expand Size
+    </span>
+  </div>
+</button>
                   )}
                   {doc.file_type === "excel" && (
                     <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-200 dark:border-gray-700">
