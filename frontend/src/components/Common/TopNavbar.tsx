@@ -1,13 +1,11 @@
 import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import {
-  Briefcase,
   Building2,
   ChevronsUpDown,
   GitMerge, // Added
   History, // Added
   Home,
   LogOut,
-  MessageSquare,
   Monitor,
   Moon,
   Settings,
@@ -67,8 +65,6 @@ export function TopNavbar() {
 
   // LEFT SIDE: Items, Chat, Team, Organization (if superuser), Admin (if superuser)
   const leftSideItems: NavigationItem[] = [
-    { icon: Briefcase, title: "Items", path: "/items" },
-    { icon: MessageSquare, title: "Chat", path: "/chat" },
     { icon: UsersRound, title: "Team", path: "/team" },
     ...(currentUser?.is_superuser
       ? [
@@ -88,7 +84,7 @@ export function TopNavbar() {
   ]
 
   return (
-    <div className="flex h-16 w-full items-center justify-between max-w-7xl mx-auto px-4">
+    <div className="flex h-16 w-full items-center justify-between px-6">
       {/* FAR LEFT: Clickable Logo */}
       <div className="flex items-center gap-8">
         <RouterLink
