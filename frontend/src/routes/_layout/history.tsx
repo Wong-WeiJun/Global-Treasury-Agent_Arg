@@ -1,33 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { FilesService } from "../../client";
-import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { FilesService } from "../../client"
+import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
-});
+})
 
 function AIResultBadge({ result }: { result: string | null }) {
-  if (!result) return <span className="text-gray-500 text-xs">—</span>;
+  if (!result) return <span className="text-gray-500 text-xs">—</span>
 
   const styles: Record<string, string> = {
     MATCHED: "bg-green-900/50 text-green-300 border border-green-700",
     FUZZY_MATCH: "bg-amber-900/50 text-amber-300 border border-amber-700",
     UNMATCHED: "bg-red-900/50 text-red-300 border border-red-700",
-  };
+  }
   const labels: Record<string, string> = {
     MATCHED: "✓ Match",
     FUZZY_MATCH: "~ Fuzzy",
     UNMATCHED: "✗ No Match",
-  };
+  }
   return (
     <span
       className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap inline-block ${styles[result] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[result] ?? result}
     </span>
-  );
+  )
 }
 
 function WorkflowStatusBadge({ status }: { status: string }) {
@@ -39,7 +39,7 @@ function WorkflowStatusBadge({ status }: { status: string }) {
     UNDER_REVIEW: "bg-orange-900/50 text-orange-300 border border-orange-700",
     EXCEPTION_APPROVED: "bg-cyan-900/50 text-cyan-300 border border-cyan-700",
     REJECTED: "bg-rose-900/50 text-rose-300 border border-rose-700",
-  };
+  }
   const labels: Record<string, string> = {
     PENDING_EXTRACTION: "Pending",
     EXTRACTED: "Extracted",
@@ -48,24 +48,24 @@ function WorkflowStatusBadge({ status }: { status: string }) {
     UNDER_REVIEW: "⚠ Under Review",
     EXCEPTION_APPROVED: "Exception OK",
     REJECTED: "✗ Rejected",
-  };
+  }
   return (
     <span
       className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  );
+  )
 }
 
 function RiskBadge({ level }: { level: string | null }) {
-  if (!level) return null;
+  if (!level) return null
 
   const styles: Record<string, string> = {
     LOW: "bg-green-950/40 text-green-400 border border-green-800/60",
     MEDIUM: "bg-yellow-950/40 text-yellow-400 border border-yellow-800/60",
     HIGH: "bg-red-950/40 text-red-400 border border-red-800/60",
-  };
+  }
 
   return (
     <span
@@ -73,14 +73,14 @@ function RiskBadge({ level }: { level: string | null }) {
     >
       {level}
     </span>
-  );
+  )
 }
 
 interface DocumentRowProps {
-  doc: any;
-  isSelected: boolean;
-  onSelectToggle: () => void;
-  onTriggerModalPreview: (url: string) => void;
+  doc: any
+  isSelected: boolean
+  onSelectToggle: () => void
+  onTriggerModalPreview: (url: string) => void
 }
 
 function DocumentRow({
@@ -89,41 +89,41 @@ function DocumentRow({
   onSelectToggle,
   onTriggerModalPreview,
 }: DocumentRowProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const queryClient = useQueryClient();
+  const [expanded, setExpanded] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const queryClient = useQueryClient()
 
   const handleRowClick = async () => {
-    const nextExpanded = !expanded;
-    setExpanded(nextExpanded);
+    const nextExpanded = !expanded
+    setExpanded(nextExpanded)
 
     if (nextExpanded && !previewUrl && doc.file_type !== "excel") {
-      setLoadingPreview(true);
+      setLoadingPreview(true)
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: doc.id,
-        })) as { url: string };
-        setPreviewUrl(res.url);
+        })) as { url: string }
+        setPreviewUrl(res.url)
       } catch {
         /* fail gracefully */
       } finally {
-        setLoadingPreview(false);
+        setLoadingPreview(false)
       }
     }
-  };
+  }
 
-  const recon = doc.reconciliation_result;
-  const decision = recon?.agent_decision;
-  const fxResult = recon?.fx_result;
-  const proof = recon?.proof;
+  const recon = doc.reconciliation_result
+  const decision = recon?.agent_decision
+  const fxResult = recon?.fx_result
+  const proof = recon?.proof
 
   const riskColorMap: Record<string, string> = {
     HIGH: "bg-red-950/20 border-l-2 border-l-red-500",
     MEDIUM: "bg-yellow-950/10 border-l-2 border-l-yellow-500",
     LOW: "bg-green-950/10 border-l-2 border-l-green-500",
-  };
-  const computedRowStyle = riskColorMap[doc.risk_level] ?? "";
+  }
+  const computedRowStyle = riskColorMap[doc.risk_level] ?? ""
 
   return (
     <>
@@ -131,8 +131,8 @@ function DocumentRow({
         onClick={(e) => {
           // Don't expand if clicking the checkbox
           if ((e.target as HTMLElement).closest('input[type="checkbox"]'))
-            return;
-          handleRowClick();
+            return
+          handleRowClick()
         }}
         className={`border-t transition-colors duration-150 cursor-pointer select-none
           ${computedRowStyle}
@@ -458,46 +458,46 @@ function DocumentRow({
         </td>
       </tr>
     </>
-  );
+  )
 }
 
 function HistoryPage() {
-  const [filter, setFilter] = useState<string>("all");
-  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
-  const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null);
-  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<string>("all")
+  const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
+  const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  });
+  })
 
   useEffect(() => {
-    setSelectedDocIds([]);
-  }, []);
+    setSelectedDocIds([])
+  }, [])
 
   useEffect(() => {
-    if (!activeModalUrl) return;
+    if (!activeModalUrl) return
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveModalUrl(null);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeModalUrl]);
+      if (e.key === "Escape") setActiveModalUrl(null)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [activeModalUrl])
 
   const deleteMultipleMutation = useMutation({
     mutationFn: async (ids: string[]) => {
       await Promise.all(
         ids.map((id) => FilesService.deleteFile({ documentId: id })),
-      );
+      )
     },
     onSuccess: () => {
-      setSelectedDocIds([]);
-      queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+      setSelectedDocIds([])
+      queryClient.invalidateQueries({ queryKey: ["my-documents"] })
     },
-  });
+  })
 
-  const docDataList = data?.data || [];
+  const docDataList = data?.data || []
 
   const filters = [
     { key: "all", label: "All orders", count: docDataList.length },
@@ -533,42 +533,41 @@ function HistoryPage() {
         (d: any) => d.workflow_status === "UNDER_REVIEW",
       ).length,
     },
-  ];
+  ]
 
   const filteredDocs = docDataList.filter((doc: any) => {
-    if (filter === "all") return true;
+    if (filter === "all") return true
     if (filter === "needs_review")
-      return doc.workflow_status === "PENDING_ACTION";
-    if (filter === "high_risk") return doc.risk_level === "HIGH";
+      return doc.workflow_status === "PENDING_ACTION"
+    if (filter === "high_risk") return doc.risk_level === "HIGH"
     if (filter === "exceptions")
-      return doc.workflow_status === "EXCEPTION_APPROVED";
-    if (filter === "approved") return doc.workflow_status === "APPROVED";
-    if (filter === "under_review")
-      return doc.workflow_status === "UNDER_REVIEW";
-    return true;
-  });
+      return doc.workflow_status === "EXCEPTION_APPROVED"
+    if (filter === "approved") return doc.workflow_status === "APPROVED"
+    if (filter === "under_review") return doc.workflow_status === "UNDER_REVIEW"
+    return true
+  })
 
   const toggleSelectAll = () => {
     if (selectedDocIds.length === filteredDocs.length) {
-      setSelectedDocIds([]);
+      setSelectedDocIds([])
     } else {
-      setSelectedDocIds(filteredDocs.map((d: any) => d.id));
+      setSelectedDocIds(filteredDocs.map((d: any) => d.id))
     }
-  };
+  }
 
   const toggleSelectRow = (id: string) => {
     setSelectedDocIds((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id],
-    );
-  };
+    )
+  }
 
   const handleDeleteTriggered = () => {
-    if (selectedDocIds.length === 0) return;
-    const confirmationMessage = `Are you sure you want to permanently delete the ${selectedDocIds.length} selected document(s)?`;
+    if (selectedDocIds.length === 0) return
+    const confirmationMessage = `Are you sure you want to permanently delete the ${selectedDocIds.length} selected document(s)?`
     if (window.confirm(confirmationMessage)) {
-      deleteMultipleMutation.mutate(selectedDocIds);
+      deleteMultipleMutation.mutate(selectedDocIds)
     }
-  };
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 flex flex-col gap-6">
@@ -583,7 +582,7 @@ function HistoryPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-zinc-800 gap-4 pt-4">
         <div className="flex flex-wrap -mb-[1px] gap-1 z-10">
           {filters.map((f) => {
-            const isActive = filter === f.key;
+            const isActive = filter === f.key
             return (
               <button
                 key={f.key}
@@ -607,7 +606,7 @@ function HistoryPage() {
                   {f.count}
                 </span>
               </button>
-            );
+            )
           })}
         </div>
 
@@ -724,5 +723,5 @@ function HistoryPage() {
         </div>
       )}
     </div>
-  );
+  )
 }
