@@ -30,7 +30,6 @@ interface KPICardProps {
   title: string
   value: string | number
   subtitle?: string
-  trend?: string
   icon: any
   colorClass: string
   link?: string
@@ -40,33 +39,26 @@ function KPICard({
   title,
   value,
   subtitle,
-  trend,
   icon: Icon,
   colorClass,
   link,
 }: KPICardProps) {
   const card = (
     <div
-      className={`${colorClass} rounded-xl p-6 border transition-all duration-200 ${link ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg" : ""}`}
+      className={`${colorClass} rounded-xl p-6 border backdrop-blur-sm transition-all duration-200 ${link ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg" : ""}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <p className="text-xs font-medium opacity-80 uppercase tracking-wide mb-1">
+          <p className="text-xs font-medium opacity-70 uppercase tracking-wide mb-1">
             {title}
           </p>
           <p className="text-3xl font-bold">{value}</p>
-          {subtitle && <p className="text-xs opacity-70 mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-xs opacity-60 mt-1">{subtitle}</p>}
         </div>
-        <div className="p-3 rounded-lg bg-black/10">
+        <div className="p-3 rounded-lg ">
           <Icon className="size-6" />
         </div>
       </div>
-      {trend && (
-        <div className="flex items-center gap-1 text-xs font-medium opacity-80">
-          <TrendingUp className="size-3" />
-          <span>{trend}</span>
-        </div>
-      )}
     </div>
   )
 
@@ -179,23 +171,22 @@ function Dashboard() {
           value={formatAmountCompact(totalAmount, baseCurrency)}
           subtitle={`${totalReconciled} documents`}
           icon={DollarSign}
-          colorClass="bg-blue-950/40 text-blue-100 border-blue-800/60"
+          colorClass="bg-blue-50/80 text-blue-900 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800/60"
           link="/history"
         />
         <KPICard
           title="Auto-Match Rate"
           value={`${autoMatchRate}%`}
           subtitle={`${matchedDocs} of ${documents.length} auto-matched`}
-          trend="+12% this week"
           icon={CheckCircle2}
-          colorClass="bg-green-950/40 text-green-100 border-green-800/60"
+          colorClass="bg-green-50/80 text-green-900 border-green-200 dark:bg-green-950/50 dark:text-green-100 dark:border-green-800/60"
         />
         <KPICard
           title="Pending Reviews"
           value={pendingReviews}
           subtitle="requires attention"
           icon={Clock}
-          colorClass="bg-yellow-950/40 text-yellow-100 border-yellow-800/60"
+          colorClass="bg-amber-50/80 text-amber-900 border-amber-200 dark:bg-yellow-950/50 dark:text-yellow-100 dark:border-yellow-800/60"
           link="/history"
         />
         <KPICard
@@ -203,19 +194,19 @@ function Dashboard() {
           value={highRiskAlerts}
           subtitle={`${exceptionCases} exception cases`}
           icon={AlertTriangle}
-          colorClass="bg-red-950/40 text-red-100 border-red-800/60"
+          colorClass="bg-red-50/80 text-red-900 border-red-200 dark:bg-red-950/50 dark:text-red-100 dark:border-red-800/60"
           link="/history"
         />
       </div>
 
       {/* AI Attention Center */}
       {(needsAttention.length > 0 || aiInsights.length > 0) && (
-        <section className="bg-gradient-to-br from-purple-950/40 to-blue-950/40 border border-purple-800/60 rounded-xl p-6">
+        <section className="bg-gradient-to-br from-purple-50/80 to-blue-50/80 dark:from-purple-950/50 dark:to-blue-950/50 border border-purple-200 dark:border-purple-800/60 rounded-xl p-6 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-purple-600/20">
-              <Zap className="size-5 text-purple-300" />
+            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-600/20">
+              <Zap className="size-5 text-purple-600 dark:text-purple-300" />
             </div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-purple-900 dark:text-white">
               ⚡ AI Attention Center
             </h2>
           </div>
@@ -228,14 +219,14 @@ function Dashboard() {
                   key={i}
                   className={`flex items-start gap-3 p-3 rounded-lg ${
                     insight.severity === "high"
-                      ? "bg-red-950/40 border border-red-800/60"
-                      : "bg-blue-950/40 border border-blue-800/60"
+                      ? "bg-red-100/80 border border-red-300 dark:bg-red-950/40 dark:border-red-800/60"
+                      : "bg-blue-100/80 border border-blue-300 dark:bg-blue-950/40 dark:border-blue-800/60"
                   }`}
                 >
                   <AlertCircle
-                    className={`size-5 mt-0.5 ${insight.severity === "high" ? "text-red-400" : "text-blue-400"}`}
+                    className={`size-5 mt-0.5 ${insight.severity === "high" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"}`}
                   />
-                  <p className="text-sm text-gray-200">{insight.message}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-200">{insight.message}</p>
                 </div>
               ))}
             </div>
@@ -244,22 +235,22 @@ function Dashboard() {
           {/* Needs Attention Queue */}
           {needsAttention.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-purple-300 uppercase font-semibold tracking-wide mb-3">
+              <p className="text-xs text-purple-700 dark:text-purple-300 uppercase font-semibold tracking-wide mb-3">
                 Requires Immediate Attention ({needsAttention.length})
               </p>
               {needsAttention.map((doc) => (
                 <Link
                   key={doc.id}
                   to="/history"
-                  className="block p-4 bg-black/20 hover:bg-black/30 rounded-lg border border-purple-700/40 hover:border-purple-600/60 transition-all"
+                  className="block p-4 bg-white/60 hover:bg-white/80 dark:bg-black/20 dark:hover:bg-black/30 rounded-lg border border-purple-200/60 dark:border-purple-700/40 hover:border-purple-400/60 dark:hover:border-purple-600/60 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {doc.original_filename}
                       </p>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
                           {doc.ai_result === "UNMATCHED"
                             ? "Payer mismatch"
                             : doc.risk_level === "HIGH"
@@ -270,10 +261,10 @@ function Dashboard() {
                           <span
                             className={`px-2 py-0.5 rounded text-xs font-bold ${
                               doc.risk_level === "HIGH"
-                                ? "bg-red-900/50 text-red-300"
+                                ? "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300"
                                 : doc.risk_level === "MEDIUM"
-                                  ? "bg-yellow-900/50 text-yellow-300"
-                                  : "bg-green-900/50 text-green-300"
+                                  ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300"
+                                  : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300"
                             }`}
                           >
                             {doc.risk_level}
@@ -281,13 +272,13 @@ function Dashboard() {
                         )}
                       </div>
                     </div>
-                    <ArrowRight className="size-4 text-purple-400" />
+                    <ArrowRight className="size-4 text-purple-600 dark:text-purple-400" />
                   </div>
                 </Link>
               ))}
               <Link
                 to="/history"
-                className="block text-center text-purple-400 hover:text-purple-300 text-sm font-medium mt-3"
+                className="block text-center text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium mt-3"
               >
                 View all pending reviews →
               </Link>
@@ -299,7 +290,7 @@ function Dashboard() {
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+        <section className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
             Recent Activity
           </h2>
@@ -355,7 +346,7 @@ function Dashboard() {
         </section>
 
         {/* Currency Analytics */}
-        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+        <section className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl p-6">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
             Currency Distribution
           </h2>
@@ -415,12 +406,12 @@ function Dashboard() {
       </div>
 
       {/* Reconciliation Trends */}
-      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <section className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl p-6">
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
           Reconciliation Summary
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
+          <div className="p-4 bg-green-50/80 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800/40">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-green-800 dark:text-green-300">
                 Matched
@@ -435,7 +426,7 @@ function Dashboard() {
             </p>
           </div>
 
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800/40">
+          <div className="p-4 bg-yellow-50/80 dark:bg-yellow-950/30 rounded-lg border border-yellow-200 dark:border-yellow-800/40">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
                 Fuzzy Match
@@ -450,17 +441,17 @@ function Dashboard() {
             </p>
           </div>
 
-          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="p-4 bg-gray-50/80 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-800 dark:text-gray-300">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Approved
               </p>
-              <CheckCircle2 className="size-5 text-gray-600 dark:text-gray-400" />
+              <CheckCircle2 className="size-5 text-gray-500 dark:text-gray-400" />
             </div>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-200">
               {approvedCount}
             </p>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Completed workflows
             </p>
           </div>
@@ -471,35 +462,35 @@ function Dashboard() {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link
           to="/reconcile"
-          className="p-6 bg-gradient-to-br from-blue-950/40 to-blue-900/40 hover:from-blue-950/60 hover:to-blue-900/60 border border-blue-800/60 rounded-xl transition-all"
+          className="p-6 bg-gradient-to-br from-blue-50/80 to-blue-100/80 dark:from-blue-950/50 dark:to-blue-900/50 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-950/70 dark:hover:to-blue-900/70 border border-blue-200 dark:border-blue-800/60 rounded-xl transition-all backdrop-blur-sm"
         >
-          <FileText className="size-8 text-blue-300 mb-3" />
-          <h3 className="text-lg font-bold text-white mb-1">
+          <FileText className="size-8 text-blue-600 dark:text-blue-300 mb-3" />
+          <h3 className="text-lg font-bold text-blue-900 dark:text-white mb-1">
             Upload Documents
           </h3>
-          <p className="text-sm text-blue-200">
+          <p className="text-sm text-blue-600 dark:text-blue-200">
             Start AI reconciliation workflow
           </p>
         </Link>
 
         <Link
           to="/history"
-          className="p-6 bg-gradient-to-br from-purple-950/40 to-purple-900/40 hover:from-purple-950/60 hover:to-purple-900/60 border border-purple-800/60 rounded-xl transition-all"
+          className="p-6 bg-gradient-to-br from-purple-50/80 to-purple-100/80 dark:from-purple-950/50 dark:to-purple-900/50 hover:from-purple-100 hover:to-purple-200 dark:hover:from-purple-950/70 dark:hover:to-purple-900/70 border border-purple-200 dark:border-purple-800/60 rounded-xl transition-all backdrop-blur-sm"
         >
-          <Clock className="size-8 text-purple-300 mb-3" />
-          <h3 className="text-lg font-bold text-white mb-1">Review Queue</h3>
-          <p className="text-sm text-purple-200">
+          <Clock className="size-8 text-purple-600 dark:text-purple-300 mb-3" />
+          <h3 className="text-lg font-bold text-purple-900 dark:text-white mb-1">Review Queue</h3>
+          <p className="text-sm text-purple-600 dark:text-purple-200">
             {pendingReviews} items need attention
           </p>
         </Link>
 
         <Link
           to="/team"
-          className="p-6 bg-gradient-to-br from-green-950/40 to-green-900/40 hover:from-green-950/60 hover:to-green-900/60 border border-green-800/60 rounded-xl transition-all"
+          className="p-6 bg-gradient-to-br from-green-50/80 to-green-100/80 dark:from-green-950/50 dark:to-green-900/50 hover:from-green-100 hover:to-green-200 dark:hover:from-green-950/70 dark:hover:to-green-900/70 border border-green-200 dark:border-green-800/60 rounded-xl transition-all backdrop-blur-sm"
         >
-          <TrendingUp className="size-8 text-green-300 mb-3" />
-          <h3 className="text-lg font-bold text-white mb-1">Team Activity</h3>
-          <p className="text-sm text-green-200">Manage organization members</p>
+          <TrendingUp className="size-8 text-green-600 dark:text-green-300 mb-3" />
+          <h3 className="text-lg font-bold text-green-900 dark:text-white mb-1">Team Activity</h3>
+          <p className="text-sm text-green-600 dark:text-green-200">Manage organization members</p>
         </Link>
       </section>
     </div>
