@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import type { OrganizationCreate } from "@/client"
 import { OrganizationsService } from "@/client"
+import { Appearance } from "@/components/Common/Appearance"
+import { Footer } from "@/components/Common/Footer"
 
 export const Route = createFileRoute("/onboarding")({
   component: OnboardingPage,
@@ -48,22 +50,15 @@ function OnboardingPage() {
     mutationFn: (data: OrganizationCreate) =>
       OrganizationsService.createOrganization({ requestBody: data }),
     onSuccess: async () => {
-      // Invalidate and wait for user data to refetch
       await queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       await queryClient.invalidateQueries({ queryKey: ["organizations"] })
-
-      // Wait a bit for the backend to fully commit the changes
       await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Refetch user to get updated organization_id
       await queryClient.refetchQueries({ queryKey: ["currentUser"] })
-
-      // Navigate to dashboard
       navigate({ to: "/" })
     },
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: { preventDefault(): void }) => {
     e.preventDefault()
     if (!formData.name.trim()) {
       return
@@ -72,116 +67,124 @@ function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <img
-            src="/assets/images/favicon.png"
-            alt="Logo"
-            className="mx-auto h-12 w-auto"
-          />
-          <h2 className="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome!
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Let's set up your organization to get started
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-4">
-            <div>
-              <label
-                htmlFor="org-name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Organization Name
-              </label>
-              <input
-                id="org-name"
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder="Acme Corporation"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                This will be the name of your workspace
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="base-currency"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Base Currency
-              </label>
-              <select
-                id="base-currency"
-                value={formData.base_currency}
-                onChange={(e) =>
-                  setFormData({ ...formData, base_currency: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                {CURRENCIES.map((currency) => (
-                  <option key={currency.code} value={currency.code}>
-                    {currency.code} - {currency.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Currency for reconciliation and reporting
-              </p>
-            </div>
-
-            <div>
-              <label
-                htmlFor="timezone"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Timezone
-              </label>
-              <select
-                id="timezone"
-                value={formData.timezone}
-                onChange={(e) =>
-                  setFormData({ ...formData, timezone: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {createOrgMutation.error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
-              <p className="text-sm text-red-800 dark:text-red-200">
-                {(createOrgMutation.error as Error).message}
-              </p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={createOrgMutation.isPending || !formData.name.trim()}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {createOrgMutation.isPending
-              ? "Creating Organization..."
-              : "Create Organization"}
-          </button>
-        </form>
+    <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex flex-col p-6 md:p-10">
+      <div className="flex justify-end">
+        <Appearance />
       </div>
+
+      <div className="flex flex-1 items-center justify-center">
+        <div className="max-w-md w-full">
+          <form onSubmit={handleSubmit}>
+            <div className="w-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50 flex flex-col gap-5">
+              <div className="text-center">
+                <img
+                  src="/assets/images/favicon.png"
+                  alt="Logo"
+                  className="mx-auto h-14 w-auto object-contain mb-3"
+                />
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Welcome!
+                </h2>
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  Let's set up your organization to get started
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="org-name"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Organization Name
+                </label>
+                <input
+                  id="org-name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1677c8] focus:border-[#1677c8] dark:bg-zinc-900 dark:text-white text-sm"
+                  placeholder="Acme Corporation"
+                />
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  This will be the name of your workspace
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="base-currency"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Base Currency
+                </label>
+                <select
+                  id="base-currency"
+                  value={formData.base_currency}
+                  onChange={(e) =>
+                    setFormData({ ...formData, base_currency: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1677c8] focus:border-[#1677c8] dark:bg-zinc-900 dark:text-white text-sm"
+                >
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.code} - {currency.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Currency for reconciliation and reporting
+                </p>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="timezone"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Timezone
+                </label>
+                <select
+                  id="timezone"
+                  value={formData.timezone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, timezone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1677c8] focus:border-[#1677c8] dark:bg-zinc-900 dark:text-white text-sm"
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {createOrgMutation.error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    {(createOrgMutation.error as Error).message}
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={createOrgMutation.isPending || !formData.name.trim()}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#1677c8] hover:bg-[#295375] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1677c8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                {createOrgMutation.isPending
+                  ? "Creating Organization..."
+                  : "Create Organization"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <Footer />
     </div>
   )
 }
