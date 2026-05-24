@@ -3,13 +3,15 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { FilesService } from "../../client"
 import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
+import useCurrency from "../../hooks/useCurrency"
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
 })
 
 function AIResultBadge({ result }: { result: string | null }) {
-  if (!result) return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
+  if (!result)
+    return <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>
 
   const styles: Record<string, string> = {
     MATCHED:
@@ -104,6 +106,7 @@ function DocumentRow({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
   const queryClient = useQueryClient()
+  const { baseCurrency, formatAmount } = useCurrency()
 
   const handleRowClick = async () => {
     const nextExpanded = !expanded
@@ -293,7 +296,10 @@ function DocumentRow({
                                 )}
                               </p>
                               <p className="text-lg font-bold text-green-700 dark:text-green-300">
-                                {doc.base_currency} {doc.base_amount.toFixed(2)}
+                                {formatAmount(
+                                  doc.base_amount,
+                                  doc.base_currency || baseCurrency,
+                                )}
                               </p>
                               {doc.fx_rate_date && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -361,11 +367,13 @@ function DocumentRow({
                             <span className="text-gray-900 dark:text-white font-semibold font-mono">
                               {proof.currency} {proof.amount}
                             </span>
-                            {fxResult && proof.currency !== "MYR" && (
+                            {fxResult && proof.currency !== baseCurrency && (
                               <>
-                                <span className="text-gray-400 dark:text-gray-600">→</span>
+                                <span className="text-gray-400 dark:text-gray-600">
+                                  →
+                                </span>
                                 <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
-                                  MYR {fxResult.to_amount}
+                                  {baseCurrency} {fxResult.to_amount}
                                 </span>
                                 <span className="text-gray-500 text-xs font-mono">
                                   @ {fxResult.rate}

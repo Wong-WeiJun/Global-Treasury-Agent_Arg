@@ -21,9 +21,7 @@ import { Route as LayoutTeamRouteImport } from './routes/_layout/team'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutReconcileRouteImport } from './routes/_layout/reconcile'
 import { Route as LayoutOrganizationRouteImport } from './routes/_layout/organization'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutHistoryRouteImport } from './routes/_layout/history'
-import { Route as LayoutChatRouteImport } from './routes/_layout/chat'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
 const SignupRoute = SignupRouteImport.update({
@@ -85,19 +83,9 @@ const LayoutOrganizationRoute = LayoutOrganizationRouteImport.update({
   path: '/organization',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutHistoryRoute = LayoutHistoryRouteImport.update({
   id: '/history',
   path: '/history',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutChatRoute = LayoutChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutAdminRoute = LayoutAdminRouteImport.update({
@@ -115,9 +103,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/chat': typeof LayoutChatRoute
   '/history': typeof LayoutHistoryRoute
-  '/items': typeof LayoutItemsRoute
   '/organization': typeof LayoutOrganizationRoute
   '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
@@ -131,9 +117,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
-  '/chat': typeof LayoutChatRoute
   '/history': typeof LayoutHistoryRoute
-  '/items': typeof LayoutItemsRoute
   '/organization': typeof LayoutOrganizationRoute
   '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
@@ -150,9 +134,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
-  '/_layout/chat': typeof LayoutChatRoute
   '/_layout/history': typeof LayoutHistoryRoute
-  '/_layout/items': typeof LayoutItemsRoute
   '/_layout/organization': typeof LayoutOrganizationRoute
   '/_layout/reconcile': typeof LayoutReconcileRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -170,9 +152,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
-    | '/chat'
     | '/history'
-    | '/items'
     | '/organization'
     | '/reconcile'
     | '/settings'
@@ -186,9 +166,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
-    | '/chat'
     | '/history'
-    | '/items'
     | '/organization'
     | '/reconcile'
     | '/settings'
@@ -204,9 +182,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_layout/admin'
-    | '/_layout/chat'
     | '/_layout/history'
-    | '/_layout/items'
     | '/_layout/organization'
     | '/_layout/reconcile'
     | '/_layout/settings'
@@ -310,25 +286,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutOrganizationRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/history': {
       id: '/_layout/history'
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof LayoutHistoryRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/chat': {
-      id: '/_layout/chat'
-      path: '/chat'
-      fullPath: '/chat'
-      preLoaderRoute: typeof LayoutChatRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/admin': {
@@ -343,9 +305,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
-  LayoutChatRoute: typeof LayoutChatRoute
   LayoutHistoryRoute: typeof LayoutHistoryRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutOrganizationRoute: typeof LayoutOrganizationRoute
   LayoutReconcileRoute: typeof LayoutReconcileRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -355,9 +315,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
-  LayoutChatRoute: LayoutChatRoute,
   LayoutHistoryRoute: LayoutHistoryRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
   LayoutOrganizationRoute: LayoutOrganizationRoute,
   LayoutReconcileRoute: LayoutReconcileRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
