@@ -11,7 +11,6 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react"
-import { useState, useEffect } from "react"
 import { FilesService } from "@/client"
 import useAuth from "@/hooks/useAuth"
 import useCurrency from "@/hooks/useCurrency"
@@ -48,253 +47,463 @@ function KPICard({
 }: KPICardProps) {
   const card = (
     <div
-      className={`${colorClass} rounded-xl p-6 border backdrop-blur-md transition-all duration-200 ${link ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg" : ""}`}
+      className={`${colorClass} rounded-xl p-6 border transition-all duration-200 ${link ? "cursor-pointer hover:scale-[1.02] hover:shadow-lg" : ""}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <p className="text-xs font-medium opacity-80 uppercase tracking-wide mb-1">
             {title}
           </p>
-          <h4 className="text-2xl font-bold font-mono tracking-tight">{value}</h4>
+          <p className="text-3xl font-bold">{value}</p>
+          {subtitle && <p className="text-xs opacity-70 mt-1">{subtitle}</p>}
         </div>
-        <div className="p-2.5 rounded-lg bg-white/10 backdrop-blur-sm">
-          <Icon className="size-5 text-white" />
+        <div className="p-3 rounded-lg bg-black/10">
+          <Icon className="size-6" />
         </div>
       </div>
-      {subtitle && (
-        <div className="flex items-center justify-between text-xs pt-2 border-t border-white/10 opacity-90">
-          <span>{subtitle}</span>
-          {trend && <span className="font-medium font-mono">{trend}</span>}
+      {trend && (
+        <div className="flex items-center gap-1 text-xs font-medium opacity-80">
+          <TrendingUp className="size-3" />
+          <span>{trend}</span>
         </div>
       )}
     </div>
   )
 
-  if (link) {
-    return <Link to={link}>{card}</Link>
-  }
-  return card
+  return link ? <Link to={link}>{card}</Link> : card
 }
 
 function Dashboard() {
-  const { user } = useAuth()
-  const { formatAmount } = useCurrency()
-  
-  // Animation Stage States: 0 = User Greeting, 1 = Brand Reveal, 2 = Widgets Rendered
-  const [animationStage, setAnimationStage] = useState<number>(0)
+  const { user: currentUser } = useAuth()
+  const { baseCurrency, formatAmountCompact } = useCurrency()
 
-  const { data } = useQuery({
+  // Fetch documents for dashboard stats
+  const { data: docs, isLoading } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
   })
 
-  useEffect(() => {
-    if (animationStage === 0) {
-      const timer1 = setTimeout(() => setAnimationStage(1), 3000)
-      return () => clearTimeout(timer1)
-    }
-    if (animationStage === 1) {
-      const timer2 = setTimeout(() => setAnimationStage(2), 3000)
-      return () => clearTimeout(timer2)
-    }
-  }, [animationStage])
+  const documents = docs?.data || []
 
-  const skipAnimations = () => {
-    setAnimationStage(2)
+  // Calculate KPIs
+  const totalReconciled = documents.length
+  const pendingReviews = documents.filter(
+    (d) => d.workflow_status === "PENDING_ACTION",
+  ).length
+  const exceptionCases = documents.filter(
+    (d) => d.workflow_status === "EXCEPTION_APPROVED",
+  ).length
+  const highRiskAlerts = documents.filter((d) => d.risk_level === "HIGH").length
+  const approvedCount = documents.filter(
+    (d) => d.workflow_status === "APPROVED",
+  ).length
+
+  // Calculate auto-match rate
+  const matchedDocs = documents.filter((d) => d.ai_result === "MATCHED").length
+  const autoMatchRate =
+    documents.length > 0
+      ? Math.round((matchedDocs / documents.length) * 100)
+      : 0
+
+  // Calculate total reconciled amount
+  const totalAmount = documents.reduce(
+    (sum, d) => sum + (d.base_amount || d.original_amount || 0),
+    0,
+  )
+
+  // Get needs attention items (high priority)
+  const needsAttention = documents
+    .filter(
+      (d) =>
+        d.workflow_status === "PENDING_ACTION" ||
+        d.risk_level === "HIGH" ||
+        d.ai_result === "UNMATCHED",
+    )
+    .slice(0, 5)
+
+  // Recent activity
+  const recentActivity = documents
+    .sort(
+      (a, b) =>
+        new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime(),
+    )
+    .slice(0, 5)
+
+  // AI Insights (pattern detection)
+  const aiInsights = []
+  const fuzzyMatches = documents.filter((d) => d.ai_result === "FUZZY_MATCH")
+  if (fuzzyMatches.length > 0) {
+    const avgConfidence =
+      fuzzyMatches.reduce((sum, d) => sum + (d.ai_confidence || 0), 0) /
+      fuzzyMatches.length
+    aiInsights.push({
+      type: "pattern",
+      message: `${Math.round(avgConfidence * 100)}% average confidence on fuzzy matches - AI learning patterns`,
+      severity: "info",
+    })
   }
 
-  const docDataList = data?.data || []
-  const pendingReviews = docDataList.filter((d: any) => d.workflow_status === "PENDING_ACTION").length
-  const highRiskCount = docDataList.filter((d: any) => d.risk_level === "HIGH").length
-  const totalProcessed = docDataList.length
+  if (highRiskAlerts > 0) {
+    aiInsights.push({
+      type: "risk",
+      message: `${highRiskAlerts} high-risk transactions detected requiring immediate review`,
+      severity: "high",
+    })
+  }
 
-  const verifiedMatches = docDataList.filter((d: any) => d.workflow_status === "APPROVED" || d.workflow_status === "EXCEPTION_APPROVED")
-  const totalVolume = verifiedMatches.reduce((acc: number, d: any) => {
-    const amt = parseFloat(d.extracted_data?.myr_amount || d.extracted_data?.amount || "0")
-    return acc + (isNaN(amt) ? 0 : amt)
-  }, 0)
+  // Currency distribution
+  const currencyMap = new Map<string, number>()
+  documents.forEach((d) => {
+    const currency = d.original_currency || d.base_currency || "MYR"
+    currencyMap.set(currency, (currencyMap.get(currency) || 0) + 1)
+  })
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] w-full text-white overflow-hidden p-6">
-      {/* Global Embedded Keyframe Animations Injection */}
-      <style>{`
-        @keyframes customZoomIn {
-          0% {
-            opacity: 0;
-            transform: scale3d(0.3, 0.3, 0.3);
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 1;
-            transform: scale3d(1, 1, 1);
-          }
-        }
-        @keyframes customFadeOut {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        .animate-zoom-fade {
-          animation: customZoomIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-                     customFadeOut 0.6s cubic-bezier(0.16, 1, 0.3, 1) 2.4s forwards;
-        }
-        .animate-widget-zoom {
-          animation: customZoomIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}</style>
-
-      {/* Deep Immersive GIF Background Layer with Darkness Filter Mask */}
-      <div 
-        className="absolute inset-0 z-0 bg-cover bg-center" 
-        style={{ backgroundImage: "url('/assets/Dashboard/nightdashboard.gif')" }}
-      />
-      <div className="absolute inset-0 z-0 bg-black/70 backdrop-blur-sm" />
-
-      {/* Interactive Animation Se quence Wrapper */}
-      {animationStage < 2 ? (
-        <div 
-          onClick={skipAnimations}
-          className="fixed inset-0 w-screen h-screen z-[999] flex flex-col items-center justify-center cursor-pointer select-none px-4 bg-transparent"
-          title="Click anywhere to skip introductory layout metrics"
-        >
-          {animationStage === 0 && (
-            <div className="text-center animate-zoom-fade max-w-4xl px-6">
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-100 to-gray-400 drop-shadow-2xl whitespace-normal">
-                Welcome back, {user?.full_name || user?.email || "Operator"}
-              </h1>
-            </div>
-          )}
-
-          {animationStage === 1 && (
-            <div className="text-center animate-zoom-fade flex flex-col gap-4 max-w-4xl px-6">
-              <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter text-blue-400 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
-                MyAudit
-              </h1>
-              <h2 className="text-xl md:text-3xl text-gray-300 font-medium tracking-wide opacity-90">
-                Your Treasury Operations Center
-              </h2>
-            </div>
-          )}
-          
-          <div className="absolute bottom-12 text-xs font-mono text-gray-500 tracking-widest uppercase animate-pulse bg-black/40 px-3 py-1.5 rounded-full border border-white/5">
-            Click anywhere to skip sequence ↗
-          </div>
+    <div className="max-w-7xl mx-auto p-6 flex flex-col gap-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Treasury Operations Center
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Welcome back, {currentUser?.full_name || currentUser?.email}
+          </p>
         </div>
-      ) : (
-        /* Final Real-time Operational Widgets Frame Grid Layout */
-        <div className="relative z-10 max-w-7xl mx-auto flex flex-col gap-8 animate-widget-zoom">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight">Operational Overview</h1>
-              <p className="text-sm text-gray-400 mt-1">
-                Real-time tracking of automated cross-border matching mechanics and active risks.
-              </p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Total Reconciled"
+          value={formatAmountCompact(totalAmount, baseCurrency)}
+          subtitle={`${totalReconciled} documents`}
+          icon={DollarSign}
+          colorClass="bg-blue-950/40 text-blue-100 border-blue-800/60"
+          link="/history"
+        />
+        <KPICard
+          title="Auto-Match Rate"
+          value={`${autoMatchRate}%`}
+          subtitle={`${matchedDocs} of ${documents.length} auto-matched`}
+          trend="+12% this week"
+          icon={CheckCircle2}
+          colorClass="bg-green-950/40 text-green-100 border-green-800/60"
+        />
+        <KPICard
+          title="Pending Reviews"
+          value={pendingReviews}
+          subtitle="requires attention"
+          icon={Clock}
+          colorClass="bg-yellow-950/40 text-yellow-100 border-yellow-800/60"
+          link="/history"
+        />
+        <KPICard
+          title="High Risk Alerts"
+          value={highRiskAlerts}
+          subtitle={`${exceptionCases} exception cases`}
+          icon={AlertTriangle}
+          colorClass="bg-red-950/40 text-red-100 border-red-800/60"
+          link="/history"
+        />
+      </div>
+
+      {/* AI Attention Center */}
+      {(needsAttention.length > 0 || aiInsights.length > 0) && (
+        <section className="bg-gradient-to-br from-purple-950/40 to-blue-950/40 border border-purple-800/60 rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-purple-600/20">
+              <Zap className="size-5 text-purple-300" />
             </div>
-            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 backdrop-blur-sm text-xs font-mono text-gray-300">
-              <Zap className="size-4 text-amber-400 animate-pulse" />
-              <span>Pipeline Engine status: Active</span>
-            </div>
+            <h2 className="text-xl font-bold text-white">
+              ⚡ AI Attention Center
+            </h2>
           </div>
 
-          {/* Primary Top Metric Summary Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            <KPICard
-              title="Total Audited Volume"
-              value={formatAmount(totalVolume)}
-              subtitle="Settled & approved payments"
-              icon={DollarSign}
-              colorClass="bg-gradient-to-br from-blue-950/40 to-blue-900/20 border-blue-800/40 text-blue-200"
-            />
-            <KPICard
-              title="Needs Review"
-              value={pendingReviews}
-              subtitle="Pending analyst verification"
-              icon={Clock}
-              colorClass="bg-gradient-to-br from-amber-950/40 to-amber-900/20 border-amber-800/40 text-amber-200"
-              link="/history"
-            />
-            <KPICard
-              title="High Risk Anomalies"
-              value={highRiskCount}
-              subtitle="Critical variance thresholds"
-              icon={AlertTriangle}
-              colorClass="bg-gradient-to-br from-red-950/40 to-red-900/20 border-red-800/40 text-red-200"
-              link="/history"
-            />
-            <KPICard
-              title="Total Pipelines Run"
-              value={totalProcessed}
-              subtitle="Historical payload runs"
-              icon={TrendingUp}
-              colorClass="bg-gradient-to-br from-zinc-900/60 to-zinc-800/30 border-zinc-700/40 text-zinc-300"
-            />
-          </div>
-
-          {/* Secondary Quick Jump Gateway Navigation Anchors Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link
-              to="/reconcile"
-              className="group p-6 bg-gradient-to-br from-blue-950/40 to-blue-900/20 border border-blue-800/40 hover:border-blue-700 rounded-xl transition-all shadow-lg backdrop-blur-sm"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <FileText className="size-6 text-blue-400" />
+          {/* AI Insights */}
+          {aiInsights.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {aiInsights.map((insight, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 p-3 rounded-lg ${
+                    insight.severity === "high"
+                      ? "bg-red-950/40 border border-red-800/60"
+                      : "bg-blue-950/40 border border-blue-800/60"
+                  }`}
+                >
+                  <AlertCircle
+                    className={`size-5 mt-0.5 ${insight.severity === "high" ? "text-red-400" : "text-blue-400"}`}
+                  />
+                  <p className="text-sm text-gray-200">{insight.message}</p>
                 </div>
-                <ArrowRight className="size-5 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-1">
-                Upload Documents
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Execute cross-border batch document extraction workflows against core payment tracking structures.
-              </p>
-            </Link>
-
-            <Link
-              to="/history"
-              className="group p-6 bg-gradient-to-br from-purple-950/40 to-purple-900/20 border border-purple-800/40 hover:border-purple-700 rounded-xl transition-all shadow-lg backdrop-blur-sm"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <Clock className="size-6 text-purple-400" />
-                </div>
-                <ArrowRight className="size-5 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-1">Review Queue</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Investigate automated discrepancies, clear fuzzy exceptions, and audit historical metadata records.
-              </p>
-            </Link>
-
-            <Link
-              to="/team"
-              className="group p-6 bg-gradient-to-br from-green-950/40 to-green-900/20 border border-green-800/40 hover:border-green-700 rounded-xl transition-all shadow-lg backdrop-blur-sm"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-green-500/10 rounded-xl group-hover:scale-110 transition-transform">
-                  <CheckCircle2 className="size-6 text-green-400" />
-                </div>
-                <ArrowRight className="size-5 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-1">Team Controls</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">
-                Provision organizational clearance hierarchies, track operator oversight loops, and control scopes.
-              </p>
-            </Link>
-          </div>
-
-          {/* Quick Informational Risk Warning Callout Banner */}
-          {highRiskCount > 0 && (
-            <div className="bg-red-950/30 border border-red-900/40 rounded-xl p-4 flex gap-3 items-start backdrop-blur-sm">
-              <AlertCircle className="size-5 text-red-400 shrink-0 mt-0.5 animate-pulse" />
-              <div className="text-xs text-red-200/90 leading-relaxed">
-                <strong>Attention Required:</strong> There are currently {highRiskCount} un-cleared items flagged as critical variance high risk. Please ensure cross-border clearing compliance protocols are monitored within active audit cycles.
-              </div>
+              ))}
             </div>
           )}
-        </div>
+
+          {/* Needs Attention Queue */}
+          {needsAttention.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-purple-300 uppercase font-semibold tracking-wide mb-3">
+                Requires Immediate Attention ({needsAttention.length})
+              </p>
+              {needsAttention.map((doc) => (
+                <Link
+                  key={doc.id}
+                  to="/history"
+                  className="block p-4 bg-black/20 hover:bg-black/30 rounded-lg border border-purple-700/40 hover:border-purple-600/60 transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {doc.original_filename}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs text-gray-400">
+                          {doc.ai_result === "UNMATCHED"
+                            ? "Payer mismatch"
+                            : doc.risk_level === "HIGH"
+                              ? "High risk detected"
+                              : "Requires review"}
+                        </span>
+                        {doc.risk_level && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-bold ${
+                              doc.risk_level === "HIGH"
+                                ? "bg-red-900/50 text-red-300"
+                                : doc.risk_level === "MEDIUM"
+                                  ? "bg-yellow-900/50 text-yellow-300"
+                                  : "bg-green-900/50 text-green-300"
+                            }`}
+                          >
+                            {doc.risk_level}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ArrowRight className="size-4 text-purple-400" />
+                  </div>
+                </Link>
+              ))}
+              <Link
+                to="/history"
+                className="block text-center text-purple-400 hover:text-purple-300 text-sm font-medium mt-3"
+              >
+                View all pending reviews →
+              </Link>
+            </div>
+          )}
+        </section>
       )}
+
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Recent Activity
+          </h2>
+          {isLoading ? (
+            <p className="text-sm text-gray-500">Loading...</p>
+          ) : recentActivity.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="size-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No documents yet</p>
+              <Link
+                to="/reconcile"
+                className="inline-block mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                Upload your first document →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentActivity.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                >
+                  <div
+                    className={`p-2 rounded-lg ${
+                      doc.ai_result === "MATCHED"
+                        ? "bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400"
+                        : doc.ai_result === "FUZZY_MATCH"
+                          ? "bg-yellow-100 dark:bg-yellow-950/40 text-yellow-600 dark:text-yellow-400"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                    }`}
+                  >
+                    <FileText className="size-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {doc.original_filename}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(doc.uploaded_at).toLocaleDateString()} •{" "}
+                      {doc.workflow_status
+                        ? doc.workflow_status
+                            .replace(/_/g, " ")
+                            .toLowerCase()
+                            .replace(/^\w/, (c) => c.toUpperCase())
+                        : "Processing"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Currency Analytics */}
+        <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Currency Distribution
+          </h2>
+          {currencyMap.size === 0 ? (
+            <div className="text-center py-8">
+              <DollarSign className="size-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">
+                No currency data available
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {Array.from(currencyMap.entries())
+                .sort((a, b) => b[1] - a[1])
+                .map(([currency, count]) => {
+                  const percentage = Math.round(
+                    (count / documents.length) * 100,
+                  )
+                  return (
+                    <div key={currency}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {currency}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {count} docs ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              {documents.some(
+                (d) =>
+                  d.original_currency &&
+                  d.base_currency &&
+                  d.original_currency !== d.base_currency,
+              ) && (
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
+                  <p className="text-xs text-green-800 dark:text-green-300 font-medium">
+                    💱 FX Normalization Active
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                    Multi-currency transactions automatically converted to base
+                    currency for reconciliation
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* Reconciliation Trends */}
+      <section className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+          Reconciliation Summary
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                Matched
+              </p>
+              <CheckCircle2 className="size-5 text-green-600 dark:text-green-400" />
+            </div>
+            <p className="text-2xl font-bold text-green-900 dark:text-green-200">
+              {matchedDocs}
+            </p>
+            <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+              Auto-approved by AI
+            </p>
+          </div>
+
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800/40">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                Fuzzy Match
+              </p>
+              <AlertCircle className="size-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-200">
+              {fuzzyMatches.length}
+            </p>
+            <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+              Pending human review
+            </p>
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-gray-800 dark:text-gray-300">
+                Approved
+              </p>
+              <CheckCircle2 className="size-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-200">
+              {approvedCount}
+            </p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+              Completed workflows
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Actions */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link
+          to="/reconcile"
+          className="p-6 bg-gradient-to-br from-blue-950/40 to-blue-900/40 hover:from-blue-950/60 hover:to-blue-900/60 border border-blue-800/60 rounded-xl transition-all"
+        >
+          <FileText className="size-8 text-blue-300 mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">
+            Upload Documents
+          </h3>
+          <p className="text-sm text-blue-200">
+            Start AI reconciliation workflow
+          </p>
+        </Link>
+
+        <Link
+          to="/history"
+          className="p-6 bg-gradient-to-br from-purple-950/40 to-purple-900/40 hover:from-purple-950/60 hover:to-purple-900/60 border border-purple-800/60 rounded-xl transition-all"
+        >
+          <Clock className="size-8 text-purple-300 mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">Review Queue</h3>
+          <p className="text-sm text-purple-200">
+            {pendingReviews} items need attention
+          </p>
+        </Link>
+
+        <Link
+          to="/team"
+          className="p-6 bg-gradient-to-br from-green-950/40 to-green-900/40 hover:from-green-950/60 hover:to-green-900/60 border border-green-800/60 rounded-xl transition-all"
+        >
+          <TrendingUp className="size-8 text-green-300 mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">Team Activity</h3>
+          <p className="text-sm text-green-200">Manage organization members</p>
+        </Link>
+      </section>
     </div>
   )
 }
+
+export default Dashboard
