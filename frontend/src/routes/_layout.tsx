@@ -63,13 +63,13 @@ function Layout() {
   }
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-zinc-50/85 dark:bg-zinc-950/85 backdrop-blur-sm">
+    <div className="relative min-h-screen w-full flex flex-col bg-blue-50 dark:bg-zinc-900">
       <IconParticleBackground
         icons={pageIcons}
-        className="z-0 text-zinc-500 dark:text-zinc-400"
+        className="z-0 text-blue-600 dark:text-zinc-500"
       />
 
-      <header className="sticky top-0 z-50 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-all">
+      <header className="sticky top-0 z-50 w-full border-b border-blue-900 bg-blue-950 dark:bg-blue-950 backdrop-blur-md transition-all">
         <TopNavbar />
       </header>
 

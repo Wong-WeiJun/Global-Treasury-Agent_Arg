@@ -171,7 +171,7 @@ function Dashboard() {
           value={formatAmountCompact(totalAmount, baseCurrency)}
           subtitle={`${totalReconciled} documents`}
           icon={DollarSign}
-          colorClass="bg-blue-50/80 text-blue-900 border-blue-200 dark:bg-blue-950/50 dark:text-blue-100 dark:border-blue-800/60"
+          colorClass="bg-white/90 text-blue-900 border-blue-200 dark:bg-blue-900/60 dark:text-blue-100 dark:border-blue-700/60"
           link="/history"
         />
         <KPICard

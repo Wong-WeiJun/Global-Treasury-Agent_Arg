@@ -15,9 +15,9 @@ const socialLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t py-4 px-6">
+    <footer className="border-t border-blue-900 bg-blue-950 dark:bg-blue-950 py-4 px-6">
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-        <p className="text-muted-foreground text-sm">
+        <p className="text-blue-200 text-sm">
           MyAudit - The Global Treasury Agent
         </p>
         <div className="flex items-center gap-4">
@@ -28,7 +28,7 @@ export function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-blue-200 hover:text-white transition-colors"
             >
               <Icon className="h-5 w-5" />
             </a>
