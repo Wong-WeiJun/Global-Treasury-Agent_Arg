@@ -122,3 +122,13 @@
     cursor: pointer;
   }
 }
+
+@keyframes expandRow {
+  from { opacity: 0; transform: scaleY(0.92); transform-origin: top; }
+  to   { opacity: 1; transform: scaleY(1);    transform-origin: top; }
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

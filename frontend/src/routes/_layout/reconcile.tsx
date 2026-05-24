@@ -1,133 +1,163 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ShieldAlert } from "lucide-react"
-import { useEffect, useState } from "react"
-import { FilesService, ReconciliationService } from "../../client"
-import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
-import { useUserRole } from "../../hooks/useUserRole"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import useAuth from "@/hooks/useAuth";
+import { FilesService, ReconciliationService } from "../../client";
+import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel";
+import { useUserRole } from "../../hooks/useUserRole";
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
-})
+});
 
 interface BankEntry {
-  amount: string
-  date: string
-  description: string
-  payer: string
+  amount: string;
+  date: string;
+  description: string;
+  payer: string;
 }
 
 interface DocumentWithEntries {
-  docId: string
-  docName: string
-  extractedData: any
-  bankEntries: BankEntry[]
-  collapsed: boolean
+  docId: string;
+  docName: string;
+  extractedData: any;
+  bankEntries: BankEntry[];
+  collapsed: boolean;
 }
 
-const emptyEntry = (): BankEntry => ({
+const emptyEntry = (defaultPayer = ""): BankEntry => ({
   amount: "",
   date: "",
   description: "",
-  payer: "",
-})
+  payer: defaultPayer,
+});
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     matched: "bg-green-900 text-green-300 border border-green-700",
     fuzzy: "bg-yellow-900 text-yellow-300 border border-yellow-700",
     unmatched: "bg-red-900 text-red-300 border border-red-700",
-  }
+  };
   const labels: Record<string, string> = {
     matched: "✓ Matched",
     fuzzy: "~ Fuzzy Match",
     unmatched: "✗ Unmatched",
-  }
+  };
   return (
     <span
       className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  )
+  );
 }
 
 function ReconcilePage() {
-  const navigate = useNavigate()
-  const { canReconcile, role, isViewer } = useUserRole()
-  const [setRecord] = useState<any>(null)
-  const queryClient = useQueryClient()
-  const [mode, setMode] = useState<"single" | "bulk">("single")
-  const [selectedDocId, setSelectedDocId] = useState<string>("")
+  const navigate = useNavigate();
+  const { canReconcile, role, isViewer } = useUserRole();
+  const [setRecord] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+
+  const defaultUserIdentity =
+    currentUser?.full_name || currentUser?.email || "";
+
+  const [mode, setMode] = useState<"single" | "bulk">("single");
+  const [selectedDocId, setSelectedDocId] = useState<string>("");
   const [documentsWithEntries, setDocumentsWithEntries] = useState<
     DocumentWithEntries[]
-  >([])
+  >([]);
   const [uploadedFiles, setUploadedFiles] = useState<
     Array<{ id: string; name: string; status: string }>
-  >([])
-  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()])
-  const [reconciling, setReconciling] = useState(false)
-  const [bulkReconciling, setBulkReconciling] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  >([]);
+  const [bankEntries, setBankEntries] = useState<BankEntry[]>([
+    emptyEntry(defaultUserIdentity),
+  ]);
+  const [reconciling, setReconciling] = useState(false);
+  const [bulkReconciling, setBulkReconciling] = useState(false);
+  const [result, setResult] = useState<any>(null);
   const [bulkResults, setBulkResults] = useState<
     Array<{ docId: string; docName: string; result: any; error?: string }>
-  >([])
-  const [error, setError] = useState<string | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [selectedFileType, setSelectedFileType] = useState<string>("")
-  const [_csvImporting, setCsvImporting] = useState(false)
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFileType, setSelectedFileType] = useState<string>("");
+  const [_csvImporting, setCsvImporting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Sync state if initial rendering occurs prior to useAuth completing context collection
+  useEffect(() => {
+    if (
+      defaultUserIdentity &&
+      bankEntries.length === 1 &&
+      bankEntries[0].payer === ""
+    ) {
+      setBankEntries([emptyEntry(defaultUserIdentity)]);
+    }
+  }, [defaultUserIdentity, bankEntries.length, bankEntries[0].payer]);
+
+  // Listen for the Escape key to instantly drop out of full-screen view
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsModalOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen]);
 
   // Fetch available documents (hook must be called unconditionally)
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  })
+  });
 
   // Find the currently selected document to show its pre-extraction details
-  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId)
+  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId);
 
   // Cast extracted_data to a usable record structure safely for TS rendering
   const extractedData = selectedDoc?.extracted_data as
     | Record<string, any>
     | null
-    | undefined
+    | undefined;
 
   // Combined Upload + Extract Mutation Flow
   const uploadAndExtractMutation = useMutation({
     mutationFn: async (file: File) => {
       const uploadRes = (await FilesService.uploadFile({
         formData: { file },
-      })) as any
-      const docId = uploadRes.document.id
-      const fileType = uploadRes.document.file_type
-      await FilesService.extractDocument({ documentId: docId })
-      return { docId, fileType }
+      })) as any;
+      const docId = uploadRes.document.id;
+      const fileType = uploadRes.document.file_type;
+      await FilesService.extractDocument({ documentId: docId });
+      return { docId, fileType };
     },
     onSuccess: async ({ docId, fileType }) => {
-      queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-      setSelectedDocId(docId)
-      setSelectedFileType(fileType)
+      queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+      setSelectedDocId(docId);
+      setSelectedFileType(fileType);
       // Fetch presigned URL for preview
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: docId,
-        })) as { url: string }
-        setPreviewUrl(res.url)
+        })) as { url: string };
+        setPreviewUrl(res.url);
       } catch {
         /* preview unavailable */
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.detail ?? "Upload or extraction failed.")
+      setError(err?.body?.detail ?? "Upload or extraction failed.");
     },
-  })
+  });
 
   // Redirect viewers to dashboard
   useEffect(() => {
     if (role && !canReconcile) {
-      navigate({ to: "/" })
+      navigate({ to: "/" });
     }
-  }, [role, canReconcile, navigate])
+  }, [role, canReconcile, navigate]);
 
   // Show access denied for viewers (after all hooks are called)
   if (isViewer) {
@@ -159,42 +189,42 @@ function ReconcilePage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setError(null)
+      setError(null);
 
       // Check if it's a CSV file
       if (file.name.toLowerCase().endsWith(".csv")) {
-        handleCSVPaymentProofUpload(file)
+        handleCSVPaymentProofUpload(file);
       } else {
-        uploadAndExtractMutation.mutate(file)
+        uploadAndExtractMutation.mutate(file);
       }
     }
-  }
+  };
 
   // Handle CSV payment proof upload
   const handleCSVPaymentProofUpload = async (file: File) => {
-    setCsvImporting(true)
-    const reader = new FileReader()
+    setCsvImporting(true);
+    const reader = new FileReader();
 
     reader.onload = async (event) => {
       try {
-        const text = event.target?.result as string
-        const lines = text.split("\n").filter((line) => line.trim())
+        const text = event.target?.result as string;
+        const lines = text.split("\n").filter((line) => line.trim());
 
         // Expected format: amount,currency,date,payer,payee,description
-        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0;
 
         const proofData = lines
           .slice(startIdx)
           .map((line) => {
             const [amount, currency, date, payer, payee, description] = line
               .split(",")
-              .map((s) => s.trim())
+              .map((s) => s.trim());
             return {
               amount: parseFloat(amount),
               currency: currency || "MYR",
@@ -202,21 +232,21 @@ function ReconcilePage() {
               payer: payer || "",
               payee: payee || "",
               description: description || "",
-            }
+            };
           })
-          .filter((e) => e.amount && e.date)
+          .filter((e) => e.amount && e.date);
 
         if (proofData.length === 0) {
-          setError("CSV file contains no valid payment proof entries")
-          setCsvImporting(false)
-          return
+          setError("CSV file contains no valid payment proof entries");
+          setCsvImporting(false);
+          return;
         }
 
         // For single mode, use first entry
         if (mode === "single") {
-          const proof = proofData[0]
+          const proof = proofData[0];
           // Create a mock document with CSV data
-          setSelectedDocId(`csv-${Date.now()}`)
+          setSelectedDocId(`csv-${Date.now()}`);
           setResult({
             proof,
             agent_decision: {
@@ -224,7 +254,7 @@ function ReconcilePage() {
               confidence: 0,
               explanation: "CSV import - please add bank entries to reconcile",
             },
-          })
+          });
         } else {
           // For bulk mode, create documents for each CSV row
           proofData.forEach((proof, idx) => {
@@ -234,52 +264,52 @@ function ReconcilePage() {
                 docId: `csv-${Date.now()}-${idx}`,
                 docName: `CSV Entry ${idx + 1}: ${proof.currency} ${proof.amount}`,
                 extractedData: proof,
-                bankEntries: [emptyEntry()],
+                bankEntries: [emptyEntry(defaultUserIdentity)],
                 collapsed: false,
               },
-            ])
-          })
+            ]);
+          });
         }
 
-        setCsvImporting(false)
+        setCsvImporting(false);
       } catch (_err) {
-        setError("Failed to parse CSV payment proof file")
-        setCsvImporting(false)
+        setError("Failed to parse CSV payment proof file");
+        setCsvImporting(false);
       }
-    }
+    };
 
-    reader.readAsText(file)
-  }
+    reader.readAsText(file);
+  };
 
   // Bulk upload handler with parallel processing
   const handleBulkFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    setError(null)
-    setUploadedFiles([])
+    setError(null);
+    setUploadedFiles([]);
 
     // Process files in parallel with concurrency limit of 3
     const processFile = async (file: File) => {
-      const tempId = `temp-${Date.now()}-${Math.random()}`
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
       setUploadedFiles((prev) => [
         ...prev,
         { id: tempId, name: file.name, status: "uploading" },
-      ])
+      ]);
 
       try {
         const uploadRes = (await FilesService.uploadFile({
           formData: { file },
-        })) as any
-        const docId = uploadRes.document.id
-        await FilesService.extractDocument({ documentId: docId })
+        })) as any;
+        const docId = uploadRes.document.id;
+        await FilesService.extractDocument({ documentId: docId });
 
         // Fetch the updated document with extracted data
-        await queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-        const docsData = await FilesService.listMyDocuments()
-        const doc = (docsData as any).data.find((d: any) => d.id === docId)
+        await queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+        const docsData = await FilesService.listMyDocuments();
+        const doc = (docsData as any).data.find((d: any) => d.id === docId);
 
         setUploadedFiles((prev) =>
           prev.map((f) =>
@@ -287,7 +317,7 @@ function ReconcilePage() {
               ? { id: docId, name: file.name, status: "extracted" }
               : f,
           ),
-        )
+        );
 
         // Add to documents with entries
         setDocumentsWithEntries((prev) => [
@@ -299,39 +329,39 @@ function ReconcilePage() {
             bankEntries: [emptyEntry()],
             collapsed: false,
           },
-        ])
+        ]);
 
-        return { success: true, docId }
+        return { success: true, docId };
       } catch (err: any) {
         setUploadedFiles((prev) =>
           prev.map((f) => (f.id === tempId ? { ...f, status: "error" } : f)),
-        )
-        return { success: false, error: err }
+        );
+        return { success: false, error: err };
       }
-    }
+    };
 
     // Process with concurrency limit
-    const concurrencyLimit = 3
-    const results = []
+    const concurrencyLimit = 3;
+    const results = [];
     for (let i = 0; i < files.length; i += concurrencyLimit) {
-      const batch = files.slice(i, i + concurrencyLimit)
-      const batchResults = await Promise.all(batch.map(processFile))
-      results.push(...batchResults)
+      const batch = files.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(batch.map(processFile));
+      results.push(...batchResults);
     }
 
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   // Handle selecting existing documents for bulk
   const handleToggleDocument = async (docId: string) => {
-    const exists = documentsWithEntries.find((d) => d.docId === docId)
+    const exists = documentsWithEntries.find((d) => d.docId === docId);
 
     if (exists) {
       // Remove from selection
-      setDocumentsWithEntries((prev) => prev.filter((d) => d.docId !== docId))
+      setDocumentsWithEntries((prev) => prev.filter((d) => d.docId !== docId));
     } else {
       // Add to selection - fetch document data
-      const doc = docs?.data.find((d: any) => d.id === docId)
+      const doc = docs?.data.find((d: any) => d.id === docId);
       if (doc) {
         setDocumentsWithEntries((prev) => [
           ...prev,
@@ -342,91 +372,91 @@ function ReconcilePage() {
             bankEntries: [emptyEntry()],
             collapsed: true,
           },
-        ])
+        ]);
       }
     }
-  }
+  };
 
   // CSV Import for bank entries
   const handleCSVImport = (
     docIndex: number,
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setCsvImporting(true)
-    const reader = new FileReader()
+    setCsvImporting(true);
+    const reader = new FileReader();
 
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string
-        const lines = text.split("\n").filter((line) => line.trim())
+        const text = event.target?.result as string;
+        const lines = text.split("\n").filter((line) => line.trim());
 
         // Skip header if present
-        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0;
 
         const entries: BankEntry[] = lines
           .slice(startIdx)
           .map((line) => {
             const [amount, date, payer, description] = line
               .split(",")
-              .map((s) => s.trim())
+              .map((s) => s.trim());
             return {
               amount: amount || "",
               date: date || "",
               payer: payer || "",
               description: description || "",
-            }
+            };
           })
-          .filter((e) => e.amount && e.date)
+          .filter((e) => e.amount && e.date);
 
         if (entries.length > 0) {
           setDocumentsWithEntries((prev) =>
             prev.map((doc, idx) =>
               idx === docIndex ? { ...doc, bankEntries: entries } : doc,
             ),
-          )
+          );
         } else {
-          setError("CSV file contains no valid entries")
+          setError("CSV file contains no valid entries");
         }
       } catch (_err) {
-        setError("Failed to parse CSV file")
+        setError("Failed to parse CSV file");
       } finally {
-        setCsvImporting(false)
+        setCsvImporting(false);
       }
-    }
+    };
 
-    reader.readAsText(file)
-  }
+    reader.readAsText(file);
+  };
 
   const handleBulkReconcile = async () => {
     if (documentsWithEntries.length === 0) {
-      setError("Please upload or select documents for bulk reconciliation.")
-      return
+      setError("Please upload or select documents for bulk reconciliation.");
+      return;
     }
 
     // Validate each document has at least one bank entry
     const invalidDocs = documentsWithEntries.filter(
       (doc) => doc.bankEntries.filter((e) => e.amount && e.date).length === 0,
-    )
+    );
 
     if (invalidDocs.length > 0) {
       setError(
         `Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`,
-      )
-      return
+      );
+      return;
     }
 
-    setBulkReconciling(true)
-    setError(null)
-    setBulkResults([])
+    setBulkReconciling(true);
+    setError(null);
+    setBulkResults([]);
 
     // Parallel processing with concurrency limit of 5
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
-      )
+      );
 
       try {
         const res = (await ReconciliationService.reconcileDocument({
@@ -439,14 +469,14 @@ function ReconcilePage() {
               payer: e.payer || undefined,
             })),
           },
-        })) as any
+        })) as any;
 
         return {
           docId: docWithEntries.docId,
           docName: docWithEntries.docName,
           result: res.result,
           success: true,
-        }
+        };
       } catch (err: any) {
         return {
           docId: docWithEntries.docId,
@@ -454,48 +484,48 @@ function ReconcilePage() {
           result: null,
           error: err?.body?.detail ?? "Reconciliation failed",
           success: false,
-        }
+        };
       }
-    }
+    };
 
     // Process in batches of 5 for parallel execution
-    const concurrencyLimit = 5
+    const concurrencyLimit = 5;
     const results: Array<{
-      docId: string
-      docName: string
-      result: any
-      error?: string
-      success?: boolean
-    }> = []
+      docId: string;
+      docName: string;
+      result: any;
+      error?: string;
+      success?: boolean;
+    }> = [];
 
     for (let i = 0; i < documentsWithEntries.length; i += concurrencyLimit) {
-      const batch = documentsWithEntries.slice(i, i + concurrencyLimit)
-      const batchResults = await Promise.all(batch.map(reconcileDocument))
-      results.push(...batchResults)
+      const batch = documentsWithEntries.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(batch.map(reconcileDocument));
+      results.push(...batchResults);
 
       // Update progress
-      setBulkResults([...results])
+      setBulkResults([...results]);
     }
 
-    setBulkReconciling(false)
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    setBulkReconciling(false);
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   // Retry failed documents
   const handleRetryFailed = async () => {
     const failedDocs = bulkResults
       .filter((r) => r.error)
       .map((r) => documentsWithEntries.find((d) => d.docId === r.docId))
-      .filter(Boolean) as DocumentWithEntries[]
+      .filter(Boolean) as DocumentWithEntries[];
 
-    if (failedDocs.length === 0) return
+    if (failedDocs.length === 0) return;
 
-    setBulkReconciling(true)
+    setBulkReconciling(true);
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
-      )
+      );
 
       try {
         const res = (await ReconciliationService.reconcileDocument({
@@ -508,14 +538,14 @@ function ReconcilePage() {
               payer: e.payer || undefined,
             })),
           },
-        })) as any
+        })) as any;
 
         return {
           docId: docWithEntries.docId,
           docName: docWithEntries.docName,
           result: res.result,
           success: true,
-        }
+        };
       } catch (err: any) {
         return {
           docId: docWithEntries.docId,
@@ -523,23 +553,23 @@ function ReconcilePage() {
           result: null,
           error: err?.body?.detail ?? "Reconciliation failed",
           success: false,
-        }
+        };
       }
-    }
+    };
 
-    const retryResults = await Promise.all(failedDocs.map(reconcileDocument))
+    const retryResults = await Promise.all(failedDocs.map(reconcileDocument));
 
     // Update results - replace failed with retry results
     setBulkResults((prev) =>
       prev.map((r) => {
-        const retryResult = retryResults.find((rr) => rr.docId === r.docId)
-        return retryResult || r
+        const retryResult = retryResults.find((rr) => rr.docId === r.docId);
+        return retryResult || r;
       }),
-    )
+    );
 
-    setBulkReconciling(false)
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    setBulkReconciling(false);
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   // Helper functions for managing document entries
   const updateDocumentEntry = (
@@ -559,18 +589,24 @@ function ReconcilePage() {
             }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const addDocumentEntry = (docIndex: number) => {
     setDocumentsWithEntries((prev) =>
       prev.map((doc, idx) =>
         idx === docIndex
-          ? { ...doc, bankEntries: [...doc.bankEntries, emptyEntry()] }
+          ? {
+              ...doc,
+              bankEntries: [
+                ...doc.bankEntries,
+                emptyEntry(defaultUserIdentity),
+              ],
+            }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const removeDocumentEntry = (docIndex: number, entryIndex: number) => {
     setDocumentsWithEntries((prev) =>
@@ -584,91 +620,94 @@ function ReconcilePage() {
             }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const toggleDocumentCollapse = (docIndex: number) => {
     setDocumentsWithEntries((prev) =>
       prev.map((doc, idx) =>
         idx === docIndex ? { ...doc, collapsed: !doc.collapsed } : doc,
       ),
-    )
-  }
+    );
+  };
 
   const removeDocument = (docIndex: number) => {
-    setDocumentsWithEntries((prev) => prev.filter((_, idx) => idx !== docIndex))
-  }
+    setDocumentsWithEntries((prev) =>
+      prev.filter((_, idx) => idx !== docIndex),
+    );
+  };
 
   const handleDocSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value
-    setSelectedDocId(id)
-    setPreviewUrl(null)
-    if (!id) return
-    const doc = docs?.data.find((d: any) => d.id === id)
-    setSelectedFileType(doc?.file_type ?? "")
+    const id = e.target.value;
+    setSelectedDocId(id);
+    setPreviewUrl(null);
+    if (!id) return;
+    const doc = docs?.data.find((d: any) => d.id === id);
+    setSelectedFileType(doc?.file_type ?? "");
     try {
       const res = (await FilesService.getDownloadUrl({
         documentId: id,
-      })) as { url: string }
-      setPreviewUrl(res.url)
+      })) as { url: string };
+      setPreviewUrl(res.url);
     } catch {
       /* unavailable */
     }
-  }
+  };
 
-  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()])
+  const addEntry = () =>
+    setBankEntries((prev) => [...prev, emptyEntry(defaultUserIdentity)]);
   const removeEntry = (i: number) =>
-    setBankEntries((prev) => prev.filter((_, idx) => idx !== i))
+    setBankEntries((prev) => prev.filter((_, idx) => idx !== i));
   const updateEntry = (i: number, field: keyof BankEntry, value: string) =>
     setBankEntries((prev) =>
       prev.map((e, idx) => (idx === i ? { ...e, [field]: value } : e)),
-    )
+    );
 
   // CSV import for single mode bank entries
   const handleSingleCSVImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setCsvImporting(true)
-    const reader = new FileReader()
+    setCsvImporting(true);
+    const reader = new FileReader();
 
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string
-        const lines = text.split("\n").filter((line) => line.trim())
+        const text = event.target?.result as string;
+        const lines = text.split("\n").filter((line) => line.trim());
 
         // Skip header if present
-        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0;
 
         const entries: BankEntry[] = lines
           .slice(startIdx)
           .map((line) => {
             const [amount, date, payer, description] = line
               .split(",")
-              .map((s) => s.trim())
+              .map((s) => s.trim());
             return {
               amount: amount || "",
               date: date || "",
               payer: payer || "",
               description: description || "",
-            }
+            };
           })
-          .filter((e) => e.amount && e.date)
+          .filter((e) => e.amount && e.date);
 
         if (entries.length > 0) {
-          setBankEntries(entries)
+          setBankEntries(entries);
         } else {
-          setError("CSV file contains no valid entries")
+          setError("CSV file contains no valid entries");
         }
       } catch (_err) {
-        setError("Failed to parse CSV file")
+        setError("Failed to parse CSV file");
       } finally {
-        setCsvImporting(false)
+        setCsvImporting(false);
       }
-    }
+    };
 
-    reader.readAsText(file)
-  }
+    reader.readAsText(file);
+  };
 
   // Download results as CSV
   const downloadResultsCSV = (results: any, filename: string) => {
@@ -683,13 +722,13 @@ function ReconcilePage() {
         "Status",
         "Explanation",
       ].join(","),
-    ]
+    ];
 
     if (Array.isArray(results)) {
       // Bulk results
       results.forEach((r) => {
-        const decision = r.result?.agent_decision
-        const proof = r.result?.proof
+        const decision = r.result?.agent_decision;
+        const proof = r.result?.proof;
         csvRows.push(
           [
             r.docName,
@@ -705,12 +744,12 @@ function ReconcilePage() {
           ]
             .map((v) => `"${v}"`)
             .join(","),
-        )
-      })
+        );
+      });
     } else {
       // Single result
-      const decision = results?.agent_decision
-      const proof = results?.proof
+      const decision = results?.agent_decision;
+      const proof = results?.proof;
       csvRows.push(
         [
           selectedDoc?.original_filename || "document",
@@ -726,35 +765,35 @@ function ReconcilePage() {
         ]
           .map((v) => `"${v}"`)
           .join(","),
-      )
+      );
     }
 
-    const csvContent = csvRows.join("\n")
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   const handleReconcile = async () => {
     if (!selectedDocId) {
-      setError("Please select or upload a payment proof document.")
-      return
+      setError("Please select or upload a payment proof document.");
+      return;
     }
-    const validEntries = bankEntries.filter((e) => e.amount && e.date)
+    const validEntries = bankEntries.filter((e) => e.amount && e.date);
     if (validEntries.length === 0) {
-      setError("Please add at least one bank entry with amount and date.")
-      return
+      setError("Please add at least one bank entry with amount and date.");
+      return;
     }
 
-    setReconciling(true)
-    setError(null)
-    setResult(null)
+    setReconciling(true);
+    setError(null);
+    setResult(null);
 
     try {
       const res = (await ReconciliationService.reconcileDocument({
@@ -767,16 +806,16 @@ function ReconcilePage() {
             payer: e.payer || undefined,
           })),
         },
-      })) as any
-      setResult(res.result)
+      })) as any;
+      setResult(res.result);
     } catch (err: any) {
-      setError(err?.body?.detail ?? "Reconciliation failed")
+      setError(err?.body?.detail ?? "Reconciliation failed");
     } finally {
-      setReconciling(false)
+      setReconciling(false);
     }
-  }
+  };
 
-  const decision = result?.agent_decision
+  const decision = result?.agent_decision;
 
   return (
     <div className="max-w-6xl mx-auto p-6 flex flex-col gap-8">
@@ -793,10 +832,10 @@ function ReconcilePage() {
           <button
             type="button"
             onClick={() => {
-              setMode("single")
-              setDocumentsWithEntries([])
-              setUploadedFiles([])
-              setBulkResults([])
+              setMode("single");
+              setDocumentsWithEntries([]);
+              setUploadedFiles([]);
+              setBulkResults([]);
             }}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               mode === "single"
@@ -809,9 +848,9 @@ function ReconcilePage() {
           <button
             type="button"
             onClick={() => {
-              setMode("bulk")
-              setSelectedDocId("")
-              setResult(null)
+              setMode("bulk");
+              setSelectedDocId("");
+              setResult(null);
             }}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
               mode === "bulk"
@@ -964,11 +1003,22 @@ function ReconcilePage() {
           {previewUrl && (
             <div className="flex flex-col gap-2 mt-2">
               {selectedFileType === "image" ? (
-                <img
-                  src={previewUrl}
-                  alt="Payment proof preview"
-                  className="rounded-lg border border-gray-700 max-h-64 object-contain self-start"
-                />
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(true)}
+                  className="group relative block text-left focus:outline-none rounded-lg overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors cursor-zoom-in self-start max-h-64"
+                >
+                  <img
+                    src={previewUrl}
+                    alt="Payment proof preview"
+                    className="rounded-lg max-h-64 object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                    <span className="bg-black/70 text-white text-xs font-medium px-2.5 py-1.5 rounded-md">
+                      View Full Size
+                    </span>
+                  </div>
+                </button>
               ) : selectedFileType === "pdf" ? (
                 <div className="bg-gray-900 rounded-lg px-4 py-4 flex items-center gap-3">
                   <span className="text-3xl">📄</span>
@@ -1047,7 +1097,7 @@ function ReconcilePage() {
                   .map((doc: any) => {
                     const isSelected = documentsWithEntries.some(
                       (dwe) => dwe.docId === doc.id,
-                    )
+                    );
                     return (
                       <label
                         key={doc.id}
@@ -1072,7 +1122,7 @@ function ReconcilePage() {
                           </span>
                         </div>
                       </label>
-                    )
+                    );
                   })}
               </div>
             </div>
@@ -1484,7 +1534,7 @@ function ReconcilePage() {
               currentCaseId={null}
               currentRiskScore={null}
               onSaved={(rec) => {
-                setRecord(rec) // store audit record to show journal etc
+                setRecord(rec); // store audit record to show journal etc
               }}
             />
           </div>
@@ -1520,8 +1570,8 @@ function ReconcilePage() {
 
           <div className="flex flex-col gap-3">
             {bulkResults.map((result) => {
-              const decision = result.result?.agent_decision
-              const hasError = !!result.error
+              const decision = result.result?.agent_decision;
+              const hasError = !!result.error;
 
               return (
                 <div
@@ -1560,7 +1610,7 @@ function ReconcilePage() {
                           type="button"
                           onClick={() => {
                             // Navigate to history to see details
-                            window.location.href = "/history"
+                            window.location.href = "/history";
                           }}
                           className="text-blue-400 hover:underline text-xs"
                         >
@@ -1579,7 +1629,7 @@ function ReconcilePage() {
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
 
@@ -1633,7 +1683,7 @@ function ReconcilePage() {
             <button
               type="button"
               onClick={() => {
-                window.location.href = "/history"
+                window.location.href = "/history";
               }}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm font-medium"
             >
@@ -1642,6 +1692,40 @@ function ReconcilePage() {
           </div>
         </section>
       )}
+
+      {/* FULL-SCREEN PREVIEW OVERLAY MODAL */}
+      {isModalOpen && previewUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 select-none backdrop-blur-sm animate-fade-in">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 z-[110] bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white px-4 py-2 text-sm font-medium rounded-md shadow-lg transition-colors border border-zinc-700/60"
+          >
+            Close
+          </button>
+
+          {/* Dismissal Side Panels */}
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-0 left-0 bottom-0 w-1/4 z-[101] cursor-zoom-out bg-transparent border-0 p-0"
+            aria-label="Close preview"
+          />
+          <div className="relative z-[105] max-w-full max-h-screen p-4 flex items-center justify-center">
+            <img
+              src={previewUrl}
+              alt="Full view proof preview"
+              className="max-w-full max-h-[92vh] object-contain rounded border border-zinc-800 shadow-2xl pointer-events-auto"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-0 right-0 bottom-0 w-1/4 z-[101] cursor-zoom-out bg-transparent border-0 p-0"
+            aria-label="Close preview"
+          />
+        </div>
+      )}
     </div>
-  )
+  );
 }
