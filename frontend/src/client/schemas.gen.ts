@@ -160,6 +160,11 @@ export const DocumentPublicSchema = {
             format: 'uuid',
             title: 'Id'
         },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
         original_filename: {
             type: 'string',
             title: 'Original Filename'
@@ -200,6 +205,96 @@ export const DocumentPublicSchema = {
                 }
             ],
             title: 'Reconciliation Result'
+        },
+        original_amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Original Amount'
+        },
+        original_currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Original Currency'
+        },
+        transaction_date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Transaction Date'
+        },
+        base_amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Amount'
+        },
+        base_currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Currency',
+            default: 'MYR'
+        },
+        fx_rate_used: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Fx Rate Used'
+        },
+        fx_rate_date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Fx Rate Date'
+        },
+        fx_rate_timestamp: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Fx Rate Timestamp'
         },
         ai_result: {
             anyOf: [
@@ -331,7 +426,7 @@ export const DocumentPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'original_filename', 's3_key', 'file_type', 'uploaded_at'],
+    required: ['id', 'organization_id', 'original_filename', 's3_key', 'file_type', 'uploaded_at'],
     title: 'DocumentPublic'
 } as const;
 
@@ -511,6 +606,95 @@ export const HTTPValidationErrorSchema = {
     title: 'HTTPValidationError'
 } as const;
 
+export const InvitationAcceptSchema = {
+    properties: {
+        token: {
+            type: 'string',
+            title: 'Token'
+        },
+        password: {
+            type: 'string',
+            maxLength: 128,
+            minLength: 8,
+            title: 'Password'
+        }
+    },
+    type: 'object',
+    required: ['token', 'password'],
+    title: 'InvitationAccept'
+} as const;
+
+export const InvitationCreateSchema = {
+    properties: {
+        email: {
+            type: 'string',
+            format: 'email',
+            title: 'Email'
+        },
+        role: {
+            type: 'string',
+            title: 'Role',
+            default: 'VIEWER'
+        }
+    },
+    type: 'object',
+    required: ['email'],
+    title: 'InvitationCreate'
+} as const;
+
+export const InvitationPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        email: {
+            type: 'string',
+            title: 'Email'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        role: {
+            type: 'string',
+            title: 'Role'
+        },
+        invited_by: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Invited By'
+        },
+        expires_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Expires At'
+        },
+        accepted_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Accepted At'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'email', 'organization_id', 'role', 'invited_by', 'expires_at', 'accepted_at', 'created_at'],
+    title: 'InvitationPublic'
+} as const;
+
 export const ItemCreateSchema = {
     properties: {
         title: {
@@ -636,6 +820,162 @@ export const ItemsPublicSchema = {
     title: 'ItemsPublic'
 } as const;
 
+export const MemberWithUserSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        role: {
+            type: 'string',
+            title: 'Role'
+        },
+        joined_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Joined At'
+        },
+        user_email: {
+            type: 'string',
+            title: 'User Email'
+        },
+        user_full_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Full Name'
+        },
+        user_is_active: {
+            type: 'boolean',
+            title: 'User Is Active'
+        }
+    },
+    type: 'object',
+    required: ['id', 'user_id', 'organization_id', 'role', 'joined_at', 'user_email', 'user_full_name', 'user_is_active'],
+    title: 'MemberWithUser'
+} as const;
+
+export const MembersWithUsersPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/MemberWithUser'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'MembersWithUsersPublic'
+} as const;
+
+export const MembershipCreateSchema = {
+    properties: {
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        role: {
+            type: 'string',
+            title: 'Role',
+            default: 'VIEWER'
+        }
+    },
+    type: 'object',
+    required: ['user_id', 'organization_id'],
+    title: 'MembershipCreate'
+} as const;
+
+export const MembershipPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        user_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'User Id'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        role: {
+            type: 'string',
+            title: 'Role'
+        },
+        joined_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Joined At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'user_id', 'organization_id', 'role', 'joined_at'],
+    title: 'MembershipPublic'
+} as const;
+
+export const MembershipUpdateSchema = {
+    properties: {
+        role: {
+            type: 'string',
+            title: 'Role'
+        }
+    },
+    type: 'object',
+    required: ['role'],
+    title: 'MembershipUpdate'
+} as const;
+
+export const MembershipsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/MembershipPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'MembershipsPublic'
+} as const;
+
 export const MessageSchema = {
     properties: {
         message: {
@@ -664,6 +1004,147 @@ export const NewPasswordSchema = {
     type: 'object',
     required: ['token', 'new_password'],
     title: 'NewPassword'
+} as const;
+
+export const OrganizationCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Name'
+        },
+        base_currency: {
+            type: 'string',
+            maxLength: 3,
+            title: 'Base Currency',
+            default: 'MYR'
+        },
+        timezone: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Timezone',
+            default: 'Asia/Kuala_Lumpur'
+        },
+        fx_provider: {
+            type: 'string',
+            maxLength: 50,
+            title: 'Fx Provider',
+            default: 'frankfurter'
+        }
+    },
+    type: 'object',
+    required: ['name'],
+    title: 'OrganizationCreate'
+} as const;
+
+export const OrganizationPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        base_currency: {
+            type: 'string',
+            title: 'Base Currency'
+        },
+        timezone: {
+            type: 'string',
+            title: 'Timezone'
+        },
+        fx_provider: {
+            type: 'string',
+            title: 'Fx Provider'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['id', 'name', 'base_currency', 'timezone', 'fx_provider', 'created_at'],
+    title: 'OrganizationPublic'
+} as const;
+
+export const OrganizationUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        base_currency: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 3
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Currency'
+        },
+        timezone: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timezone'
+        },
+        fx_provider: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 50
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Fx Provider'
+        }
+    },
+    type: 'object',
+    title: 'OrganizationUpdate'
+} as const;
+
+export const OrganizationsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/OrganizationPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'OrganizationsPublic'
 } as const;
 
 export const PrivateUserCreateSchema = {
@@ -810,6 +1291,28 @@ export const ReconciliationRecordPublicSchema = {
             ],
             title: 'Normalized Amount Myr'
         },
+        base_currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Currency'
+        },
+        base_amount: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Base Amount'
+        },
         action: {
             type: 'string',
             title: 'Action'
@@ -906,7 +1409,7 @@ export const ReconciliationRecordPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'document_id', 'created_at', 'reviewed_by', 'confidence', 'risk_score', 'risk_level', 'fx_rate', 'normalized_amount_myr', 'action', 'exception_type', 'note', 'ai_explanation', 'case_id', 'assigned_to', 'priority', 'risk_factors', 'journal_entry'],
+    required: ['id', 'document_id', 'created_at', 'reviewed_by', 'confidence', 'risk_score', 'risk_level', 'fx_rate', 'normalized_amount_myr', 'base_currency', 'base_amount', 'action', 'exception_type', 'note', 'ai_explanation', 'case_id', 'assigned_to', 'priority', 'risk_factors', 'journal_entry'],
     title: 'ReconciliationRecordPublic'
 } as const;
 
@@ -1091,6 +1594,30 @@ export const UserPublicSchema = {
                 }
             ],
             title: 'Created At'
+        },
+        organization_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Organization Id'
+        },
+        display_currency: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Display Currency',
+            default: 'MYR'
         }
     },
     type: 'object',

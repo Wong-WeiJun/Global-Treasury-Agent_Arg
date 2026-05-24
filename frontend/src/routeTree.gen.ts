@@ -12,11 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AcceptInvitationRouteImport } from './routes/accept-invitation'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutTeamRouteImport } from './routes/_layout/team'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutReconcileRouteImport } from './routes/_layout/reconcile'
+import { Route as LayoutOrganizationRouteImport } from './routes/_layout/organization'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutHistoryRouteImport } from './routes/_layout/history'
 import { Route as LayoutChatRouteImport } from './routes/_layout/chat'
@@ -37,9 +41,19 @@ const RecoverPasswordRoute = RecoverPasswordRouteImport.update({
   path: '/recover-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcceptInvitationRoute = AcceptInvitationRouteImport.update({
+  id: '/accept-invitation',
+  path: '/accept-invitation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LayoutRoute = LayoutRouteImport.update({
@@ -51,6 +65,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTeamRoute = LayoutTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -59,6 +78,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
 const LayoutReconcileRoute = LayoutReconcileRouteImport.update({
   id: '/reconcile',
   path: '/reconcile',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutOrganizationRoute = LayoutOrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
@@ -84,7 +108,9 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -92,11 +118,15 @@ export interface FileRoutesByFullPath {
   '/chat': typeof LayoutChatRoute
   '/history': typeof LayoutHistoryRoute
   '/items': typeof LayoutItemsRoute
+  '/organization': typeof LayoutOrganizationRoute
   '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
+  '/team': typeof LayoutTeamRoute
 }
 export interface FileRoutesByTo {
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -104,14 +134,18 @@ export interface FileRoutesByTo {
   '/chat': typeof LayoutChatRoute
   '/history': typeof LayoutHistoryRoute
   '/items': typeof LayoutItemsRoute
+  '/organization': typeof LayoutOrganizationRoute
   '/reconcile': typeof LayoutReconcileRoute
   '/settings': typeof LayoutSettingsRoute
+  '/team': typeof LayoutTeamRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/accept-invitation': typeof AcceptInvitationRoute
   '/login': typeof LoginRoute
+  '/onboarding': typeof OnboardingRoute
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
@@ -119,15 +153,19 @@ export interface FileRoutesById {
   '/_layout/chat': typeof LayoutChatRoute
   '/_layout/history': typeof LayoutHistoryRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/organization': typeof LayoutOrganizationRoute
   '/_layout/reconcile': typeof LayoutReconcileRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/team': typeof LayoutTeamRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accept-invitation'
     | '/login'
+    | '/onboarding'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
@@ -135,11 +173,15 @@ export interface FileRouteTypes {
     | '/chat'
     | '/history'
     | '/items'
+    | '/organization'
     | '/reconcile'
     | '/settings'
+    | '/team'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accept-invitation'
     | '/login'
+    | '/onboarding'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
@@ -147,13 +189,17 @@ export interface FileRouteTypes {
     | '/chat'
     | '/history'
     | '/items'
+    | '/organization'
     | '/reconcile'
     | '/settings'
+    | '/team'
     | '/'
   id:
     | '__root__'
     | '/_layout'
+    | '/accept-invitation'
     | '/login'
+    | '/onboarding'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
@@ -161,14 +207,18 @@ export interface FileRouteTypes {
     | '/_layout/chat'
     | '/_layout/history'
     | '/_layout/items'
+    | '/_layout/organization'
     | '/_layout/reconcile'
     | '/_layout/settings'
+    | '/_layout/team'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  AcceptInvitationRoute: typeof AcceptInvitationRoute
   LoginRoute: typeof LoginRoute
+  OnboardingRoute: typeof OnboardingRoute
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
@@ -197,11 +247,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecoverPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accept-invitation': {
+      id: '/accept-invitation'
+      path: '/accept-invitation'
+      fullPath: '/accept-invitation'
+      preLoaderRoute: typeof AcceptInvitationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_layout': {
@@ -218,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/team': {
+      id: '/_layout/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof LayoutTeamRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -230,6 +301,13 @@ declare module '@tanstack/react-router' {
       path: '/reconcile'
       fullPath: '/reconcile'
       preLoaderRoute: typeof LayoutReconcileRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/organization': {
+      id: '/_layout/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof LayoutOrganizationRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/items': {
@@ -268,8 +346,10 @@ interface LayoutRouteChildren {
   LayoutChatRoute: typeof LayoutChatRoute
   LayoutHistoryRoute: typeof LayoutHistoryRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutOrganizationRoute: typeof LayoutOrganizationRoute
   LayoutReconcileRoute: typeof LayoutReconcileRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutTeamRoute: typeof LayoutTeamRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -278,8 +358,10 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutChatRoute: LayoutChatRoute,
   LayoutHistoryRoute: LayoutHistoryRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutOrganizationRoute: LayoutOrganizationRoute,
   LayoutReconcileRoute: LayoutReconcileRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutTeamRoute: LayoutTeamRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 
@@ -288,7 +370,9 @@ const LayoutRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  AcceptInvitationRoute: AcceptInvitationRoute,
   LoginRoute: LoginRoute,
+  OnboardingRoute: OnboardingRoute,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,

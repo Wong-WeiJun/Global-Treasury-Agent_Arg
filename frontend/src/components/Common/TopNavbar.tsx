@@ -1,6 +1,7 @@
 import { Link as RouterLink, useRouterState } from "@tanstack/react-router"
 import {
   Briefcase,
+  Building2,
   ChevronsUpDown,
   GitMerge, // Added
   History, // Added
@@ -12,6 +13,7 @@ import {
   Settings,
   Sun,
   Users,
+  UsersRound,
 } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -22,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import useAuth from "@/hooks/useAuth"
+import { useUserRole } from "@/hooks/useUserRole"
 import { getInitials } from "@/utils"
 
 export type NavigationItem = {
@@ -57,23 +60,30 @@ function UserInfo({ fullName, email }: UserInfoProps) {
 
 export function TopNavbar() {
   const { user: currentUser, logout } = useAuth()
+  const { canReconcile } = useUserRole()
   const { setTheme } = useTheme()
   const router = useRouterState()
   const currentPath = router.location.pathname
 
-  // LEFT SIDE: Items, Chat, Reconcile, History, Admin (if superuser)
+  // LEFT SIDE: Items, Chat, Team, Organization (if superuser), Admin (if superuser)
   const leftSideItems: NavigationItem[] = [
     { icon: Briefcase, title: "Items", path: "/items" },
     { icon: MessageSquare, title: "Chat", path: "/chat" },
+    { icon: UsersRound, title: "Team", path: "/team" },
     ...(currentUser?.is_superuser
-      ? [{ icon: Users, title: "Admin", path: "/admin" }]
+      ? [
+          { icon: Building2, title: "Organization", path: "/organization" },
+          { icon: Users, title: "Admin", path: "/admin" },
+        ]
       : []),
   ]
 
-  // RIGHT SIDE: Dashboard, Documents
+  // RIGHT SIDE: Dashboard, Documents (Reconcile only for Finance Manager+)
   const rightSideItems: NavigationItem[] = [
     { icon: Home, title: "Dashboard", path: "/" },
-    { icon: GitMerge, title: "Reconcile", path: "/reconcile" },
+    ...(canReconcile
+      ? [{ icon: GitMerge, title: "Reconcile", path: "/reconcile" }]
+      : []),
     { icon: History, title: "History", path: "/history" },
   ]
 

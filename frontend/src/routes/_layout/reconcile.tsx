@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { ShieldAlert } from "lucide-react"
+import { useEffect, useState } from "react"
 import { FilesService, ReconciliationService } from "../../client"
 import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
+import { useUserRole } from "../../hooks/useUserRole"
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
@@ -51,6 +53,8 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ReconcilePage() {
+  const navigate = useNavigate()
+  const { canReconcile, role, isViewer } = useUserRole()
   const [setRecord] = useState<any>(null)
   const queryClient = useQueryClient()
   const [mode, setMode] = useState<"single" | "bulk">("single")
@@ -73,7 +77,7 @@ function ReconcilePage() {
   const [selectedFileType, setSelectedFileType] = useState<string>("")
   const [_csvImporting, setCsvImporting] = useState(false)
 
-  // Fetch available documents
+  // Fetch available documents (hook must be called unconditionally)
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
@@ -118,13 +122,53 @@ function ReconcilePage() {
     },
   })
 
+  // Redirect viewers to dashboard
+  useEffect(() => {
+    if (role && !canReconcile) {
+      navigate({ to: "/" })
+    }
+  }, [role, canReconcile, navigate])
+
+  // Show access denied for viewers (after all hooks are called)
+  if (isViewer) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <ShieldAlert className="size-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                Access Restricted
+              </h3>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
+                You do not have permission to access the Reconciliation page.
+                This page is only available to Finance Managers, Admins, and
+                Owners.
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                Your current role: <strong>Viewer (Read-only)</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/" })}
+                className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-md text-sm font-medium"
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setError(null)
 
       // Check if it's a CSV file
-      if (file.name.toLowerCase().endsWith('.csv')) {
+      if (file.name.toLowerCase().endsWith(".csv")) {
         handleCSVPaymentProofUpload(file)
       } else {
         uploadAndExtractMutation.mutate(file)
@@ -140,22 +184,27 @@ function ReconcilePage() {
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string
-        const lines = text.split('\n').filter(line => line.trim())
+        const lines = text.split("\n").filter((line) => line.trim())
 
         // Expected format: amount,currency,date,payer,payee,description
-        const startIdx = lines[0].toLowerCase().includes('amount') ? 1 : 0
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
 
-        const proofData = lines.slice(startIdx).map(line => {
-          const [amount, currency, date, payer, payee, description] = line.split(',').map(s => s.trim())
-          return {
-            amount: parseFloat(amount),
-            currency: currency || 'MYR',
-            date: date || '',
-            payer: payer || '',
-            payee: payee || '',
-            description: description || ''
-          }
-        }).filter(e => e.amount && e.date)
+        const proofData = lines
+          .slice(startIdx)
+          .map((line) => {
+            const [amount, currency, date, payer, payee, description] = line
+              .split(",")
+              .map((s) => s.trim())
+            return {
+              amount: parseFloat(amount),
+              currency: currency || "MYR",
+              date: date || "",
+              payer: payer || "",
+              payee: payee || "",
+              description: description || "",
+            }
+          })
+          .filter((e) => e.amount && e.date)
 
         if (proofData.length === 0) {
           setError("CSV file contains no valid payment proof entries")
@@ -167,30 +216,33 @@ function ReconcilePage() {
         if (mode === "single") {
           const proof = proofData[0]
           // Create a mock document with CSV data
-          setSelectedDocId("csv-" + Date.now())
+          setSelectedDocId(`csv-${Date.now()}`)
           setResult({
             proof,
             agent_decision: {
               final_status: "unmatched",
               confidence: 0,
-              explanation: "CSV import - please add bank entries to reconcile"
-            }
+              explanation: "CSV import - please add bank entries to reconcile",
+            },
           })
         } else {
           // For bulk mode, create documents for each CSV row
           proofData.forEach((proof, idx) => {
-            setDocumentsWithEntries(prev => [...prev, {
-              docId: `csv-${Date.now()}-${idx}`,
-              docName: `CSV Entry ${idx + 1}: ${proof.currency} ${proof.amount}`,
-              extractedData: proof,
-              bankEntries: [emptyEntry()],
-              collapsed: false
-            }])
+            setDocumentsWithEntries((prev) => [
+              ...prev,
+              {
+                docId: `csv-${Date.now()}-${idx}`,
+                docName: `CSV Entry ${idx + 1}: ${proof.currency} ${proof.amount}`,
+                extractedData: proof,
+                bankEntries: [emptyEntry()],
+                collapsed: false,
+              },
+            ])
           })
         }
 
         setCsvImporting(false)
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to parse CSV payment proof file")
         setCsvImporting(false)
       }
@@ -583,27 +635,32 @@ function ReconcilePage() {
     reader.onload = (event) => {
       try {
         const text = event.target?.result as string
-        const lines = text.split('\n').filter(line => line.trim())
+        const lines = text.split("\n").filter((line) => line.trim())
 
         // Skip header if present
-        const startIdx = lines[0].toLowerCase().includes('amount') ? 1 : 0
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
 
-        const entries: BankEntry[] = lines.slice(startIdx).map(line => {
-          const [amount, date, payer, description] = line.split(',').map(s => s.trim())
-          return {
-            amount: amount || "",
-            date: date || "",
-            payer: payer || "",
-            description: description || ""
-          }
-        }).filter(e => e.amount && e.date)
+        const entries: BankEntry[] = lines
+          .slice(startIdx)
+          .map((line) => {
+            const [amount, date, payer, description] = line
+              .split(",")
+              .map((s) => s.trim())
+            return {
+              amount: amount || "",
+              date: date || "",
+              payer: payer || "",
+              description: description || "",
+            }
+          })
+          .filter((e) => e.amount && e.date)
 
         if (entries.length > 0) {
           setBankEntries(entries)
         } else {
           setError("CSV file contains no valid entries")
         }
-      } catch (err) {
+      } catch (_err) {
         setError("Failed to parse CSV file")
       } finally {
         setCsvImporting(false)
@@ -616,45 +673,66 @@ function ReconcilePage() {
   // Download results as CSV
   const downloadResultsCSV = (results: any, filename: string) => {
     const csvRows = [
-      ['Document', 'AI Result', 'Confidence', 'Amount', 'Currency', 'Date', 'Status', 'Explanation'].join(',')
+      [
+        "Document",
+        "AI Result",
+        "Confidence",
+        "Amount",
+        "Currency",
+        "Date",
+        "Status",
+        "Explanation",
+      ].join(","),
     ]
 
     if (Array.isArray(results)) {
       // Bulk results
-      results.forEach(r => {
+      results.forEach((r) => {
         const decision = r.result?.agent_decision
         const proof = r.result?.proof
-        csvRows.push([
-          r.docName,
-          decision?.final_status || 'error',
-          decision?.confidence ? (decision.confidence * 100).toFixed(1) + '%' : 'N/A',
-          proof?.amount || 'N/A',
-          proof?.currency || 'N/A',
-          proof?.date || 'N/A',
-          r.error ? 'Error' : 'Success',
-          r.error || decision?.explanation?.replace(/,/g, ';') || ''
-        ].map(v => `"${v}"`).join(','))
+        csvRows.push(
+          [
+            r.docName,
+            decision?.final_status || "error",
+            decision?.confidence
+              ? `${(decision.confidence * 100).toFixed(1)}%`
+              : "N/A",
+            proof?.amount || "N/A",
+            proof?.currency || "N/A",
+            proof?.date || "N/A",
+            r.error ? "Error" : "Success",
+            r.error || decision?.explanation?.replace(/,/g, ";") || "",
+          ]
+            .map((v) => `"${v}"`)
+            .join(","),
+        )
       })
     } else {
       // Single result
       const decision = results?.agent_decision
       const proof = results?.proof
-      csvRows.push([
-        selectedDoc?.original_filename || 'document',
-        decision?.final_status || 'unknown',
-        decision?.confidence ? (decision.confidence * 100).toFixed(1) + '%' : 'N/A',
-        proof?.amount || 'N/A',
-        proof?.currency || 'N/A',
-        proof?.date || 'N/A',
-        'Success',
-        decision?.explanation?.replace(/,/g, ';') || ''
-      ].map(v => `"${v}"`).join(','))
+      csvRows.push(
+        [
+          selectedDoc?.original_filename || "document",
+          decision?.final_status || "unknown",
+          decision?.confidence
+            ? `${(decision.confidence * 100).toFixed(1)}%`
+            : "N/A",
+          proof?.amount || "N/A",
+          proof?.currency || "N/A",
+          proof?.date || "N/A",
+          "Success",
+          decision?.explanation?.replace(/,/g, ";") || "",
+        ]
+          .map((v) => `"${v}"`)
+          .join(","),
+      )
     }
 
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const csvContent = csvRows.join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv" })
     const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const a = document.createElement("a")
     a.href = url
     a.download = filename
     document.body.appendChild(a)
@@ -770,7 +848,8 @@ function ReconcilePage() {
                 className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
               />
               <p className="text-xs text-gray-500">
-                Supports: Images, PDF, CSV, or XLSX (amount,currency,date,payer,payee,description)
+                Supports: Images, PDF, CSV, or XLSX
+                (amount,currency,date,payer,payee,description)
               </p>
             </div>
 
@@ -806,28 +885,78 @@ function ReconcilePage() {
             </p>
           )}
 
-          {/* Safe extraction display by converting types explicitly */}
-          {extractedData && (
-            <div className="mt-2 text-xs bg-blue-950/40 border border-blue-900/60 rounded-lg p-3 flex flex-col gap-1">
-              <span className="font-semibold text-blue-300">
-                💡 AI Extracted Content Preview:
+          {/* Multi-Currency Extraction Display */}
+          {(selectedDoc?.original_amount || extractedData) && (
+            <div className="mt-2 bg-blue-950/40 border border-blue-900/60 rounded-lg p-3 flex flex-col gap-2">
+              <span className="text-xs font-semibold text-blue-300">
+                💡 AI Extracted Content Preview
               </span>
-              <div className="grid grid-cols-3 gap-2 text-gray-300 mt-1">
-                <div>
-                  <strong>Amount:</strong>{" "}
-                  {String(extractedData.currency || "")}{" "}
-                  {String(extractedData.amount || "")}
-                </div>
-                <div>
-                  <strong>Date:</strong> {String(extractedData.date || "N/A")}
-                </div>
-                {extractedData.myr_amount && (
-                  <div className="text-green-400">
-                    <strong>MYR Value:</strong> MYR{" "}
-                    {String(extractedData.myr_amount)}
+
+              {/* Original Currency */}
+              {selectedDoc?.original_amount &&
+                selectedDoc?.original_currency && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400">Original Amount</p>
+                      <p className="text-sm font-bold text-white">
+                        {selectedDoc.original_currency}{" "}
+                        {selectedDoc.original_amount.toFixed(2)}
+                      </p>
+                    </div>
+
+                    {/* Base Currency */}
+                    {selectedDoc.base_amount &&
+                      selectedDoc.original_currency !==
+                        selectedDoc.base_currency && (
+                        <>
+                          <span className="text-gray-500">→</span>
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-400">
+                              Base Currency
+                            </p>
+                            <p className="text-sm font-bold text-green-300">
+                              {selectedDoc.base_currency}{" "}
+                              {selectedDoc.base_amount.toFixed(2)}
+                            </p>
+                            {selectedDoc.fx_rate_used && (
+                              <p className="text-xs text-gray-500">
+                                @ {selectedDoc.fx_rate_used.toFixed(4)}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                    {selectedDoc.transaction_date && (
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-400">Date</p>
+                        <p className="text-sm text-gray-300">
+                          {selectedDoc.transaction_date}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+
+              {/* Fallback to extracted_data if new fields not populated yet */}
+              {!selectedDoc?.original_amount && extractedData && (
+                <div className="grid grid-cols-3 gap-2 text-gray-300 text-xs">
+                  <div>
+                    <strong>Amount:</strong>{" "}
+                    {String(extractedData.currency || "")}{" "}
+                    {String(extractedData.amount || "")}
+                  </div>
+                  <div>
+                    <strong>Date:</strong> {String(extractedData.date || "N/A")}
+                  </div>
+                  {extractedData.myr_amount && (
+                    <div className="text-green-400">
+                      <strong>MYR Value:</strong> MYR{" "}
+                      {String(extractedData.myr_amount)}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -902,7 +1031,8 @@ function ReconcilePage() {
                 className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
               />
               <p className="text-xs text-gray-500">
-                You can select multiple files at once (Ctrl/Cmd + Click). Supports: Images, PDF, or XLSX.
+                You can select multiple files at once (Ctrl/Cmd + Click).
+                Supports: Images, PDF, or XLSX.
               </p>
             </div>
 
@@ -1294,7 +1424,12 @@ function ReconcilePage() {
               <StatusBadge status={decision.final_status} />
               <button
                 type="button"
-                onClick={() => downloadResultsCSV(result, `reconciliation-result-${Date.now()}.csv`)}
+                onClick={() =>
+                  downloadResultsCSV(
+                    result,
+                    `reconciliation-result-${Date.now()}.csv`,
+                  )
+                }
                 className="text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
                 📥 Download CSV
@@ -1370,7 +1505,12 @@ function ReconcilePage() {
               </span>
               <button
                 type="button"
-                onClick={() => downloadResultsCSV(bulkResults, `bulk-reconciliation-${Date.now()}.csv`)}
+                onClick={() =>
+                  downloadResultsCSV(
+                    bulkResults,
+                    `bulk-reconciliation-${Date.now()}.csv`,
+                  )
+                }
                 className="text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
                 📥 Download All Results

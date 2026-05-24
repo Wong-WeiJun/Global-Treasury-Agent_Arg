@@ -207,35 +207,81 @@ function DocumentRow({ doc }: { doc: any }) {
                   </div>
                 )}
 
-                {/* Extracted fields */}
-                {doc.extracted_data && !doc.extracted_data.rows && (
-                  <div className="flex flex-col gap-1 mt-2">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                      Extracted
-                    </p>
-                    {(
-                      ["amount", "currency", "date", "payer", "payee"] as const
-                    ).map((k) =>
-                      doc.extracted_data[k] ? (
-                        <div key={k} className="flex justify-between text-xs">
-                          <span className="text-gray-500 capitalize">{k}</span>
-                          <span className="text-gray-300">
-                            {String(doc.extracted_data[k])}
-                          </span>
-                        </div>
-                      ) : null,
-                    )}
-                    {doc.extracted_data.myr_amount &&
-                      doc.extracted_data.currency !== "MYR" && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500">MYR equivalent</span>
-                          <span className="text-green-400 font-medium">
-                            MYR {doc.extracted_data.myr_amount}
-                          </span>
+                {/* Multi-Currency Display */}
+                {(doc.original_amount || doc.extracted_data) &&
+                  !doc.extracted_data?.rows && (
+                    <div className="flex flex-col gap-2 mt-2">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                        Payment Details
+                      </p>
+
+                      {/* Original Currency (what customer paid) */}
+                      {doc.original_amount && doc.original_currency && (
+                        <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg px-3 py-2">
+                          <p className="text-xs text-blue-400 mb-1">
+                            Original Amount
+                          </p>
+                          <p className="text-lg font-bold text-white">
+                            {doc.original_currency}{" "}
+                            {doc.original_amount.toFixed(2)}
+                          </p>
+                          {doc.transaction_date && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Date: {doc.transaction_date}
+                            </p>
+                          )}
                         </div>
                       )}
-                  </div>
-                )}
+
+                      {/* Base Currency (normalized for reconciliation) */}
+                      {doc.base_amount &&
+                        doc.original_currency !== doc.base_currency && (
+                          <div className="bg-green-950/30 border border-green-800/50 rounded-lg px-3 py-2">
+                            <p className="text-xs text-green-400 mb-1 flex items-center gap-2">
+                              <span>Base Currency (Reconciliation)</span>
+                              {doc.fx_rate_used && (
+                                <span
+                                  className="text-gray-500"
+                                  title={`Historical FX rate used on ${doc.fx_rate_date || "transaction date"}`}
+                                >
+                                  @ {doc.fx_rate_used.toFixed(4)}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-lg font-bold text-green-300">
+                              {doc.base_currency} {doc.base_amount.toFixed(2)}
+                            </p>
+                            {doc.fx_rate_date && (
+                              <p className="text-xs text-gray-400 mt-1">
+                                FX Rate Date: {doc.fx_rate_date}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                      {/* Additional fields */}
+                      {doc.extracted_data && (
+                        <div className="flex flex-col gap-1">
+                          {doc.extracted_data.payer && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Payer:</span>
+                              <span className="text-gray-300">
+                                {doc.extracted_data.payer}
+                              </span>
+                            </div>
+                          )}
+                          {doc.extracted_data.payee && (
+                            <div className="flex justify-between text-xs">
+                              <span className="text-gray-500">Payee:</span>
+                              <span className="text-gray-300">
+                                {doc.extracted_data.payee}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
               </div>
 
               {/* Reconciliation result */}
@@ -416,9 +462,12 @@ function downloadDocumentsCSV(docs: any[], filename: string) {
       "Document",
       "AI Result",
       "Confidence",
-      "Amount",
-      "Currency",
-      "Date",
+      "Original Amount",
+      "Original Currency",
+      "Base Amount",
+      "Base Currency",
+      "FX Rate",
+      "Transaction Date",
       "Payer",
       "Payee",
       "Workflow Status",
@@ -435,9 +484,12 @@ function downloadDocumentsCSV(docs: any[], filename: string) {
         `"${doc.original_filename || ""}"`,
         doc.ai_result || "",
         Math.round((doc.ai_confidence || 0) * 100),
-        extracted.amount || "",
-        extracted.currency || "",
-        extracted.date || "",
+        doc.original_amount || extracted.amount || "",
+        doc.original_currency || extracted.currency || "",
+        doc.base_amount || extracted.myr_amount || "",
+        doc.base_currency || "MYR",
+        doc.fx_rate_used || extracted.fx_rate || "",
+        doc.transaction_date || extracted.date || "",
         `"${extracted.payer || ""}"`,
         `"${extracted.payee || ""}"`,
         doc.workflow_status || "",

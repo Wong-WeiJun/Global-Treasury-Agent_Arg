@@ -2,7 +2,7 @@ from sqlmodel import Session, create_engine, select
 
 from app import crud
 from app.core.config import settings
-from app.models import User, UserCreate
+from app.models import User, UserCreate, Organization
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -21,6 +21,19 @@ def init_db(session: Session) -> None:
     # This works because the models are already imported and registered from app.models
     # SQLModel.metadata.create_all(engine)
 
+    # Create default organization if it doesn't exist
+    default_org = session.exec(select(Organization)).first()
+    if not default_org:
+        default_org = Organization(
+            name="Default Organization",
+            base_currency="MYR",
+            timezone="Asia/Kuala_Lumpur",
+            fx_provider="frankfurter",
+        )
+        session.add(default_org)
+        session.commit()
+        session.refresh(default_org)
+
     user = session.exec(
         select(User).where(User.email == settings.FIRST_SUPERUSER)
     ).first()
@@ -31,3 +44,8 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+
+        # Assign user to default organization
+        user.organization_id = default_org.id
+        session.add(user)
+        session.commit()

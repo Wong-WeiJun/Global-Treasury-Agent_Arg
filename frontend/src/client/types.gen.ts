@@ -37,6 +37,7 @@ export type ChatResponse = {
 
 export type DocumentPublic = {
     id: string;
+    organization_id: string;
     original_filename: string;
     s3_key: string;
     file_type: string;
@@ -47,6 +48,14 @@ export type DocumentPublic = {
     reconciliation_result?: ({
     [key: string]: unknown;
 } | null);
+    original_amount?: (number | null);
+    original_currency?: (string | null);
+    transaction_date?: (string | null);
+    base_amount?: (number | null);
+    base_currency?: (string | null);
+    fx_rate_used?: (number | null);
+    fx_rate_date?: (string | null);
+    fx_rate_timestamp?: (string | null);
     ai_result?: (string | null);
     ai_confidence?: (number | null);
     ai_explanation?: (string | null);
@@ -88,6 +97,27 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type InvitationAccept = {
+    token: string;
+    password: string;
+};
+
+export type InvitationCreate = {
+    email: string;
+    role?: string;
+};
+
+export type InvitationPublic = {
+    id: string;
+    email: string;
+    organization_id: string;
+    role: string;
+    invited_by: string;
+    expires_at: string;
+    accepted_at: (string | null);
+    created_at: string;
+};
+
 export type ItemCreate = {
     title: string;
     description?: (string | null);
@@ -111,6 +141,45 @@ export type ItemUpdate = {
     description?: (string | null);
 };
 
+export type MembershipCreate = {
+    user_id: string;
+    organization_id: string;
+    role?: string;
+};
+
+export type MembershipPublic = {
+    id: string;
+    user_id: string;
+    organization_id: string;
+    role: string;
+    joined_at: string;
+};
+
+export type MembershipsPublic = {
+    data: Array<MembershipPublic>;
+    count: number;
+};
+
+export type MembershipUpdate = {
+    role: string;
+};
+
+export type MembersWithUsersPublic = {
+    data: Array<MemberWithUser>;
+    count: number;
+};
+
+export type MemberWithUser = {
+    id: string;
+    user_id: string;
+    organization_id: string;
+    role: string;
+    joined_at: string;
+    user_email: string;
+    user_full_name: (string | null);
+    user_is_active: boolean;
+};
+
 export type Message = {
     message: string;
 };
@@ -118,6 +187,34 @@ export type Message = {
 export type NewPassword = {
     token: string;
     new_password: string;
+};
+
+export type OrganizationCreate = {
+    name: string;
+    base_currency?: string;
+    timezone?: string;
+    fx_provider?: string;
+};
+
+export type OrganizationPublic = {
+    id: string;
+    name: string;
+    base_currency: string;
+    timezone: string;
+    fx_provider: string;
+    created_at: string;
+};
+
+export type OrganizationsPublic = {
+    data: Array<OrganizationPublic>;
+    count: number;
+};
+
+export type OrganizationUpdate = {
+    name?: (string | null);
+    base_currency?: (string | null);
+    timezone?: (string | null);
+    fx_provider?: (string | null);
 };
 
 export type PrivateUserCreate = {
@@ -150,6 +247,8 @@ export type ReconciliationRecordPublic = {
     risk_level: (string | null);
     fx_rate: (number | null);
     normalized_amount_myr: (number | null);
+    base_currency: (string | null);
+    base_amount: (number | null);
     action: string;
     exception_type: (string | null);
     note: (string | null);
@@ -201,6 +300,8 @@ export type UserPublic = {
     full_name?: (string | null);
     id: string;
     created_at?: (string | null);
+    organization_id?: (string | null);
+    display_currency?: (string | null);
 };
 
 export type UserRegister = {
@@ -316,6 +417,39 @@ export type FxConvertToMyrEndpointData = {
 
 export type FxConvertToMyrEndpointResponse = (unknown);
 
+export type InvitationsInviteMemberData = {
+    organizationId: string;
+    requestBody: InvitationCreate;
+};
+
+export type InvitationsInviteMemberResponse = (InvitationPublic);
+
+export type InvitationsListInvitationsData = {
+    organizationId: string;
+};
+
+export type InvitationsListInvitationsResponse = (Array<InvitationPublic>);
+
+export type InvitationsCancelInvitationData = {
+    invitationId: string;
+};
+
+export type InvitationsCancelInvitationResponse = (unknown);
+
+export type InvitationsAcceptInvitationData = {
+    requestBody: InvitationAccept;
+};
+
+export type InvitationsAcceptInvitationResponse = ({
+    [key: string]: unknown;
+});
+
+export type InvitationsVerifyInvitationData = {
+    token: string;
+};
+
+export type InvitationsVerifyInvitationResponse = (unknown);
+
 export type ItemsReadItemsData = {
     limit?: number;
     skip?: number;
@@ -373,6 +507,79 @@ export type LoginRecoverPasswordHtmlContentData = {
 };
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
+
+export type MembershipsListMyOrganizationsResponse = (MembershipsPublic);
+
+export type MembershipsListOrganizationMembersData = {
+    organizationId: string;
+};
+
+export type MembershipsListOrganizationMembersResponse = (MembersWithUsersPublic);
+
+export type MembershipsAddOrganizationMemberData = {
+    organizationId: string;
+    requestBody: MembershipCreate;
+};
+
+export type MembershipsAddOrganizationMemberResponse = (MembershipPublic);
+
+export type MembershipsUpdateMembershipData = {
+    membershipId: string;
+    requestBody: MembershipUpdate;
+};
+
+export type MembershipsUpdateMembershipResponse = (MembershipPublic);
+
+export type MembershipsRemoveMembershipData = {
+    membershipId: string;
+};
+
+export type MembershipsRemoveMembershipResponse = (unknown);
+
+export type OrganizationsListOrganizationsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type OrganizationsListOrganizationsResponse = (OrganizationsPublic);
+
+export type OrganizationsCreateOrganizationData = {
+    requestBody: OrganizationCreate;
+};
+
+export type OrganizationsCreateOrganizationResponse = (OrganizationPublic);
+
+export type OrganizationsGetOrganizationData = {
+    organizationId: string;
+};
+
+export type OrganizationsGetOrganizationResponse = (OrganizationPublic);
+
+export type OrganizationsUpdateOrganizationData = {
+    organizationId: string;
+    requestBody: OrganizationUpdate;
+};
+
+export type OrganizationsUpdateOrganizationResponse = (OrganizationPublic);
+
+export type OrganizationsDeleteOrganizationData = {
+    organizationId: string;
+};
+
+export type OrganizationsDeleteOrganizationResponse = (unknown);
+
+export type OrganizationsGetOrganizationSettingsData = {
+    organizationId: string;
+};
+
+export type OrganizationsGetOrganizationSettingsResponse = (OrganizationPublic);
+
+export type OrganizationsUpdateOrganizationSettingsData = {
+    organizationId: string;
+    requestBody: OrganizationUpdate;
+};
+
+export type OrganizationsUpdateOrganizationSettingsResponse = (OrganizationPublic);
 
 export type PrivateCreateUserData = {
     requestBody: PrivateUserCreate;

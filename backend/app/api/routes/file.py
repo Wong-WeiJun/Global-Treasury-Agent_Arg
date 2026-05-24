@@ -10,9 +10,10 @@ from app.models import (
     UploadResponse,
     ExtractedData,
     ExtractionResponse,
+    Organization,
 )
 from sqlmodel import select, func
-from app.fx import convert_to_myr
+from app.fx import convert_to_myr, convert
 import uuid
 from app.api.deps import SessionDep
 from sqlalchemy import desc
@@ -23,6 +24,23 @@ from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+
+def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
+    """Get the base currency for a user's organization. Defaults to MYR."""
+    from sqlmodel import select
+    from app.models import User
+
+    user = session.get(User, user_id)
+    if not user or not user.organization_id:
+        return "MYR"
+
+    org = session.get(Organization, user.organization_id)
+    if not org:
+        return "MYR"
+
+    return org.base_currency
+
 
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
@@ -70,6 +88,8 @@ async def upload_file(
     session: SessionDep,
     file: UploadFile = File(...),
 ):
+    from app.utils.org_context import get_user_primary_organization
+
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=415, detail=f"Unsupported file type: {file.content_type}"
@@ -79,6 +99,14 @@ async def upload_file(
 
     if len(contents) > settings.max_upload_size_bytes:
         raise HTTPException(status_code=413, detail="File too large")
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(
+            status_code=400,
+            detail="You must belong to an organization to upload documents",
+        )
 
     try:
         s3_key = await upload_document(
@@ -93,6 +121,7 @@ async def upload_file(
 
     doc = Document(
         owner_id=current_user.id,
+        organization_id=org.id,
         original_filename=file.filename or "upload",
         s3_key=s3_key,
         file_type=get_file_type(file.content_type),
@@ -111,13 +140,22 @@ def list_my_documents(
     skip: int = 0,
     limit: int = 20,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's current organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        return DocumentsPublic(data=[], count=0)
+
+    # CRITICAL: Filter by organization_id for multi-tenant isolation
     count = session.exec(
-        select(func.count()).where(Document.owner_id == current_user.id)
+        select(func.count())
+        .where(Document.organization_id == org.id)
     ).one()
 
     docs = session.exec(
         select(Document)
-        .where(Document.owner_id == current_user.id)
+        .where(Document.organization_id == org.id)
         .order_by(desc(cast(ColumnElement, Document.uploaded_at)))
         .offset(skip)
         .limit(limit)
@@ -148,10 +186,19 @@ async def delete_file(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     await delete_document(doc.s3_key)
@@ -167,10 +214,19 @@ def get_download_url(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     s3 = boto3.client(
@@ -197,10 +253,19 @@ async def extract_document(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     # Tip: You could import _get_s3_client from app.file_utils to avoid repeating this!
@@ -223,16 +288,35 @@ async def extract_document(
         if doc.file_type == "excel":
             rows = extract_from_excel(file_bytes, doc.original_filename)
             converted_rows = []
+            base_currency = get_user_base_currency(session, current_user.id)
+
             for row in rows:
                 if row.get("amount") and row.get("currency"):
-                    fx = await convert_to_myr(
+                    fx_date = row.get("date") or "latest"
+                    fx = await convert(
                         amount=row["amount"],
                         from_currency=row["currency"],
-                        on_date=row.get("date") or "latest",
+                        to_currency=base_currency,
+                        on_date=fx_date,
                     )
-                    row["myr_amount"] = fx["to_amount"]
+                    row["myr_amount"] = fx["to_amount"]  # Legacy field
                     row["fx_rate"] = fx["rate"]
+                    row["base_currency"] = base_currency
+                    row["base_amount"] = fx["to_amount"]
+                    row["fx_rate_date"] = fx_date if fx_date != "latest" else None
                 converted_rows.append(row)
+
+            # For Excel with single row, populate document-level currency fields
+            if len(converted_rows) == 1:
+                first_row = converted_rows[0]
+                doc.original_amount = first_row.get("amount")
+                doc.original_currency = first_row.get("currency", "MYR")
+                doc.transaction_date = first_row.get("date")
+                doc.base_amount = first_row.get("base_amount")
+                doc.base_currency = base_currency
+                doc.fx_rate_used = first_row.get("fx_rate")
+                doc.fx_rate_date = first_row.get("fx_rate_date")
+                doc.fx_rate_timestamp = datetime.now(timezone.utc)
 
             doc.extracted_data = {"rows": converted_rows}
             doc.workflow_status = "EXTRACTED"
@@ -255,12 +339,32 @@ async def extract_document(
             )
 
         if data:
+            # Multi-Currency Architecture
+            # 1. Store Original Currency (what customer paid - NEVER overwrite)
+            doc.original_amount = data.get("amount")
+            doc.original_currency = data.get("currency") or "MYR"
+            doc.transaction_date = data.get("date")
+
+            # 2. Convert to Base Currency (for reconciliation)
             if data.get("amount") and data.get("currency"):
-                fx_result = await convert_to_myr(
+                base_currency = get_user_base_currency(session, current_user.id)
+                fx_date = data.get("date") or "latest"
+
+                fx_result = await convert(
                     amount=data["amount"],
                     from_currency=data["currency"],
-                    on_date=data.get("date") or "latest",
+                    to_currency=base_currency,
+                    on_date=fx_date,
                 )
+
+                # Store base currency fields
+                doc.base_amount = fx_result["to_amount"]
+                doc.base_currency = base_currency
+                doc.fx_rate_used = fx_result["rate"]
+                doc.fx_rate_date = fx_date if fx_date != "latest" else None
+                doc.fx_rate_timestamp = datetime.now(timezone.utc)
+
+                # Keep legacy fields for backward compatibility
                 data["myr_amount"] = fx_result["to_amount"]
                 data["fx_rate"] = fx_result["rate"]
 

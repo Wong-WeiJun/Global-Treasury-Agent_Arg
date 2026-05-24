@@ -1,10 +1,17 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router"
+import { useEffect } from "react"
 
 import { Footer } from "@/components/Common/Footer"
 import { TopNavbar } from "@/components/Common/TopNavbar"
 import AppSidebar from "@/components/Sidebar/AppSidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { isLoggedIn } from "@/hooks/useAuth"
+import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
 export const Route = createFileRoute("/_layout")({
   component: Layout,
@@ -18,6 +25,41 @@ export const Route = createFileRoute("/_layout")({
 })
 
 function Layout() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const router = useRouterState()
+
+  useEffect(() => {
+    // Only redirect to onboarding if user has no organization AND we're not already on onboarding
+    if (
+      user &&
+      !user.organization_id &&
+      router.location.pathname !== "/onboarding"
+    ) {
+      navigate({ to: "/onboarding" })
+    }
+  }, [user, navigate, router.location.pathname])
+
+  // Show loading state while checking user organization
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      </div>
+    )
+  }
+
+  // Allow access if user has organization OR if they're on the onboarding page
+  if (!user.organization_id && router.location.pathname !== "/onboarding") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-500 dark:text-gray-400">
+          Redirecting to onboarding...
+        </div>
+      </div>
+    )
+  }
+
   return (
     <SidebarProvider defaultOpen={false}>
       {/* Kept rendering in the background to avoid context errors, but visually hidden */}

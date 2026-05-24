@@ -95,6 +95,8 @@ async def review_document(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
     if body.action not in ("approved", "flagged", "exception"):
         raise HTTPException(status_code=422, detail="Invalid action")
 
@@ -109,10 +111,17 @@ async def review_document(
             detail=f"Invalid exception_type. Valid: {list(EXCEPTION_TYPES.keys())}",
         )
 
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     session.refresh(doc)
@@ -167,6 +176,7 @@ async def review_document(
     # Create immutable audit record
     record = ReconciliationRecord(
         document_id=document_id,
+        organization_id=org.id,  # CRITICAL: Tenant isolation
         reviewed_by=current_user.id,
         confidence=confidence,
         risk_score=risk_score,
@@ -215,16 +225,26 @@ def get_audit_trail(
 ):
     """Return all review records for a document — full audit trail."""
     from sqlmodel import select
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
 
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    # CRITICAL: Filter records by organization_id
     records = session.exec(
         select(ReconciliationRecord)
         .where(ReconciliationRecord.document_id == document_id)
+        .where(ReconciliationRecord.organization_id == org.id)
         .order_by(ReconciliationRecord.created_at)
     ).all()
 
@@ -238,10 +258,19 @@ async def ask_ai_question(
     current_user: CurrentUser,
     session: SessionDep,
 ):
+    from app.utils.org_context import get_user_primary_organization
+
+    # Get user's organization for multi-tenant isolation
+    org = get_user_primary_organization(session, current_user.id)
+    if not org:
+        raise HTTPException(status_code=400, detail="You must belong to an organization")
+
     doc = session.get(Document, document_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
+
+    # CRITICAL: Check organization_id for multi-tenant isolation
+    if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
     session.refresh(doc)
