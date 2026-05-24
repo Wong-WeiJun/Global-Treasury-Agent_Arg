@@ -1,30 +1,30 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ShieldAlert } from "lucide-react"
-import { useEffect, useState } from "react"
-import useAuth from "@/hooks/useAuth"
-import { FilesService, ReconciliationService } from "../../client"
-import { ReviewPanel } from "../../components/Common/ReviewPanel"
-import useCurrency from "../../hooks/useCurrency"
-import { useUserRole } from "../../hooks/useUserRole"
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import useAuth from "@/hooks/useAuth";
+import { FilesService, ReconciliationService } from "../../client";
+import { ReviewPanel } from "../../components/Common/ReviewPanel";
+import useCurrency from "../../hooks/useCurrency";
+import { useUserRole } from "../../hooks/useUserRole";
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
-})
+});
 
 interface BankEntry {
-  amount: string
-  date: string
-  description: string
-  payer: string
+  amount: string;
+  date: string;
+  description: string;
+  payer: string;
 }
 
 interface DocumentWithEntries {
-  docId: string
-  docName: string
-  extractedData: any
-  bankEntries: BankEntry[]
-  collapsed: boolean
+  docId: string;
+  docName: string;
+  extractedData: any;
+  bankEntries: BankEntry[];
+  collapsed: boolean;
 }
 
 const emptyEntry = (defaultPayer = ""): BankEntry => ({
@@ -32,60 +32,64 @@ const emptyEntry = (defaultPayer = ""): BankEntry => ({
   date: "",
   description: "",
   payer: defaultPayer,
-})
+});
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    matched: "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
-    fuzzy: "bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700",
-    unmatched: "bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
-  }
+    matched:
+      "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
+    fuzzy:
+      "bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700",
+    unmatched:
+      "bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
+  };
   const labels: Record<string, string> = {
     matched: "✓ Matched",
     fuzzy: "~ Fuzzy Match",
     unmatched: "✗ Unmatched",
-  }
+  };
   return (
     <span
       className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  )
+  );
 }
 
 function ReconcilePage() {
-  const navigate = useNavigate()
-  const { canReconcile, role, isViewer } = useUserRole()
-  const queryClient = useQueryClient()
-  const { user: currentUser } = useAuth()
-  const { baseCurrency, getSymbol, formatAmount } = useCurrency()
+  const navigate = useNavigate();
+  const { canReconcile, role, isViewer } = useUserRole();
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
+  const { baseCurrency, getSymbol, formatAmount } = useCurrency();
 
-  const defaultUserIdentity = currentUser?.full_name || currentUser?.email || ""
+  const defaultUserIdentity =
+    currentUser?.full_name || currentUser?.email || "";
 
   const [documentsWithEntries, setDocumentsWithEntries] = useState<
     DocumentWithEntries[]
-  >([])
+  >([]);
   const [uploadedFiles, setUploadedFiles] = useState<
     Array<{ id: string; name: string; status: string }>
-  >([])
-  const [bulkReconciling, setBulkReconciling] = useState(false)
+  >([]);
+  const [bulkReconciling, setBulkReconciling] = useState(false);
   const [bulkResults, setBulkResults] = useState<
     Array<{ docId: string; docName: string; result: any; error?: string }>
-  >([])
-  const [error, setError] = useState<string | null>(null)
-  const [_csvImporting, setCsvImporting] = useState(false)
+  >([]);
+  const [error, setError] = useState<string | null>(null);
+  const [_csvImporting, setCsvImporting] = useState(false);
 
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  })
+  });
 
   useEffect(() => {
     if (role && !canReconcile) {
-      navigate({ to: "/" })
+      navigate({ to: "/" });
     }
-  }, [role, canReconcile, navigate])
+  }, [role, canReconcile, navigate]);
 
   if (isViewer) {
     return (
@@ -99,7 +103,8 @@ function ReconcilePage() {
               </h3>
               <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
                 You do not have permission to access the Reconciliation page.
-                This page is only available to Finance Managers, Admins, and Owners.
+                This page is only available to Finance Managers, Admins, and
+                Owners.
               </p>
               <p className="text-xs text-yellow-700 dark:text-yellow-300">
                 Your current role: <strong>Viewer (Read-only)</strong>
@@ -115,62 +120,67 @@ function ReconcilePage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   const handleDropdownSelectHistory = async (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
-    const targetDocId = e.target.value
-    if (!targetDocId) return
+    const targetDocId = e.target.value;
+    if (!targetDocId) return;
 
-    const targetDoc = docs?.data.find((d: any) => d.id === targetDocId)
-    if (!targetDoc) return
+    const targetDoc = docs?.data.find((d: any) => d.id === targetDocId);
+    if (!targetDoc) return;
 
     if (documentsWithEntries.some((d) => d.docId === targetDocId)) {
-      setError("This document is already appended to your target tracking workbench.")
-      return
+      setError(
+        "This document is already appended to your target tracking workbench.",
+      );
+      return;
     }
+    const extractedRows = targetDoc.extracted_data?.rows as any[] | undefined;
 
+    const normalizedExtractedData =
+      extractedRows?.[0] || targetDoc.extracted_data || null;
     setDocumentsWithEntries((prev) => [
       ...prev,
       {
         docId: targetDoc.id,
         docName: targetDoc.original_filename,
-        extractedData: targetDoc.extracted_data,
+        extractedData: normalizedExtractedData,
         bankEntries: [emptyEntry(defaultUserIdentity)],
         collapsed: false,
       },
-    ])
-    e.target.value = ""
-  }
+    ]);
+    e.target.value = "";
+  };
 
   const handleBulkFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const files = Array.from(e.target.files || [])
-    if (files.length === 0) return
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    setError(null)
-    setUploadedFiles([])
+    setError(null);
+    setUploadedFiles([]);
 
     const processFile = async (file: File) => {
-      const tempId = `temp-${Date.now()}-${Math.random()}`
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
       setUploadedFiles((prev) => [
         ...prev,
         { id: tempId, name: file.name, status: "uploading" },
-      ])
+      ]);
 
       try {
         const uploadRes = (await FilesService.uploadFile({
           formData: { file },
-        })) as any
-        const docId = uploadRes.document.id
-        await FilesService.extractDocument({ documentId: docId })
+        })) as any;
+        const docId = uploadRes.document.id;
+        await FilesService.extractDocument({ documentId: docId });
 
-        await queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-        const docsData = await FilesService.listMyDocuments()
-        const doc = (docsData as any).data.find((d: any) => d.id === docId)
+        await queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+        const docsData = await FilesService.listMyDocuments();
+        const doc = (docsData as any).data.find((d: any) => d.id === docId);
 
         setUploadedFiles((prev) =>
           prev.map((f) =>
@@ -178,62 +188,63 @@ function ReconcilePage() {
               ? { id: docId, name: file.name, status: "extracted" }
               : f,
           ),
-        )
-
+        );
+        const normalizedExtractedData =
+          doc?.extracted_data?.rows?.[0] || doc?.extracted_data || null;
         setDocumentsWithEntries((prev) => [
           ...prev,
           {
             docId,
             docName: file.name,
-            extractedData: doc?.extracted_data || null,
+            extractedData: normalizedExtractedData || null,
             bankEntries: [emptyEntry(defaultUserIdentity)],
             collapsed: false,
           },
-        ])
+        ]);
 
-        return { success: true, docId }
+        return { success: true, docId };
       } catch (err: any) {
         setUploadedFiles((prev) =>
           prev.map((f) => (f.id === tempId ? { ...f, status: "error" } : f)),
-        )
-        return { success: false, error: err }
+        );
+        return { success: false, error: err };
       }
-    }
+    };
 
-    const concurrencyLimit = 3
+    const concurrencyLimit = 3;
     for (let i = 0; i < files.length; i += concurrencyLimit) {
-      const batch = files.slice(i, i + concurrencyLimit)
-      await Promise.all(batch.map(processFile))
+      const batch = files.slice(i, i + concurrencyLimit);
+      await Promise.all(batch.map(processFile));
     }
 
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   const handleBulkReconcile = async () => {
     if (documentsWithEntries.length === 0) {
-      setError("Please upload or select documents for bulk reconciliation.")
-      return
+      setError("Please upload or select documents for bulk reconciliation.");
+      return;
     }
 
     const invalidDocs = documentsWithEntries.filter(
       (doc) => doc.bankEntries.filter((e) => e.amount && e.date).length === 0,
-    )
+    );
 
     if (invalidDocs.length > 0) {
       setError(
         `Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`,
-      )
-      return
+      );
+      return;
     }
 
-    setBulkReconciling(true)
-    setError(null)
-    setBulkResults([])
+    setBulkReconciling(true);
+    setError(null);
+    setBulkResults([]);
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
-      )
+      );
 
       try {
         const res = (await ReconciliationService.reconcileDocument({
@@ -246,14 +257,14 @@ function ReconcilePage() {
               payer: e.payer || undefined,
             })),
           },
-        })) as any
+        })) as any;
 
         return {
           docId: docWithEntries.docId,
           docName: docWithEntries.docName,
           result: res.result,
           success: true,
-        }
+        };
       } catch (err: any) {
         return {
           docId: docWithEntries.docId,
@@ -261,37 +272,37 @@ function ReconcilePage() {
           result: null,
           error: err?.body?.detail ?? "Reconciliation failed",
           success: false,
-        }
+        };
       }
-    }
+    };
 
-    const concurrencyLimit = 5
-    const results: any[] = []
+    const concurrencyLimit = 5;
+    const results: any[] = [];
 
     for (let i = 0; i < documentsWithEntries.length; i += concurrencyLimit) {
-      const batch = documentsWithEntries.slice(i, i + concurrencyLimit)
-      const batchResults = await Promise.all(batch.map(reconcileDocument))
-      results.push(...batchResults)
-      setBulkResults([...results])
+      const batch = documentsWithEntries.slice(i, i + concurrencyLimit);
+      const batchResults = await Promise.all(batch.map(reconcileDocument));
+      results.push(...batchResults);
+      setBulkResults([...results]);
     }
 
-    setBulkReconciling(false)
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    setBulkReconciling(false);
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   const handleRetryFailed = async () => {
     const failedDocs = bulkResults
       .filter((r) => r.error)
       .map((r) => documentsWithEntries.find((d) => d.docId === r.docId))
-      .filter(Boolean) as DocumentWithEntries[]
+      .filter(Boolean) as DocumentWithEntries[];
 
-    if (failedDocs.length === 0) return
-    setBulkReconciling(true)
+    if (failedDocs.length === 0) return;
+    setBulkReconciling(true);
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
-      )
+      );
       try {
         const res = (await ReconciliationService.reconcileDocument({
           requestBody: {
@@ -303,14 +314,14 @@ function ReconcilePage() {
               payer: e.payer || undefined,
             })),
           },
-        })) as any
+        })) as any;
 
         return {
           docId: docWithEntries.docId,
           docName: docWithEntries.docName,
           result: res.result,
           success: true,
-        }
+        };
       } catch (err: any) {
         return {
           docId: docWithEntries.docId,
@@ -318,66 +329,66 @@ function ReconcilePage() {
           result: null,
           error: err?.body?.detail ?? "Reconciliation failed",
           success: false,
-        }
+        };
       }
-    }
+    };
 
-    const retryResults = await Promise.all(failedDocs.map(reconcileDocument))
+    const retryResults = await Promise.all(failedDocs.map(reconcileDocument));
     setBulkResults((prev) =>
       prev.map((r) => retryResults.find((rr) => rr.docId === r.docId) || r),
-    )
-    setBulkReconciling(false)
-    queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-  }
+    );
+    setBulkReconciling(false);
+    queryClient.invalidateQueries({ queryKey: ["my-documents"] });
+  };
 
   const handleCSVImport = (
     docIndex: number,
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setCsvImporting(true)
-    const reader = new FileReader()
+    setCsvImporting(true);
+    const reader = new FileReader();
 
     reader.onload = (event) => {
       try {
-        const text = event.target?.result as string
-        const lines = text.split("\n").filter((line) => line.trim())
-        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0
+        const text = event.target?.result as string;
+        const lines = text.split("\n").filter((line) => line.trim());
+        const startIdx = lines[0].toLowerCase().includes("amount") ? 1 : 0;
 
         const entries: BankEntry[] = lines
           .slice(startIdx)
           .map((line) => {
             const [amount, date, payer, description] = line
               .split(",")
-              .map((s) => s.trim())
+              .map((s) => s.trim());
             return {
               amount: amount || "",
               date: date || "",
               payer: payer || "",
               description: description || "",
-            }
+            };
           })
-          .filter((e) => e.amount && e.date)
+          .filter((e) => e.amount && e.date);
 
         if (entries.length > 0) {
           setDocumentsWithEntries((prev) =>
             prev.map((doc, idx) =>
               idx === docIndex ? { ...doc, bankEntries: entries } : doc,
             ),
-          )
+          );
         } else {
-          setError("CSV file contains no valid entries")
+          setError("CSV file contains no valid entries");
         }
       } catch (_err) {
-        setError("Failed to parse CSV file")
+        setError("Failed to parse CSV file");
       } finally {
-        setCsvImporting(false)
+        setCsvImporting(false);
       }
-    }
-    reader.readAsText(file)
-  }
+    };
+    reader.readAsText(file);
+  };
 
   const updateDocumentEntry = (
     docIndex: number,
@@ -396,8 +407,8 @@ function ReconcilePage() {
             }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const addDocumentEntry = (docIndex: number) => {
     setDocumentsWithEntries((prev) =>
@@ -412,8 +423,8 @@ function ReconcilePage() {
             }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const removeDocumentEntry = (docIndex: number, entryIndex: number) => {
     setDocumentsWithEntries((prev) =>
@@ -427,34 +438,47 @@ function ReconcilePage() {
             }
           : doc,
       ),
-    )
-  }
+    );
+  };
 
   const toggleDocumentCollapse = (docIndex: number) => {
     setDocumentsWithEntries((prev) =>
       prev.map((doc, idx) =>
         idx === docIndex ? { ...doc, collapsed: !doc.collapsed } : doc,
       ),
-    )
-  }
+    );
+  };
 
   const removeDocument = (docIndex: number) => {
-    setDocumentsWithEntries((prev) => prev.filter((_, idx) => idx !== docIndex))
-  }
+    setDocumentsWithEntries((prev) =>
+      prev.filter((_, idx) => idx !== docIndex),
+    );
+  };
 
   const downloadResultsCSV = (results: any[], filename: string) => {
     const csvRows = [
-      ["Document", "AI Result", "Confidence", "Amount", "Currency", "Date", "Status", "Explanation"].join(","),
-    ]
+      [
+        "Document",
+        "AI Result",
+        "Confidence",
+        "Amount",
+        "Currency",
+        "Date",
+        "Status",
+        "Explanation",
+      ].join(","),
+    ];
 
     results.forEach((r) => {
-      const decision = r.result?.agent_decision
-      const proof = r.result?.proof
+      const decision = r.result?.agent_decision;
+      const proof = r.result?.proof;
       csvRows.push(
         [
           r.docName,
           decision?.final_status || "error",
-          decision?.confidence ? `${(decision.confidence * 100).toFixed(1)}%` : "N/A",
+          decision?.confidence
+            ? `${(decision.confidence * 100).toFixed(1)}%`
+            : "N/A",
           proof?.amount || "N/A",
           proof?.currency || "N/A",
           proof?.date || "N/A",
@@ -463,20 +487,20 @@ function ReconcilePage() {
         ]
           .map((v) => `"${v}"`)
           .join(","),
-      )
-    })
+      );
+    });
 
-    const csvContent = csvRows.join("\n")
-    const blob = new Blob([csvContent], { type: "text/csv" })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6 flex flex-col gap-8">
@@ -496,7 +520,10 @@ function ReconcilePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="bulk-file-upload" className="text-xs text-gray-400 font-medium">
+            <label
+              htmlFor="bulk-file-upload"
+              className="text-xs text-gray-400 font-medium"
+            >
               Upload New Documents (Parallel Pipeline Extraction)
             </label>
             <input
@@ -508,12 +535,16 @@ function ReconcilePage() {
               className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
             <p className="text-xs text-gray-500">
-              Supports continuous native file uploads: Images, PDF, or XLSX spreadsheets.
+              Supports continuous native file uploads: Images, PDF, or XLSX
+              spreadsheets.
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="history-select-dropdown" className="text-xs text-gray-400 font-medium">
+            <label
+              htmlFor="history-select-dropdown"
+              className="text-xs text-gray-400 font-medium"
+            >
               Select From Document History
             </label>
             <select
@@ -535,7 +566,8 @@ function ReconcilePage() {
                 ))}
             </select>
             <p className="text-xs text-gray-500">
-              Selecting a document instantly appends it to your current workbench session below.
+              Selecting a document instantly appends it to your current
+              workbench session below.
             </p>
           </div>
         </div>
@@ -543,11 +575,18 @@ function ReconcilePage() {
         {/* Upload Status Pipeline Tracking */}
         {uploadedFiles.length > 0 && (
           <div className="flex flex-col gap-2 mt-2">
-            <p className="text-xs text-gray-500 font-semibold">Upload Progress Trackers</p>
+            <p className="text-xs text-gray-500 font-semibold">
+              Upload Progress Trackers
+            </p>
             <div className="flex flex-col gap-1">
               {uploadedFiles.map((file) => (
-                <div key={file.id} className="flex items-center justify-between px-3 py-2 bg-gray-200 dark:bg-gray-950 rounded-lg text-xs">
-                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">{file.name}</span>
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between px-3 py-2 bg-gray-200 dark:bg-gray-950 rounded-lg text-xs"
+                >
+                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
+                    {file.name}
+                  </span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       file.status === "extracted"
@@ -584,7 +623,10 @@ function ReconcilePage() {
 
           <div className="flex flex-col gap-4">
             {documentsWithEntries.map((docWithEntries, docIdx) => (
-              <div key={docWithEntries.docId} className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white/50 dark:bg-gray-900/10">
+              <div
+                key={docWithEntries.docId}
+                className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white/50 dark:bg-gray-900/10"
+              >
                 {/* Header Profile Info Bar */}
                 <div className="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-b border-gray-300 dark:border-gray-800">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -596,14 +638,24 @@ function ReconcilePage() {
                       {docWithEntries.collapsed ? "▶" : "▼"}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">{docWithEntries.docName}</p>
+                      <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">
+                        {docWithEntries.docName}
+                      </p>
                       {docWithEntries.extractedData && (
                         <p className="text-xs text-gray-500">
                           Extracted: {docWithEntries.extractedData.currency}{" "}
                           {docWithEntries.extractedData.amount}
                           {docWithEntries.extractedData.myr_amount &&
-                            docWithEntries.extractedData.currency !== baseCurrency && (
-                              <> → {formatAmount(docWithEntries.extractedData.myr_amount, baseCurrency)}</>
+                            docWithEntries.extractedData.currency !==
+                              baseCurrency && (
+                              <>
+                                {" "}
+                                →{" "}
+                                {formatAmount(
+                                  docWithEntries.extractedData.myr_amount,
+                                  baseCurrency,
+                                )}
+                              </>
                             )}
                         </p>
                       )}
@@ -623,30 +675,45 @@ function ReconcilePage() {
                   <div className="p-4 flex flex-col gap-4 bg-black/10">
                     {docWithEntries.extractedData && (
                       <div className="bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40 rounded-lg p-3">
-                        <p className="text-xs text-blue-600 dark:text-blue-300 font-semibold mb-2">💡 AI Extracted Content Preview</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-300 font-semibold mb-2">
+                          💡 AI Extracted Content Preview
+                        </p>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                           <div>
                             <span className="text-gray-500 block">Amount</span>
                             <span className="text-gray-700 dark:text-gray-300 font-medium font-mono">
-                              {docWithEntries.extractedData.currency} {docWithEntries.extractedData.amount}
+                              {docWithEntries.extractedData.currency}{" "}
+                              {docWithEntries.extractedData.amount}
                             </span>
                           </div>
                           <div>
                             <span className="text-gray-500 block">Date</span>
-                            <span className="text-gray-700 dark:text-gray-300 font-medium">{docWithEntries.extractedData.date || "N/A"}</span>
+                            <span className="text-gray-700 dark:text-gray-300 font-medium">
+                              {docWithEntries.extractedData.date || "N/A"}
+                            </span>
                           </div>
                           {docWithEntries.extractedData.payer && (
                             <div>
-                              <span className="text-gray-500 block">Extracted Payer</span>
-                              <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">{docWithEntries.extractedData.payer}</span>
+                              <span className="text-gray-500 block">
+                                Extracted Payer
+                              </span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">
+                                {docWithEntries.extractedData.payer}
+                              </span>
                             </div>
                           )}
                           {docWithEntries.extractedData.myr_amount &&
-                            docWithEntries.extractedData.currency !== baseCurrency && (
+                            docWithEntries.extractedData.currency !==
+                              baseCurrency && (
                               <div>
-                                <span className="text-gray-500 block">Converted to Base Currency</span>
+                                <span className="text-gray-500 block">
+                                  Converted to Base Currency
+                                </span>
                                 <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
-                                  {formatAmount(docWithEntries.extractedData.myr_amount, baseCurrency)}
+                                  {formatAmount(
+                                    docWithEntries.extractedData.myr_amount,
+                                    baseCurrency,
+                                  )}
                                 </span>
                               </div>
                             )}
@@ -657,13 +724,24 @@ function ReconcilePage() {
                     {/* Target Bank Statement Entry Allocation */}
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Bank Statement Entry Allocation</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
+                          Bank Statement Entry Allocation
+                        </p>
                         <div className="flex gap-3 text-xs">
                           <label className="text-blue-500 dark:text-blue-400 hover:underline cursor-pointer">
                             Import Entry CSV
-                            <input type="file" accept=".csv" onChange={(e) => handleCSVImport(docIdx, e)} className="hidden" />
+                            <input
+                              type="file"
+                              accept=".csv"
+                              onChange={(e) => handleCSVImport(docIdx, e)}
+                              className="hidden"
+                            />
                           </label>
-                          <button type="button" onClick={() => addDocumentEntry(docIdx)} className="text-blue-500 dark:text-blue-400 hover:underline">
+                          <button
+                            type="button"
+                            onClick={() => addDocumentEntry(docIdx)}
+                            className="text-blue-500 dark:text-blue-400 hover:underline"
+                          >
                             + Add Entry Row
                           </button>
                         </div>
@@ -671,37 +749,70 @@ function ReconcilePage() {
 
                       <div className="flex flex-col gap-2">
                         {docWithEntries.bankEntries.map((entry, entryIdx) => (
-                          <div key={entryIdx} className="grid grid-cols-12 gap-2 items-center">
+                          <div
+                            key={entryIdx}
+                            className="grid grid-cols-12 gap-2 items-center"
+                          >
                             <input
                               type="number"
                               placeholder={`Amount (${getSymbol(baseCurrency)})`}
                               value={entry.amount}
-                              onChange={(e) => updateDocumentEntry(docIdx, entryIdx, "amount", e.target.value)}
+                              onChange={(e) =>
+                                updateDocumentEntry(
+                                  docIdx,
+                                  entryIdx,
+                                  "amount",
+                                  e.target.value,
+                                )
+                              }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background font-mono"
                             />
                             <input
                               type="date"
                               value={entry.date}
-                              onChange={(e) => updateDocumentEntry(docIdx, entryIdx, "date", e.target.value)}
+                              onChange={(e) =>
+                                updateDocumentEntry(
+                                  docIdx,
+                                  entryIdx,
+                                  "date",
+                                  e.target.value,
+                                )
+                              }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
                             />
                             <input
                               type="text"
                               placeholder="Payer Identity"
                               value={entry.payer}
-                              onChange={(e) => updateDocumentEntry(docIdx, entryIdx, "payer", e.target.value)}
+                              onChange={(e) =>
+                                updateDocumentEntry(
+                                  docIdx,
+                                  entryIdx,
+                                  "payer",
+                                  e.target.value,
+                                )
+                              }
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
                             />
                             <input
                               type="text"
                               placeholder="Memo Description"
                               value={entry.description}
-                              onChange={(e) => updateDocumentEntry(docIdx, entryIdx, "description", e.target.value)}
+                              onChange={(e) =>
+                                updateDocumentEntry(
+                                  docIdx,
+                                  entryIdx,
+                                  "description",
+                                  e.target.value,
+                                )
+                              }
                               className="col-span-2 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
                             />
                             <button
                               type="button"
-                              onClick={() => removeDocumentEntry(docIdx, entryIdx)}
+                              onClick={() =>
+                                removeDocumentEntry(docIdx, entryIdx)
+                              }
                               disabled={docWithEntries.bankEntries.length === 1}
                               className="col-span-1 text-red-500 dark:text-red-400 text-sm hover:text-red-700 dark:hover:text-red-300 disabled:opacity-20 text-center font-bold"
                             >
@@ -741,14 +852,22 @@ function ReconcilePage() {
       {bulkResults.length > 0 && (
         <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Bulk Reconciliation Results</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              Bulk Reconciliation Results
+            </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400">
-                {bulkResults.filter((r) => !r.error).length} / {bulkResults.length} Successful Operations
+                {bulkResults.filter((r) => !r.error).length} /{" "}
+                {bulkResults.length} Successful Operations
               </span>
               <button
                 type="button"
-                onClick={() => downloadResultsCSV(bulkResults, `bulk-reconciliation-${Date.now()}.csv`)}
+                onClick={() =>
+                  downloadResultsCSV(
+                    bulkResults,
+                    `bulk-reconciliation-${Date.now()}.csv`,
+                  )
+                }
                 className="text-blue-500 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
                 Download Results Sheet (CSV)
@@ -758,8 +877,8 @@ function ReconcilePage() {
 
           <div className="flex flex-col gap-3">
             {bulkResults.map((result) => {
-              const decision = result.result?.agent_decision
-              const hasError = !!result.error
+              const decision = result.result?.agent_decision;
+              const hasError = !!result.error;
 
               return (
                 <div
@@ -772,14 +891,21 @@ function ReconcilePage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-gray-700 dark:text-gray-300">{result.docName}</p>
+                      <p className="font-medium text-sm truncate text-gray-700 dark:text-gray-300">
+                        {result.docName}
+                      </p>
                       {hasError ? (
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-mono">✗ Error Details: {result.error}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-mono">
+                          ✗ Error Details: {result.error}
+                        </p>
                       ) : (
                         <div className="flex items-center gap-4 mt-2">
-                          <StatusBadge status={decision?.final_status || "unknown"} />
+                          <StatusBadge
+                            status={decision?.final_status || "unknown"}
+                          />
                           <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                            Confidence Index: {Math.round((decision?.confidence ?? 0) * 100)}%
+                            Confidence Index:{" "}
+                            {Math.round((decision?.confidence ?? 0) * 100)}%
                           </span>
                         </div>
                       )}
@@ -787,7 +913,9 @@ function ReconcilePage() {
                     {!hasError && (
                       <button
                         type="button"
-                        onClick={() => { window.location.href = "/history" }}
+                        onClick={() => {
+                          window.location.href = "/history";
+                        }}
                         className="text-blue-500 dark:text-blue-400 hover:underline text-xs"
                       >
                         Auditing File →
@@ -797,7 +925,9 @@ function ReconcilePage() {
 
                   {!hasError && decision?.explanation && (
                     <div className="mt-3 bg-gray-100 dark:bg-black/40 rounded-lg px-3 py-2 border border-gray-300 dark:border-gray-800/60">
-                      <p className="text-xs text-gray-600 dark:text-gray-400 italic">"{decision.explanation}"</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 italic">
+                        "{decision.explanation}"
+                      </p>
                     </div>
                   )}
 
@@ -811,34 +941,50 @@ function ReconcilePage() {
                         currentReviewStatus={null}
                         currentCaseId={null}
                         currentRiskScore={null}
-                        onSaved={() => queryClient.invalidateQueries({ queryKey: ["my-documents"] })}
+                        onSaved={() =>
+                          queryClient.invalidateQueries({
+                            queryKey: ["my-documents"],
+                          })
+                        }
                       />
                     </div>
                   )}
                 </div>
-              )
+              );
             })}
           </div>
 
           {/* Aggregate Operations Stats Breakdown */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
             <div className="bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-green-600 dark:text-green-400 font-semibold tracking-wide uppercase">Auto-Approved Matching</p>
+              <p className="text-xs text-green-600 dark:text-green-400 font-semibold tracking-wide uppercase">
+                Auto-Approved Matching
+              </p>
               <p className="text-3xl font-bold text-green-600 dark:text-green-400 font-mono mt-1">
-                {bulkResults.filter((r) => r.result?.agent_decision?.final_status === "matched").length}
+                {
+                  bulkResults.filter(
+                    (r) => r.result?.agent_decision?.final_status === "matched",
+                  ).length
+                }
               </p>
             </div>
             <div className="bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold tracking-wide uppercase">Requires Verification Review</p>
+              <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold tracking-wide uppercase">
+                Requires Verification Review
+              </p>
               <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-400 font-mono mt-1">
-                {bulkResults.filter((r) => {
-                  const status = r.result?.agent_decision?.final_status
-                  return status === "fuzzy" || status === "unmatched"
-                }).length}
+                {
+                  bulkResults.filter((r) => {
+                    const status = r.result?.agent_decision?.final_status;
+                    return status === "fuzzy" || status === "unmatched";
+                  }).length
+                }
               </p>
             </div>
             <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-800/40 rounded-lg p-4 shadow-sm">
-              <p className="text-xs text-red-600 dark:text-red-400 font-semibold tracking-wide uppercase">Failed Processing Pipeline Exception</p>
+              <p className="text-xs text-red-600 dark:text-red-400 font-semibold tracking-wide uppercase">
+                Failed Processing Pipeline Exception
+              </p>
               <p className="text-3xl font-bold text-red-600 dark:text-red-400 font-mono mt-1">
                 {bulkResults.filter((r) => r.error).length}
               </p>
@@ -858,7 +1004,9 @@ function ReconcilePage() {
             )}
             <button
               type="button"
-              onClick={() => { window.location.href = "/history" }}
+              onClick={() => {
+                window.location.href = "/history";
+              }}
               className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
               View All in History Dashboard →
@@ -867,5 +1015,5 @@ function ReconcilePage() {
         </section>
       )}
     </div>
-  )
+  );
 }

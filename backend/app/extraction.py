@@ -1,12 +1,10 @@
 import base64
 import csv
 import json
-import re
-from io import BytesIO
-
+import io
 import boto3
 import openpyxl
-
+import re
 from app.core.config import settings
 
 
@@ -187,6 +185,63 @@ def _call_bedrock_text(text_content: str, ocr_hint: str = "") -> dict:
     return json.loads(text)
 
 
+def _call_bedrock_excel(csv_content: str) -> list[dict]:
+    """
+    Calls Claude on Bedrock specifically to extract multi-row spreadsheet data.
+    Expects a dense CSV string and guarantees a list of dictionaries in return.
+    """
+    client = _get_bedrock_client()
+
+    # Append strict array instructions to your base prompt
+    prompt = (
+        f"{EXTRACTION_PROMPT}\n\n"
+        "CRITICAL INSTRUCTIONS FOR SPREADSHEET DATA:\n"
+        "1. The input below is a raw spreadsheet converted to CSV format.\n"
+        "2. It contains multiple rows of transactions. You must extract ALL valid transactions.\n"
+        "3. You MUST output a SINGLE JSON ARRAY of objects: `[ {...}, {...} ]`.\n"
+        '4. Do NOT wrap the array in a parent object (e.g., no `{"transactions": [...]}`).\n'
+        "5. If a row is missing data, infer what you can from context or return null for that field."
+    )
+
+    response = client.invoke_model(
+        modelId="us.anthropic.claude-sonnet-4-6",
+        body=json.dumps(
+            {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 8192,  # Maximize tokens: Excel files generate massive JSON arrays
+                "messages": [
+                    {
+                        "role": "user",
+                        # High character limit to fit the entire CSV string
+                        "content": f"{prompt}\n\nSpreadsheet Data:\n{csv_content[:50000]}",
+                    }
+                ],
+            }
+        ),
+    )
+
+    result = json.loads(response["body"].read())
+    text = result["content"][0]["text"].strip()
+
+    json_match = re.search(r"\[.*\]", text, re.DOTALL)
+
+    if not json_match:
+        dict_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if dict_match:
+            parsed_dict = json.loads(dict_match.group(0))
+            # Find the first value that is a list and return it
+            for val in parsed_dict.values():
+                if isinstance(val, list):
+                    return val
+            return [parsed_dict]
+
+        raise ValueError("Could not locate a valid JSON array in the AI response.")
+
+    parsed_data = json.loads(json_match.group(0))
+
+    return parsed_data
+
+
 def extract_from_image(image_bytes: bytes) -> dict:
     """
     Pipeline:
@@ -241,54 +296,52 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
     return llm_result
 
 
-def extract_from_excel(excel_bytes: bytes, filename: str) -> list[dict]:
-    """Parse Excel/CSV directly — no AI needed for structured data."""
-    transactions = []
+def extract_from_excel(excel_bytes: bytes, filename: str) -> str:
+    """
+    Parses unstructured Excel/CSV files into a clean, token-efficient CSV string.
+    Strips completely empty rows/columns so the AI doesn't waste tokens on whitespace.
+    """
+    raw_rows = []
 
-    if filename.endswith(".csv"):
-        import io
-
-        reader = csv.DictReader(
-            io.StringIO(excel_bytes.decode("utf-8", errors="ignore"))
-        )
+    if filename.lower().endswith(".csv"):
+        decoded = excel_bytes.decode("utf-8", errors="ignore")
+        reader = csv.reader(io.StringIO(decoded))
         for row in reader:
-            transactions.append(_normalize_excel_row(row))
+            # Keep the row if it has at least one non-empty cell
+            if any(cell.strip() for cell in row if cell):
+                raw_rows.append([cell.strip() if cell else "" for cell in row])
     else:
-        wb = openpyxl.load_workbook(BytesIO(excel_bytes), read_only=True)
+        # CRITICAL: data_only=True ensures we get the calculated values, not raw Excel formulas
+        wb = openpyxl.load_workbook(
+            io.BytesIO(excel_bytes), read_only=True, data_only=True
+        )
         ws = wb.active
         if ws is None:
-            return transactions
-        headers = None
-        for i, row in enumerate(ws.iter_rows(values_only=True)):
-            if i == 0:
-                headers = [str(c).strip().lower() if c else "" for c in row]
-                continue
-            if headers and any(row):
-                row_dict = dict(zip(headers, row, strict=False))
-                transactions.append(_normalize_excel_row(row_dict))
+            return ""
 
-    return transactions
+        for row in ws.iter_rows(values_only=True):
+            # Openpyxl parses dates as datetime objects, str() converts them cleanly
+            if any(cell is not None and str(cell).strip() != "" for cell in row):
+                raw_rows.append(
+                    [str(cell).strip() if cell is not None else "" for cell in row]
+                )
 
+    if not raw_rows:
+        return ""
 
-def _normalize_excel_row(row: dict) -> dict:
-    def find(keys):
-        for k in keys:
-            for col, val in row.items():
-                if k in col.lower() and val is not None:
-                    return str(val).strip()
-        return None
+    # Remove columns that are completely empty across the entire document
+    max_cols = max(len(r) for r in raw_rows)
+    cols_to_keep = []
+    for col_idx in range(max_cols):
+        has_data = any(col_idx < len(row) and row[col_idx] != "" for row in raw_rows)
+        if has_data:
+            cols_to_keep.append(col_idx)
 
-    amount_str = find(["amount", "debit", "credit", "value"])
-    try:
-        amount = float(re.sub(r"[^\d.]", "", amount_str)) if amount_str else None
-    except ValueError:
-        amount = None
+    # Build the final token-efficient CSV string for the AI
+    output = io.StringIO()
+    writer = csv.writer(output)
+    for row in raw_rows:
+        filtered_row = [row[i] if i < len(row) else "" for i in cols_to_keep]
+        writer.writerow(filtered_row)
 
-    return {
-        "amount": amount,
-        "currency": find(["currency", "ccy"]) or "MYR",
-        "date": find(["date", "txn date", "transaction date", "value date"]),
-        "payer": find(["payer", "sender", "from"]),
-        "payee": find(["payee", "recipient", "beneficiary", "to"]),
-        "description": find(["description", "narration", "details", "remarks", "ref"]),
-    }
+    return output.getvalue()
