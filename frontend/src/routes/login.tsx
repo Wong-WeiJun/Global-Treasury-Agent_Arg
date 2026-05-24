@@ -78,6 +78,11 @@ function Login() {
               className="flex flex-col gap-6"
             >
               <div className="flex flex-col items-center gap-2 text-center">
+                <img
+                  src="/assets/images/favicon.png"
+                  alt="Brand Logo"
+                  className="h-14 w-auto object-contain mb-1"
+                />
                 <h1 className="text-2xl font-bold tracking-tight">
                   Login to your account
                 </h1>

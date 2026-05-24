@@ -13,13 +13,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <Appearance />
       </div>
       <div className="flex flex-1 flex-col items-center justify-center gap-6">
-        {/* Your custom brand logo */}
-        <img
-          src="/assets/images/favicon.png"
-          alt="Brand Logo"
-          className="h-16 w-auto object-contain"
-        />
-
         {/* Removed 'max-w-xs' constraints here so that the card size can be controlled cleanly by the children templates */}
         <div className="w-full flex justify-center">{children}</div>
       </div>
