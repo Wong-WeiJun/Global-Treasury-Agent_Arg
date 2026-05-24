@@ -16,11 +16,6 @@ function Dashboard() {
   const { user: currentUser } = useAuth()
 
   return (
-    /* FORCE FULL BREAKOUT:
-      - We completely neutralize layout paddings by matching your viewport metrics.
-      - w-screen + left-1/2 + -translate-x-1/2 completely yanks this element out of 
-        ANY parent container constraint, aligning it directly with the browser edges.
-    */
     <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen min-h-screen bg-[#111111] text-white font-sans antialiased selection:bg-[#1677c8] overflow-x-hidden">
       {/* HERO SECTION */}
       <section

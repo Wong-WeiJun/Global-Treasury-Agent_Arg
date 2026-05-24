@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FilesService, ReconciliationService } from "../../client"
 import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
+import useAuth from "@/hooks/useAuth" // Imported user identity hook
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
@@ -15,11 +16,12 @@ interface BankEntry {
   payer: string
 }
 
-const emptyEntry = (): BankEntry => ({
+// Adjusted helper to accept an optional active user string payload
+const emptyEntry = (defaultPayer = ""): BankEntry => ({
   amount: "",
   date: "",
   description: "",
-  payer: "",
+  payer: defaultPayer,
 })
 
 function StatusBadge({ status }: { status: string }) {
@@ -45,13 +47,38 @@ function StatusBadge({ status }: { status: string }) {
 function ReconcilePage() {
   const [setRecord] = useState<any>(null)
   const queryClient = useQueryClient()
+  const { user: currentUser } = useAuth() // Extracting current session context
+
+  // Safely evaluate standard identity parameter fallback string paths
+  const defaultUserIdentity = currentUser?.full_name || currentUser?.email || ""
+
   const [selectedDocId, setSelectedDocId] = useState<string>("")
-  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()])
+  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry(defaultUserIdentity)])
   const [reconciling, setReconciling] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [selectedFileType, setSelectedFileType] = useState<string>("")
+  
+  // Modal visibility state for full-screen zoom preview
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  // Sync state if initial rendering occurs prior to useAuth completing context collection
+  useEffect(() => {
+    if (defaultUserIdentity && bankEntries.length === 1 && bankEntries[0].payer === "") {
+      setBankEntries([emptyEntry(defaultUserIdentity)])
+    }
+  }, [defaultUserIdentity])
+
+  // Listen for the Escape key to instantly drop out of full-screen view
+  useEffect(() => {
+    if (!isModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsModalOpen(false)
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [isModalOpen])
 
   // Fetch available documents
   const { data: docs } = useQuery({
@@ -123,7 +150,7 @@ function ReconcilePage() {
     }
   }
 
-  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()])
+  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry(defaultUserIdentity)])
   const removeEntry = (i: number) =>
     setBankEntries((prev) => prev.filter((_, idx) => idx !== i))
   const updateEntry = (i: number, field: keyof BankEntry, value: string) =>
@@ -229,7 +256,7 @@ function ReconcilePage() {
 
         {uploadAndExtractMutation.isPending && (
           <p className="text-xs text-blue-400 animate-pulse mt-1">
-            ⏳ Processing document with Bedrock AI extraction... Please wait.
+          Processing document with Bedrock AI extraction... Please wait.
           </p>
         )}
 
@@ -257,18 +284,26 @@ function ReconcilePage() {
           </div>
         )}
 
-        {/* Image preview */}
+        {/* Dynamic Previews */}
         {previewUrl && (
           <div className="flex flex-col gap-2 mt-2">
             {selectedFileType === "image" ? (
-              <img
-                src={previewUrl}
-                alt="Payment proof preview"
-                className="rounded-lg border border-gray-700 max-h-64 object-contain self-start"
-              />
+              <button 
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="group relative block text-left focus:outline-none rounded-lg overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors cursor-zoom-in self-start max-h-64"
+              >
+                <img
+                  src={previewUrl}
+                  alt="Payment proof preview"
+                  className="rounded-lg max-h-64 object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-lg">
+                  <span className="bg-black/70 text-white text-xs font-medium px-2.5 py-1.5 rounded-md">View Full Size</span>
+                </div>
+              </button>
             ) : selectedFileType === "pdf" ? (
               <div className="bg-gray-900 rounded-lg px-4 py-4 flex items-center gap-3">
-                <span className="text-3xl">📄</span>
                 <div>
                   <p className="text-sm text-gray-300">
                     PDF uploaded successfully
@@ -370,8 +405,6 @@ function ReconcilePage() {
             <StatusBadge status={decision.final_status} />
           </div>
 
-          {/* ... (keep your existing proof, explanation, and confidence bar logic here) ... */}
-
           {result.match_scores?.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-xs text-gray-500 uppercase tracking-wide">
@@ -392,15 +425,13 @@ function ReconcilePage() {
                       s.amount_match ? "text-green-400" : "text-red-400"
                     }
                   >
-                    Amount {s.amount_match ? "✓" : "✗"} ({s.amount_diff_pct}%
-                    diff)
+                    Amount {s.amount_match ? "✓" : "✗"} ({s.amount_diff_pct}% diff)
                   </span>
                   <span
                     className={s.date_match ? "text-green-400" : "text-red-400"}
                   >
                     Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d apart)
                   </span>
-                  <span className="text-gray-500">—</span>
                 </div>
               ))}
             </div>
@@ -417,11 +448,43 @@ function ReconcilePage() {
               currentCaseId={null}
               currentRiskScore={null}
               onSaved={(rec) => {
-                setRecord(rec) // store audit record to show journal etc
+                setRecord(rec)
               }}
             />
           </div>
         </section>
+      )}
+
+      {/* FULL-SCREEN PREVIEW OVERLAY MODAL */}
+      {isModalOpen && previewUrl && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 select-none backdrop-blur-sm animate-fade-in">
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(false)}
+            className="absolute top-4 right-4 z-[110] bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white px-4 py-2 text-sm font-medium rounded-md shadow-lg transition-colors border border-zinc-700/60"
+          >
+            Close
+          </button>
+
+          {/* Dismissal Side Panels */}
+          <div 
+            onClick={() => setIsModalOpen(false)} 
+            className="absolute top-0 left-0 bottom-0 w-1/4 z-[101] cursor-zoom-out"
+            title="Click to close"
+          />
+          <div className="relative z-[105] max-w-full max-h-screen p-4 flex items-center justify-center">
+            <img
+              src={previewUrl}
+              alt="Full view proof preview"
+              className="max-w-full max-h-[92vh] object-contain rounded border border-zinc-800 shadow-2xl pointer-events-auto"
+            />
+          </div>
+          <div 
+            onClick={() => setIsModalOpen(false)} 
+            className="absolute top-0 right-0 bottom-0 w-1/4 z-[101] cursor-zoom-out"
+            title="Click to close"
+          />
+        </div>
       )}
     </div>
   )
