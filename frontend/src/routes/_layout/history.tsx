@@ -1,66 +1,114 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ReviewPanel } from "../../components/Common/ReviewPanel";
-import { FilesService } from "../../client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import { FilesService } from "../../client"
+import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
 
 export const Route = createFileRoute("/_layout/history")({
   component: HistoryPage,
-});
+})
 
-function StatusBadge({ status }: { status: string }) {
+function AIResultBadge({ result }: { result: string | null }) {
+  if (!result) return <span className="text-gray-500 text-xs">—</span>
+
   const styles: Record<string, string> = {
-    matched: "bg-green-900 text-green-300 border border-green-700",
-    fuzzy: "bg-yellow-900 text-yellow-300 border border-yellow-700",
-    unmatched: "bg-red-900 text-red-300 border border-red-700",
-  };
+    MATCHED: "bg-green-900/50 text-green-300 border border-green-700",
+    FUZZY_MATCH: "bg-amber-900/50 text-amber-300 border border-amber-700",
+    UNMATCHED: "bg-red-900/50 text-red-300 border border-red-700",
+  }
   const labels: Record<string, string> = {
-    matched: "✓ Matched",
-    fuzzy: "~ Fuzzy Match",
-    unmatched: "✗ Unmatched",
-  };
+    MATCHED: "✓ Match",
+    FUZZY_MATCH: "~ Fuzzy",
+    UNMATCHED: "✗ No Match",
+  }
   return (
     <span
-      className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
+      className={`px-2 py-0.5 rounded-full text-xs font-medium ${styles[result] ?? "bg-gray-800 text-gray-300"}`}
+    >
+      {labels[result] ?? result}
+    </span>
+  )
+}
+
+function WorkflowStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    PENDING_EXTRACTION: "bg-gray-800 text-gray-400 border border-gray-700",
+    EXTRACTED: "bg-blue-900/50 text-blue-300 border border-blue-700",
+    PENDING_ACTION: "bg-purple-900/50 text-purple-300 border border-purple-700",
+    APPROVED: "bg-green-900/50 text-green-300 border border-green-700",
+    UNDER_REVIEW: "bg-orange-900/50 text-orange-300 border border-orange-700",
+    EXCEPTION_APPROVED: "bg-cyan-900/50 text-cyan-300 border border-cyan-700",
+    REJECTED: "bg-rose-900/50 text-rose-300 border border-rose-700",
+  }
+  const labels: Record<string, string> = {
+    PENDING_EXTRACTION: "Pending",
+    EXTRACTED: "Extracted",
+    PENDING_ACTION: "Needs Review",
+    APPROVED: "✓ Approved",
+    UNDER_REVIEW: "⚠ Under Review",
+    EXCEPTION_APPROVED: "Exception OK",
+    REJECTED: "✗ Rejected",
+  }
+  return (
+    <span
+      className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  );
+  )
+}
+
+function RiskBadge({ level }: { level: string | null }) {
+  if (!level) return null
+
+  const styles: Record<string, string> = {
+    LOW: "bg-green-900/30 text-green-400 border border-green-800",
+    MEDIUM: "bg-yellow-900/30 text-yellow-400 border border-yellow-800",
+    HIGH: "bg-red-900/30 text-red-400 border border-red-800",
+  }
+
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-bold ${styles[level] ?? ""}`}
+    >
+      {level}
+    </span>
+  )
 }
 
 function DocumentRow({ doc }: { doc: any }) {
-  const [expanded, setExpanded] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const queryClient = useQueryClient();
+  const [expanded, setExpanded] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState(false)
+  const queryClient = useQueryClient()
 
   const deleteMutation = useMutation({
     mutationFn: (documentId: string) => FilesService.deleteFile({ documentId }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["my-documents"] }),
-  });
+  })
 
   const handleToggle = async () => {
     if (!expanded && !previewUrl && doc.file_type !== "excel") {
-      setLoadingPreview(true);
+      setLoadingPreview(true)
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: doc.id,
-        })) as { url: string };
-        setPreviewUrl(res.url);
+        })) as { url: string }
+        setPreviewUrl(res.url)
       } catch {
         // preview unavailable
       } finally {
-        setLoadingPreview(false);
+        setLoadingPreview(false)
       }
     }
-    setExpanded((p) => !p);
-  };
+    setExpanded((p) => !p)
+  }
 
-  const recon = doc.reconciliation_result;
-  const decision = recon?.agent_decision;
-  const fxResult = recon?.fx_result;
-  const proof = recon?.proof;
+  const recon = doc.reconciliation_result
+  const decision = recon?.agent_decision
+  const fxResult = recon?.fx_result
+  const proof = recon?.proof
 
   return (
     <>
@@ -68,22 +116,14 @@ function DocumentRow({ doc }: { doc: any }) {
         <td className="px-4 py-3 font-medium text-sm">
           {doc.original_filename}
         </td>
-        <td className="px-4 py-3 capitalize text-gray-500 text-sm">
-          {doc.file_type}
+        <td className="px-4 py-3 text-sm">
+          <AIResultBadge result={doc.ai_result} />
         </td>
         <td className="px-4 py-3 text-sm">
-          {doc.extracted_data ? (
-            <span className="text-green-500 text-xs">✓ Extracted</span>
-          ) : (
-            <span className="text-gray-500 text-xs">—</span>
-          )}
+          <WorkflowStatusBadge status={doc.workflow_status} />
         </td>
         <td className="px-4 py-3 text-sm">
-          {decision ? (
-            <StatusBadge status={decision.final_status} />
-          ) : (
-            <span className="text-gray-500 text-xs">—</span>
-          )}
+          <RiskBadge level={doc.risk_level} />
         </td>
         <td className="px-4 py-3 text-gray-500 text-sm">
           {new Date(doc.uploaded_at).toLocaleString()}
@@ -95,7 +135,7 @@ function DocumentRow({ doc }: { doc: any }) {
               onClick={handleToggle}
               className="text-blue-400 hover:underline text-xs"
             >
-              {expanded ? "Hide" : "Preview"}
+              {expanded ? "Hide" : "View"}
             </button>
             <button
               type="button"
@@ -188,9 +228,16 @@ function DocumentRow({ doc }: { doc: any }) {
 
               {/* Reconciliation result */}
               <div className="flex-1 flex flex-col gap-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                  Reconciliation Result
-                </p>
+                {/* Timeline */}
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
+                    Processing Timeline
+                  </p>
+                  <Timeline
+                    status={doc.workflow_status}
+                    caseId={doc.case_id}
+                  />
+                </div>
 
                 {!recon ? (
                   <p className="text-gray-500 text-sm">
@@ -201,12 +248,12 @@ function DocumentRow({ doc }: { doc: any }) {
                     {/* Status + FX */}
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        {decision && (
-                          <StatusBadge status={decision.final_status} />
-                        )}
+                        <AIResultBadge result={doc.ai_result} />
+                        <WorkflowStatusBadge status={doc.workflow_status} />
+                        {doc.risk_level && <RiskBadge level={doc.risk_level} />}
                         <span className="text-xs text-gray-500">
-                          Confidence:{" "}
-                          {Math.round((decision?.confidence ?? 0) * 100)}%
+                          AI Confidence:{" "}
+                          {Math.round((doc.ai_confidence ?? 0) * 100)}%
                         </span>
                       </div>
 
@@ -248,8 +295,21 @@ function DocumentRow({ doc }: { doc: any }) {
                       </div>
                     </div>
 
-                    {/* Agent explanation */}
-                    {decision?.explanation && (
+                    {/* AI Explanation (immutable) */}
+                    {doc.ai_explanation && (
+                      <div className="bg-blue-950/30 border border-blue-800/50 rounded-lg px-4 py-3 flex flex-col gap-1">
+                        <p className="text-xs text-blue-400 font-semibold flex items-center gap-2">
+                          <span>🤖</span>
+                          <span>AI Analysis (Original)</span>
+                        </p>
+                        <p className="text-xs text-gray-300 italic">
+                          "{doc.ai_explanation}"
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Agent explanation - legacy */}
+                    {decision?.explanation && !doc.ai_explanation && (
                       <div className="bg-gray-900 rounded-lg px-4 py-3 flex flex-col gap-1">
                         <p className="text-xs text-gray-500 font-semibold">
                           Agent Analysis
@@ -284,7 +344,7 @@ function DocumentRow({ doc }: { doc: any }) {
                         {recon.match_scores.map((s: any, i: number) => (
                           <div
                             key={i}
-                            className={`grid grid-cols-4 gap-1 text-xs px-3 py-1.5 rounded-lg ${
+                            className={`grid grid-cols-3 gap-1 text-xs px-3 py-1.5 rounded-lg ${
                               decision?.matched_entry_index === i
                                 ? "bg-green-950 border border-green-800"
                                 : "bg-gray-900"
@@ -308,25 +368,18 @@ function DocumentRow({ doc }: { doc: any }) {
                             >
                               Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d)
                             </span>
-                            <span
-                              className={
-                                s.payer_match
-                                  ? "text-green-400"
-                                  : "text-yellow-400"
-                              }
-                            >
-                              Payer {s.payer_match ? "✓" : "~"} (
-                              {Math.round(s.payer_similarity * 100)}%)
-                            </span>
                           </div>
                         ))}
                         {decision && (
                           <div className="mt-4 pt-4 border-t border-gray-800">
                             <ReviewPanel
                               documentId={doc.id}
-                              currentStatus={doc.review_status}
-                              currentNote={doc.review_note}
                               finalStatus={decision.final_status}
+                              matchScores={recon.match_scores}
+                              confidence={decision.confidence}
+                              currentReviewStatus={doc.review_status}
+                              currentCaseId={doc.case_id}
+                              currentRiskScore={doc.risk_score}
                               onSaved={() =>
                                 queryClient.invalidateQueries({
                                   queryKey: ["my-documents"],
@@ -345,22 +398,104 @@ function DocumentRow({ doc }: { doc: any }) {
         </tr>
       )}
     </>
-  );
+  )
 }
 
 function HistoryPage() {
+  const [filter, setFilter] = useState<string>("all")
+
   const { data, isLoading } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  });
+  })
+
+  const filters = [
+    { key: "all", label: "All", count: data?.data.length || 0 },
+    {
+      key: "needs_review",
+      label: "Needs Review",
+      count:
+        data?.data.filter((d: any) => d.workflow_status === "PENDING_ACTION")
+          .length || 0,
+    },
+    {
+      key: "high_risk",
+      label: "High Risk",
+      count:
+        data?.data.filter((d: any) => d.risk_level === "HIGH").length || 0,
+    },
+    {
+      key: "exceptions",
+      label: "Exceptions",
+      count:
+        data?.data.filter((d: any) => d.workflow_status === "EXCEPTION_APPROVED")
+          .length || 0,
+    },
+    {
+      key: "approved",
+      label: "Approved",
+      count:
+        data?.data.filter((d: any) => d.workflow_status === "APPROVED").length ||
+        0,
+    },
+    {
+      key: "under_review",
+      label: "Under Review",
+      count:
+        data?.data.filter((d: any) => d.workflow_status === "UNDER_REVIEW")
+          .length || 0,
+    },
+  ]
+
+  const filteredDocs = data?.data.filter((doc: any) => {
+    if (filter === "all") return true
+    if (filter === "needs_review")
+      return doc.workflow_status === "PENDING_ACTION"
+    if (filter === "high_risk") return doc.risk_level === "HIGH"
+    if (filter === "exceptions")
+      return doc.workflow_status === "EXCEPTION_APPROVED"
+    if (filter === "approved") return doc.workflow_status === "APPROVED"
+    if (filter === "under_review") return doc.workflow_status === "UNDER_REVIEW"
+    return true
+  })
 
   return (
-    <div className="max-w-6xl mx-auto p-6 flex flex-col gap-6">
+    <div className="max-w-7xl mx-auto p-6 flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">Upload History</h1>
+        <h1 className="text-2xl font-bold">
+          Treasury Operations Dashboard
+        </h1>
         <p className="text-gray-500 text-sm mt-1">
-          All uploaded documents with extraction and reconciliation results.
+          Autonomous cross-border payment reconciliation, discrepancy
+          investigation, and exception management.
         </p>
+      </div>
+
+      {/* Smart Filters */}
+      <div className="flex gap-2 flex-wrap">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFilter(f.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              filter === f.key
+                ? "bg-blue-600 text-white border border-blue-500"
+                : "bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-600"
+            }`}
+          >
+            {f.label}
+            <span
+              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                filter === f.key
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-700 text-gray-400"
+              }`}
+            >
+              {f.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {isLoading ? (
@@ -368,6 +503,10 @@ function HistoryPage() {
       ) : !data?.data.length ? (
         <p className="text-gray-400 text-sm text-center mt-12">
           No uploads yet. Go to Reconcile to upload a payment proof.
+        </p>
+      ) : !filteredDocs?.length ? (
+        <p className="text-gray-400 text-sm text-center mt-12">
+          No documents match the selected filter.
         </p>
       ) : (
         <table className="w-full text-sm border rounded-lg overflow-hidden">
@@ -377,13 +516,13 @@ function HistoryPage() {
                 Filename
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
-                Type
+                AI Result
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
-                Extracted
+                Workflow Status
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
-                Match
+                Risk
               </th>
               <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500">
                 Uploaded
@@ -394,12 +533,12 @@ function HistoryPage() {
             </tr>
           </thead>
           <tbody>
-            {data.data.map((doc: any) => (
+            {filteredDocs.map((doc: any) => (
               <DocumentRow key={doc.id} doc={doc} />
             ))}
           </tbody>
         </table>
       )}
     </div>
-  );
+  )
 }

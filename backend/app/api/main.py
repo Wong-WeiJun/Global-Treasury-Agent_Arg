@@ -10,6 +10,7 @@ from app.api.routes import (
     chat,
     fx,
     reconciliation,
+    review,
 )
 from app.core.config import settings
 
@@ -22,6 +23,7 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(file.router)
 api_router.include_router(fx.router)
 api_router.include_router(reconciliation.router)
+api_router.include_router(review.router)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

@@ -89,7 +89,8 @@ export function TopNavbar() {
             src="/assets/images/favicon.png"
             alt="Logo"
             className="h-8 w-auto object-contain"
-          /><h1>MyAudit</h1>
+          />
+          <h1>MyAudit</h1>
         </RouterLink>
 
         {/* REST OF LEFT SIDE ITEMS */}

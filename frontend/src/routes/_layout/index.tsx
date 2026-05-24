@@ -31,11 +31,15 @@ function Dashboard() {
       >
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-[72px] md:leading-tight font-bold mb-5 uppercase tracking-wide drop-shadow-md">
-            MyAudit Dashboard
+            Treasury AI Agent
           </h1>
-          <p className="text-lg md:text-xl text-zinc-300 max-w-xl mx-auto drop-shadow">
-            Hi, {currentUser?.full_name || currentUser?.email || "User"}.
-            Welcome back.
+          <p className="text-lg md:text-xl text-zinc-300 max-w-2xl mx-auto drop-shadow leading-relaxed">
+            Autonomous cross-border payment reconciliation, discrepancy
+            investigation, and exception management for global treasury
+            operations.
+          </p>
+          <p className="text-sm text-zinc-400 mt-4">
+            Welcome back, {currentUser?.full_name || currentUser?.email || "User"}
           </p>
         </div>
       </section>
@@ -83,11 +87,12 @@ function Dashboard() {
                 <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
                   Reconcile
                 </h3>
-                <p className="text-zinc-400 text-sm">Upload Documents.</p>
+                <p className="text-zinc-400 text-sm">
+                  Upload payment proofs for AI reconciliation.
+                </p>
               </div>
             </div>
           </Link>
-
 
           <Link
             to="/history"
@@ -103,7 +108,9 @@ function Dashboard() {
                 <h3 className="text-xl font-bold mb-2 text-black dark:text-white group-hover:text-[#65d4e8] transition-colors">
                   History
                 </h3>
-                <p className="text-zinc-400 text-sm">Review past uploaded documents.</p>
+                <p className="text-zinc-400 text-sm">
+                  Review past uploaded documents.
+                </p>
               </div>
             </div>
           </Link>

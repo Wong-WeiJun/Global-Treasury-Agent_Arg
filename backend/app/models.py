@@ -147,9 +147,25 @@ class Document(SQLModel, table=True):
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
     reconciliation_result: dict | None = Field(default=None, sa_column=Column(JSON))
-    review_status: str | None = Field(default=None)
-    review_note: str | None = Field(default=None)
-    reviewed_at: datetime | None = Field(default=None)
+
+    # AI Result (machine-generated, never overwritten by human action)
+    ai_result: str | None = Field(default=None)  # "MATCHED" | "FUZZY_MATCH" | "UNMATCHED"
+    ai_confidence: float | None = None  # 0.0 to 1.0
+    ai_explanation: str | None = None  # Why AI made this decision
+
+    # Workflow Status (human-driven business decision)
+    workflow_status: str = Field(default="PENDING_EXTRACTION")
+    # Possible values: "PENDING_EXTRACTION" | "EXTRACTED" | "PENDING_ACTION" | "APPROVED" | "UNDER_REVIEW" | "EXCEPTION_APPROVED" | "REJECTED"
+
+    # Review/Decision metadata
+    review_status: str | None = None  # Deprecated: use workflow_status
+    review_note: str | None = None
+    reviewed_at: datetime | None = None
+    reviewed_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    exception_type: str | None = None
+    case_id: str | None = None
+    risk_score: int | None = None
+    risk_level: str | None = None  # "LOW" | "MEDIUM" | "HIGH"
 
 
 class DocumentPublic(SQLModel):
@@ -160,9 +176,24 @@ class DocumentPublic(SQLModel):
     uploaded_at: datetime
     extracted_data: dict | None = None
     reconciliation_result: dict | None = None
+
+    # AI Result (immutable after AI processing)
+    ai_result: str | None = None
+    ai_confidence: float | None = None
+    ai_explanation: str | None = None
+
+    # Workflow Status (mutable by human actions)
+    workflow_status: str = "PENDING_EXTRACTION"
+
+    # Review/Decision metadata
     review_status: str | None = None
     review_note: str | None = None
     reviewed_at: datetime | None = None
+    reviewed_by: uuid.UUID | None = None
+    exception_type: str | None = None
+    case_id: str | None = None
+    risk_score: int | None = None
+    risk_level: str | None = None
 
 
 class DocumentsPublic(SQLModel):
@@ -224,6 +255,68 @@ class ReconcileResponse(BaseModel):
     result: dict
 
 
+class ReconciliationRecord(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    document_id: uuid.UUID = Field(foreign_key="document.id", nullable=False)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    reviewed_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+
+    # Match data
+    confidence: float
+    risk_score: int
+    risk_level: str | None = None  # "LOW" | "MEDIUM" | "HIGH"
+    fx_rate: float | None = None
+    normalized_amount_myr: float | None = None
+
+    # Decision
+    action: str  # "approved" | "flagged" | "exception" | "rejected"
+    exception_type: str | None = None  # "BANK_FEE" | "PARTIAL_PAYMENT" etc.
+    note: str | None = None
+    ai_explanation: str | None = None
+
+    # Investigation (for flagged)
+    case_id: str | None = None
+    assigned_to: str | None = None
+    priority: str | None = None  # "low" | "medium" | "high"
+    risk_factors: dict | None = Field(default=None, sa_column=Column(JSON))
+
+    # Accounting (for approved/exception)
+    journal_entry: dict | None = Field(default=None, sa_column=Column(JSON))
+
+
+class ReconciliationRecordPublic(SQLModel):
+    id: uuid.UUID
+    document_id: uuid.UUID
+    created_at: datetime
+    reviewed_by: uuid.UUID | None
+    confidence: float
+    risk_score: int
+    risk_level: str | None
+    fx_rate: float | None
+    normalized_amount_myr: float | None
+    action: str
+    exception_type: str | None
+    note: str | None
+    ai_explanation: str | None
+    case_id: str | None
+    assigned_to: str | None
+    priority: str | None
+    risk_factors: dict | None
+    journal_entry: dict | None
+
+
+class ReviewActionRequest(BaseModel):
+    action: str  # "approved" | "flagged" | "exception"
+    note: str | None = None
+    exception_type: str | None = None  # required when action == "exception"
+    # For flagged
+    priority: str | None = None  # "low" | "medium" | "high"
+
+
 class ReviewRequest(BaseModel):
     status: str  # "approved" | "flagged" | "exception"
     note: str | None = None
+
+
+class AskAIRequest(BaseModel):
+    question: str

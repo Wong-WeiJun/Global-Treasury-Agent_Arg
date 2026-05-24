@@ -1,18 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { FilesService, ReconciliationService } from "../../client";
-import { ReviewPanel } from "../../components/Common/ReviewPanel";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import { FilesService, ReconciliationService } from "../../client"
+import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
 
 export const Route = createFileRoute("/_layout/reconcile")({
   component: ReconcilePage,
-});
+})
 
 interface BankEntry {
-  amount: string;
-  date: string;
-  description: string;
-  payer: string;
+  amount: string
+  date: string
+  description: string
+  payer: string
 }
 
 const emptyEntry = (): BankEntry => ({
@@ -20,130 +20,131 @@ const emptyEntry = (): BankEntry => ({
   date: "",
   description: "",
   payer: "",
-});
+})
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     matched: "bg-green-900 text-green-300 border border-green-700",
     fuzzy: "bg-yellow-900 text-yellow-300 border border-yellow-700",
     unmatched: "bg-red-900 text-red-300 border border-red-700",
-  };
+  }
   const labels: Record<string, string> = {
     matched: "✓ Matched",
     fuzzy: "~ Fuzzy Match",
     unmatched: "✗ Unmatched",
-  };
+  }
   return (
     <span
       className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
     >
       {labels[status] ?? status}
     </span>
-  );
+  )
 }
 
 function ReconcilePage() {
-  const queryClient = useQueryClient();
-  const [selectedDocId, setSelectedDocId] = useState<string>("");
-  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()]);
-  const [reconciling, setReconciling] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedFileType, setSelectedFileType] = useState<string>("");
+  const [setRecord] = useState<any>(null)
+  const queryClient = useQueryClient()
+  const [selectedDocId, setSelectedDocId] = useState<string>("")
+  const [bankEntries, setBankEntries] = useState<BankEntry[]>([emptyEntry()])
+  const [reconciling, setReconciling] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [selectedFileType, setSelectedFileType] = useState<string>("")
 
   // Fetch available documents
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
-  });
+  })
 
   // Find the currently selected document to show its pre-extraction details
-  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId);
+  const selectedDoc = docs?.data.find((d) => d.id === selectedDocId)
 
   // Cast extracted_data to a usable record structure safely for TS rendering
   const extractedData = selectedDoc?.extracted_data as
     | Record<string, any>
     | null
-    | undefined;
+    | undefined
 
   // Combined Upload + Extract Mutation Flow
   const uploadAndExtractMutation = useMutation({
     mutationFn: async (file: File) => {
       const uploadRes = (await FilesService.uploadFile({
         formData: { file },
-      })) as any;
-      const docId = uploadRes.document.id;
-      const fileType = uploadRes.document.file_type;
-      await FilesService.extractDocument({ documentId: docId });
-      return { docId, fileType };
+      })) as any
+      const docId = uploadRes.document.id
+      const fileType = uploadRes.document.file_type
+      await FilesService.extractDocument({ documentId: docId })
+      return { docId, fileType }
     },
     onSuccess: async ({ docId, fileType }) => {
-      queryClient.invalidateQueries({ queryKey: ["my-documents"] });
-      setSelectedDocId(docId);
-      setSelectedFileType(fileType);
+      queryClient.invalidateQueries({ queryKey: ["my-documents"] })
+      setSelectedDocId(docId)
+      setSelectedFileType(fileType)
       // Fetch presigned URL for preview
       try {
         const res = (await FilesService.getDownloadUrl({
           documentId: docId,
-        })) as { url: string };
-        setPreviewUrl(res.url);
+        })) as { url: string }
+        setPreviewUrl(res.url)
       } catch {
         /* preview unavailable */
       }
     },
     onError: (err: any) => {
-      setError(err?.body?.detail ?? "Upload or extraction failed.");
+      setError(err?.body?.detail ?? "Upload or extraction failed.")
     },
-  });
+  })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
-      setError(null);
-      uploadAndExtractMutation.mutate(file);
+      setError(null)
+      uploadAndExtractMutation.mutate(file)
     }
-  };
+  }
 
   const handleDocSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value;
-    setSelectedDocId(id);
-    setPreviewUrl(null);
-    if (!id) return;
-    const doc = docs?.data.find((d: any) => d.id === id);
-    setSelectedFileType(doc?.file_type ?? "");
+    const id = e.target.value
+    setSelectedDocId(id)
+    setPreviewUrl(null)
+    if (!id) return
+    const doc = docs?.data.find((d: any) => d.id === id)
+    setSelectedFileType(doc?.file_type ?? "")
     try {
       const res = (await FilesService.getDownloadUrl({
         documentId: id,
-      })) as { url: string };
-      setPreviewUrl(res.url);
+      })) as { url: string }
+      setPreviewUrl(res.url)
     } catch {
       /* unavailable */
     }
-  };
+  }
 
-  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()]);
+  const addEntry = () => setBankEntries((prev) => [...prev, emptyEntry()])
   const removeEntry = (i: number) =>
-    setBankEntries((prev) => prev.filter((_, idx) => idx !== i));
+    setBankEntries((prev) => prev.filter((_, idx) => idx !== i))
   const updateEntry = (i: number, field: keyof BankEntry, value: string) =>
     setBankEntries((prev) =>
       prev.map((e, idx) => (idx === i ? { ...e, [field]: value } : e)),
-    );
+    )
 
   const handleReconcile = async () => {
     if (!selectedDocId) {
-      setError("Please select or upload a payment proof document.");
-      return;
+      setError("Please select or upload a payment proof document.")
+      return
     }
-    const validEntries = bankEntries.filter((e) => e.amount && e.date);
+    const validEntries = bankEntries.filter((e) => e.amount && e.date)
     if (validEntries.length === 0) {
-      setError("Please add at least one bank entry with amount and date.");
-      return;
+      setError("Please add at least one bank entry with amount and date.")
+      return
     }
 
-    setReconciling(true);
-    setError(null);
-    setResult(null);
+    setReconciling(true)
+    setError(null)
+    setResult(null)
 
     try {
       const res = (await ReconciliationService.reconcileDocument({
@@ -156,16 +157,16 @@ function ReconcilePage() {
             payer: e.payer || undefined,
           })),
         },
-      })) as any;
-      setResult(res.result);
+      })) as any
+      setResult(res.result)
     } catch (err: any) {
-      setError(err?.body?.detail ?? "Reconciliation failed");
+      setError(err?.body?.detail ?? "Reconciliation failed")
     } finally {
-      setReconciling(false);
+      setReconciling(false)
     }
-  };
+  }
 
-  const decision = result?.agent_decision;
+  const decision = result?.agent_decision
 
   return (
     <div className="max-w-4xl mx-auto p-6 flex flex-col gap-8">
@@ -365,6 +366,7 @@ function ReconcilePage() {
         <section className="flex flex-col gap-4 border rounded-lg p-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Result</h2>
+            <Timeline status="PENDING_ACTION" caseId={null} />
             <StatusBadge status={decision.final_status} />
           </div>
 
@@ -378,7 +380,7 @@ function ReconcilePage() {
               {result.match_scores.map((s: any, i: number) => (
                 <div
                   key={i}
-                  className={`grid grid-cols-4 gap-2 text-xs px-3 py-2 rounded-lg ${
+                  className={`grid grid-cols-3 gap-2 text-xs px-3 py-2 rounded-lg ${
                     decision.matched_entry_index === i
                       ? "bg-green-950 border border-green-800"
                       : "bg-gray-900"
@@ -398,14 +400,7 @@ function ReconcilePage() {
                   >
                     Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d apart)
                   </span>
-                  <span
-                    className={
-                      s.payer_match ? "text-green-400" : "text-yellow-400"
-                    }
-                  >
-                    Payer {s.payer_match ? "✓" : "~"} (
-                    {Math.round(s.payer_similarity * 100)}%)
-                  </span>
+                  <span className="text-gray-500">—</span>
                 </div>
               ))}
             </div>
@@ -415,16 +410,19 @@ function ReconcilePage() {
           <div className="mt-4 pt-4 border-t border-gray-800">
             <ReviewPanel
               documentId={selectedDocId}
-              currentStatus={null}
-              currentNote={null}
               finalStatus={decision.final_status}
-              onSaved={() =>
-                queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-              }
+              matchScores={result.match_scores}
+              confidence={decision.confidence}
+              currentReviewStatus={null}
+              currentCaseId={null}
+              currentRiskScore={null}
+              onSaved={(rec) => {
+                setRecord(rec) // store audit record to show journal etc
+              }}
             />
           </div>
         </section>
       )}
     </div>
-  );
+  )
 }
