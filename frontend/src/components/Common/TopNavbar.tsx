@@ -39,16 +39,16 @@ interface UserInfoProps {
 function UserInfo({ fullName, email }: UserInfoProps) {
   return (
     <div className="flex items-center gap-2.5 min-w-0">
-      <Avatar className="size-8 border border-zinc-200 dark:border-zinc-800">
-        <AvatarFallback className="bg-zinc-600 text-white text-xs">
+      <Avatar className="size-8 border border-blue-600">
+        <AvatarFallback className="bg-blue-700 text-white text-xs">
           {getInitials(fullName || "User")}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col items-start text-left min-w-0">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-[120px]">
+        <p className="text-sm font-medium text-white truncate max-w-30">
           {fullName || "User"}
         </p>
-        <p className="text-xs text-muted-foreground truncate max-w-[140px]">
+        <p className="text-xs text-blue-300 truncate max-w-35">
           {email}
         </p>
       </div>
@@ -85,7 +85,7 @@ export function TopNavbar() {
       <div className="flex items-center gap-8">
         <RouterLink
           to="/"
-          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity text-white"
         >
           <img
             src="/assets/images/favicon.png"
@@ -105,8 +105,8 @@ export function TopNavbar() {
                 to={item.path}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                    ? "bg-blue-900 text-[#65d4e8]"
+                    : "text-blue-200 hover:text-white hover:bg-blue-900"
                 }`}
               >
                 <item.icon className="size-4" />
@@ -128,8 +128,8 @@ export function TopNavbar() {
                 to={item.path}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-zinc-100 dark:bg-zinc-900 text-[#65d4e8]"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+                    ? "bg-blue-900 text-[#65d4e8]"
+                    : "text-blue-200 hover:text-white hover:bg-blue-900"
                 }`}
               >
                 <item.icon className="size-4" />
@@ -139,11 +139,11 @@ export function TopNavbar() {
           })}
         </nav>
 
-        <span className="h-5 w-px bg-zinc-200 dark:bg-zinc-800" />
+        <span className="h-5 w-px bg-blue-700" />
 
         {/* Theme Dropdown */}
         <DropdownMenu>
-          <DropdownMenuTrigger className="relative p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl transition-colors focus:outline-none flex items-center justify-center">
+          <DropdownMenuTrigger className="relative p-2 hover:bg-blue-900 rounded-xl transition-colors focus:outline-none flex items-center justify-center text-blue-200 hover:text-white">
             <Sun className="size-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute size-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             <span className="sr-only">Toggle theme</span>
@@ -173,12 +173,12 @@ export function TopNavbar() {
         {/* PROFILE DROPDOWN */}
         {currentUser && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl transition-colors focus:outline-none">
+            <DropdownMenuTrigger className="flex items-center gap-1 p-1.5 hover:bg-blue-900 rounded-xl transition-colors focus:outline-none">
               <UserInfo
                 fullName={currentUser?.full_name}
                 email={currentUser?.email}
               />
-              <ChevronsUpDown className="size-4 text-muted-foreground ml-1" />
+              <ChevronsUpDown className="size-4 text-blue-300 ml-1" />
             </DropdownMenuTrigger>
             <DropdownMenuContent
               className="w-56 rounded-xl mt-2"
