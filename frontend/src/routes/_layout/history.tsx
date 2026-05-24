@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect} from "react"
 import { FilesService } from "../../client"
 import { ReviewPanel, Timeline } from "../../components/Common/ReviewPanel"
 
@@ -88,35 +88,24 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [loadingPreview, setLoadingPreview] = useState(false)
   const queryClient = useQueryClient()
-  
-  // Ref to hold the active debounce timer
-  const hoverTimer = useRef<NodeJS.Timeout | null>(null)
 
-  const handlePointerHoverEnter = () => {
-    // Introduce a intentional short delay (300ms) to allow smooth unhindered scrolling
-    hoverTimer.current = setTimeout(async () => {
-      setExpanded(true)
-      if (!previewUrl && doc.file_type !== "excel") {
-        setLoadingPreview(true)
-        try {
-          const res = (await FilesService.getDownloadUrl({
-            documentId: doc.id,
-          })) as { url: string }
-          setPreviewUrl(res.url)
-        } catch {
-          /* fail gracefully */
-        } finally {
-          setLoadingPreview(false)
-        }
+  const handleRowClick = async () => {
+    const nextExpanded = !expanded
+    setExpanded(nextExpanded)
+
+    if (nextExpanded && !previewUrl && doc.file_type !== "excel") {
+      setLoadingPreview(true)
+      try {
+        const res = (await FilesService.getDownloadUrl({
+          documentId: doc.id,
+        })) as { url: string }
+        setPreviewUrl(res.url)
+      } catch {
+        /* fail gracefully */
+      } finally {
+        setLoadingPreview(false)
       }
-    }, 300)
-  }
-
-  const handlePointerHoverLeave = () => {
-    if (hoverTimer.current) {
-      clearTimeout(hoverTimer.current)
     }
-    setExpanded(false)
   }
 
   const recon = doc.reconciliation_result
@@ -125,28 +114,42 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
   const proof = recon?.proof
 
   const riskColorMap: Record<string, string> = {
-    HIGH: "bg-red-950/20 hover:bg-red-950/30 border-l-2 border-l-red-500",
-    MEDIUM: "bg-yellow-950/10 hover:bg-yellow-950/20 border-l-2 border-l-yellow-500",
-    LOW: "bg-green-950/10 hover:bg-green-950/20 border-l-2 border-l-green-500",
+    HIGH: "bg-red-950/20 border-l-2 border-l-red-500",
+    MEDIUM: "bg-yellow-950/10 border-l-2 border-l-yellow-500",
+    LOW: "bg-green-950/10 border-l-2 border-l-green-500",
   }
-  const computedRowStyle = riskColorMap[doc.risk_level] ?? "hover:bg-gray-50/5"
+  const computedRowStyle = riskColorMap[doc.risk_level] ?? ""
 
   return (
     <>
-      <tr 
-        onMouseEnter={handlePointerHoverEnter}
-        onMouseLeave={handlePointerHoverLeave}
-        className={`border-t transition-colors duration-150 ${computedRowStyle}`}
+      <tr
+        onClick={(e) => {
+          // Don't expand if clicking the checkbox
+          if ((e.target as HTMLElement).closest('input[type="checkbox"]')) return
+          handleRowClick()
+        }}
+        className={`border-t transition-colors duration-150 cursor-pointer select-none
+          ${computedRowStyle}
+          ${expanded
+            ? "bg-gray-800/60"
+            : "hover:bg-gray-50/5"
+          }`}
       >
         <td className="px-4 py-3 text-center">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onSelectToggle}
+            onClick={(e) => e.stopPropagation()}
             className="rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-900 h-4 w-4"
           />
         </td>
-        <td className="px-4 py-3 font-medium text-sm">
+        <td className="px-4 py-3 font-medium text-sm flex items-center gap-2">
+          <span
+            className={`text-gray-500 transition-transform duration-200 text-xs ${expanded ? "rotate-90" : ""}`}
+          >
+            ▶
+          </span>
           {doc.original_filename}
         </td>
         <td className="px-4 py-3 text-sm">
@@ -163,209 +166,175 @@ function DocumentRow({ doc, isSelected, onSelectToggle, onTriggerModalPreview }:
         </td>
       </tr>
 
-      {expanded && (
-        <tr 
-          onMouseEnter={() => { if (hoverTimer.current) clearTimeout(hoverTimer.current); setExpanded(true); }}
-          onMouseLeave={handlePointerHoverLeave}
-          className="border-t bg-gray-950/95 border-x border-gray-800 transition-all duration-300 ease-in-out"
-        >
-          <td colSpan={6} className="px-6 py-5 animate-fade-in">
-            <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-              <div className="flex flex-col gap-2 min-w-0 lg:w-64">
-                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                  Document Preview
-                </p>
-                {loadingPreview && (
-                  <div className="w-full h-40 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center">
-                    <span className="text-gray-500 text-xs">Loading Asset...</span>
-                  </div>
-                )}
-                {previewUrl && doc.file_type === "pdf" && (
-                  <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
-                    <span className="text-xs text-gray-400 truncate max-w-full">
-                      {doc.original_filename}
-                    </span>
-                    <a
-                      href={previewUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 text-xs hover:underline"
-                    >
-                      Open PDF ↗
-                    </a>
-                  </div>
-                )}
-                {previewUrl && doc.file_type === "image" && (
-                  <button
-                    type="button"
-                    onClick={() => onTriggerModalPreview(previewUrl)}
-                    className="group relative block text-left focus:outline-none rounded-lg overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors cursor-zoom-in"
-                  >
-                    <img
-                      src={previewUrl}
-                      alt={doc.original_filename}
-                      className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                      <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">Expand Size</span>
-                    </div>
-                  </button>
-                )}
-                {doc.file_type === "excel" && (
-                  <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
-                    <span className="text-4xl">📊</span>
-                    <span className="text-xs text-gray-400">
-                      {doc.original_filename}
-                    </span>
-                  </div>
-                )}
-
-                {doc.extracted_data && !doc.extracted_data.rows && (
-                  <div className="flex flex-col gap-1 mt-2 bg-gray-900/50 p-2 rounded border border-gray-800/60">
-                    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">
-                      Extracted
-                    </p>
-                    {(["amount", "currency", "date", "payer", "payee"] as const).map((k) =>
-                      doc.extracted_data[k] ? (
-                        <div key={k} className="flex justify-between text-xs py-0.5 border-b border-gray-800/30 last:border-0">
-                          <span className="text-gray-500 capitalize">{k}</span>
-                          <span className="text-gray-300 font-mono truncate max-w-[140px]">
-                            {String(doc.extracted_data[k])}
-                          </span>
-                        </div>
-                      ) : null,
-                    )}
-                    {doc.extracted_data.myr_amount && doc.extracted_data.currency !== "MYR" && (
-                      <div className="flex justify-between text-xs pt-1 mt-0.5 border-t border-gray-700/50">
-                        <span className="text-gray-400">MYR Equiv.</span>
-                        <span className="text-green-400 font-semibold">
-                          MYR {doc.extracted_data.myr_amount}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
+      {/* Accordion expand panel — animates via max-height */}
+      <tr className={`border-x border-gray-800 transition-all duration-300 ease-in-out ${expanded ? "border-t" : ""}`}>
+        <td colSpan={6} className="p-0 overflow-hidden">
+          <div
+            style={{
+              maxHeight: expanded ? "800px" : "0px",
+              opacity: expanded ? 1 : 0,
+              transition: "max-height 320ms cubic-bezier(0.4,0,0.2,1), opacity 220ms ease",
+              overflow: "hidden",
+            }}
+          >
+            <div className="px-6 py-5 bg-gray-950/95">
+              <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+                {/* === LEFT COLUMN: preview + extracted === */}
+                <div className="flex flex-col gap-2 min-w-0 lg:w-64">
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                    Processing Timeline
+                    Document Preview
                   </p>
-                  <Timeline status={doc.workflow_status} caseId={doc.case_id} />
-                </div>
-
-                {!recon ? (
-                  <p className="text-gray-500 text-sm italic">
-                    No reconciliation has been executed for this profile yet.
-                  </p>
-                ) : (
-                  <>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <AIResultBadge result={doc.ai_result} />
-                        <WorkflowStatusBadge status={doc.workflow_status} />
-                        {doc.risk_level && <RiskBadge level={doc.risk_level} />}
-                        <span className="text-xs text-gray-400 font-mono">
-                          Confidence: {Math.round((doc.ai_confidence ?? 0) * 100)}%
-                        </span>
+                  {loadingPreview && (
+                    <div className="w-full h-40 bg-gray-800 rounded-lg animate-pulse flex items-center justify-center">
+                      <span className="text-gray-500 text-xs">Loading Asset...</span>
+                    </div>
+                  )}
+                  {previewUrl && doc.file_type === "pdf" && (
+                    <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
+                      <span className="text-xs text-gray-400 truncate max-w-full">{doc.original_filename}</span>
+                      <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline">
+                        Open PDF ↗
+                      </a>
+                    </div>
+                  )}
+                  {previewUrl && doc.file_type === "image" && (
+                    <button
+                      type="button"
+                      onClick={() => onTriggerModalPreview(previewUrl)}
+                      className="group relative block text-left focus:outline-none rounded-lg overflow-hidden border border-gray-700 hover:border-gray-500 transition-colors cursor-zoom-in"
+                    >
+                      <img
+                        src={previewUrl}
+                        alt={doc.original_filename}
+                        className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">Expand Size</span>
                       </div>
-
-                      {proof && (
-                        <div className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg px-3 py-2 border border-gray-800">
-                          <span className="text-white font-semibold font-mono">
-                            {proof.currency} {proof.amount}
-                          </span>
-                          {fxResult && proof.currency !== "MYR" && (
-                            <>
-                              <span className="text-gray-600">→</span>
-                              <span className="text-green-400 font-semibold font-mono">
-                                MYR {fxResult.to_amount}
-                              </span>
-                              <span className="text-gray-500 text-xs font-mono">
-                                @ {fxResult.rate}
-                              </span>
-                            </>
-                          )}
+                    </button>
+                  )}
+                  {doc.file_type === "excel" && (
+                    <div className="bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-700">
+                      <span className="text-4xl">📊</span>
+                      <span className="text-xs text-gray-400">{doc.original_filename}</span>
+                    </div>
+                  )}
+                  {doc.extracted_data && !doc.extracted_data.rows && (
+                    <div className="flex flex-col gap-1 mt-2 bg-gray-900/50 p-2 rounded border border-gray-800/60">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Extracted</p>
+                      {(["amount", "currency", "date", "payer", "payee"] as const).map((k) =>
+                        doc.extracted_data[k] ? (
+                          <div key={k} className="flex justify-between text-xs py-0.5 border-b border-gray-800/30 last:border-0">
+                            <span className="text-gray-500 capitalize">{k}</span>
+                            <span className="text-gray-300 font-mono truncate max-w-[140px]">{String(doc.extracted_data[k])}</span>
+                          </div>
+                        ) : null,
+                      )}
+                      {doc.extracted_data.myr_amount && doc.extracted_data.currency !== "MYR" && (
+                        <div className="flex justify-between text-xs pt-1 mt-0.5 border-t border-gray-700/50">
+                          <span className="text-gray-400">MYR Equiv.</span>
+                          <span className="text-green-400 font-semibold">MYR {doc.extracted_data.myr_amount}</span>
                         </div>
                       )}
                     </div>
+                  )}
+                </div>
 
-                    <div className="flex flex-col gap-1">
-                      <div className="w-full bg-gray-800 rounded-full h-1.5">
-                        <div
-                          className={`h-1.5 rounded-full transition-all duration-300 ${
-                            decision?.final_status === "matched"
-                              ? "bg-green-500"
-                              : decision?.final_status === "fuzzy"
-                                ? "bg-yellow-500"
-                                : "bg-red-500"
-                          }`}
-                          style={{ width: `${(decision?.confidence ?? 0) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {doc.ai_explanation && (
-                      <div className="bg-blue-950/20 border border-blue-900/40 rounded-lg px-4 py-3 flex flex-col gap-1">
-                        <p className="text-xs text-blue-400 font-semibold flex items-center gap-1.5">
-                          <span>AI Analysis (Original)</span>
-                        </p>
-                        <p className="text-xs text-gray-300 italic leading-relaxed">
-                          "{doc.ai_explanation}"
-                        </p>
-                      </div>
-                    )}
-
-                    {recon.match_scores?.length > 0 && (
-                      <div className="flex flex-col gap-1.5">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
-                          Match Scores
-                        </p>
-                        {recon.match_scores.map((s: any, i: number) => (
-                          <div
-                            key={i}
-                            className={`grid grid-cols-3 gap-1 text-xs px-3 py-1.5 rounded-lg ${
-                              decision?.matched_entry_index === i
-                                ? "bg-green-950/60 border border-green-800"
-                                : "bg-gray-900/60 border border-transparent"
-                            }`}
-                          >
-                            <span className="text-gray-400 font-medium">Entry {i + 1}</span>
-                            <span className={s.amount_match ? "text-green-400" : "text-red-400"}>
-                              Amt {s.amount_match ? "✓" : "✗"} ({s.amount_diff_pct}%)
-                            </span>
-                            <span className={s.date_match ? "text-green-400" : "text-red-400"}>
-                              Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d)
-                            </span>
-                          </div>
-                        ))}
-                        
-                        {decision && (
-                          <div className="mt-4 pt-4 border-t border-gray-800">
-                            <ReviewPanel
-                              documentId={doc.id}
-                              finalStatus={decision.final_status}
-                              matchScores={recon.match_scores}
-                              confidence={decision.confidence}
-                              currentReviewStatus={doc.review_status}
-                              currentCaseId={doc.case_id}
-                              currentRiskScore={doc.risk_score}
-                              onSaved={() =>
-                                queryClient.invalidateQueries({ queryKey: ["my-documents"] })
-                              }
-                            />
+                {/* === RIGHT COLUMN: timeline + recon === */}
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Processing Timeline</p>
+                    <Timeline status={doc.workflow_status} caseId={doc.case_id} />
+                  </div>
+                  {!recon ? (
+                    <p className="text-gray-500 text-sm italic">No reconciliation has been executed for this profile yet.</p>
+                  ) : (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <AIResultBadge result={doc.ai_result} />
+                          <WorkflowStatusBadge status={doc.workflow_status} />
+                          {doc.risk_level && <RiskBadge level={doc.risk_level} />}
+                          <span className="text-xs text-gray-400 font-mono">
+                            Confidence: {Math.round((doc.ai_confidence ?? 0) * 100)}%
+                          </span>
+                        </div>
+                        {proof && (
+                          <div className="flex items-center gap-2 text-sm bg-gray-900 rounded-lg px-3 py-2 border border-gray-800">
+                            <span className="text-white font-semibold font-mono">{proof.currency} {proof.amount}</span>
+                            {fxResult && proof.currency !== "MYR" && (
+                              <>
+                                <span className="text-gray-600">→</span>
+                                <span className="text-green-400 font-semibold font-mono">MYR {fxResult.to_amount}</span>
+                                <span className="text-gray-500 text-xs font-mono">@ {fxResult.rate}</span>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </>
-                )}
+                      <div className="flex flex-col gap-1">
+                        <div className="w-full bg-gray-800 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full transition-all duration-300 ${
+                              decision?.final_status === "matched" ? "bg-green-500"
+                              : decision?.final_status === "fuzzy" ? "bg-yellow-500"
+                              : "bg-red-500"
+                            }`}
+                            style={{ width: `${(decision?.confidence ?? 0) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                      {doc.ai_explanation && (
+                        <div className="bg-blue-950/20 border border-blue-900/40 rounded-lg px-4 py-3 flex flex-col gap-1">
+                          <p className="text-xs text-blue-400 font-semibold">AI Analysis (Original)</p>
+                          <p className="text-xs text-gray-300 italic leading-relaxed">"{doc.ai_explanation}"</p>
+                        </div>
+                      )}
+                      {recon.match_scores?.length > 0 && (
+                        <div className="flex flex-col gap-1.5">
+                          <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Match Scores</p>
+                          {recon.match_scores.map((s: any, i: number) => (
+                            <div
+                              key={i}
+                              className={`grid grid-cols-3 gap-1 text-xs px-3 py-1.5 rounded-lg ${
+                                decision?.matched_entry_index === i
+                                  ? "bg-green-950/60 border border-green-800"
+                                  : "bg-gray-900/60 border border-transparent"
+                              }`}
+                            >
+                              <span className="text-gray-400 font-medium">Entry {i + 1}</span>
+                              <span className={s.amount_match ? "text-green-400" : "text-red-400"}>
+                                Amt {s.amount_match ? "✓" : "✗"} ({s.amount_diff_pct}%)
+                              </span>
+                              <span className={s.date_match ? "text-green-400" : "text-red-400"}>
+                                Date {s.date_match ? "✓" : "✗"} ({s.days_apart}d)
+                              </span>
+                            </div>
+                          ))}
+                          {decision && (
+                            <div className="mt-4 pt-4 border-t border-gray-800">
+                              <ReviewPanel
+                                documentId={doc.id}
+                                finalStatus={decision.final_status}
+                                matchScores={recon.match_scores}
+                                confidence={decision.confidence}
+                                currentReviewStatus={doc.review_status}
+                                currentCaseId={doc.case_id}
+                                currentRiskScore={doc.risk_score}
+                                onSaved={() => queryClient.invalidateQueries({ queryKey: ["my-documents"] })}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </td>
-        </tr>
-      )}
+          </div>
+        </td>
+      </tr>
     </>
   )
 }
@@ -456,59 +425,55 @@ function HistoryPage() {
         </p>
       </div>
 
-      {/* Overlapping Folder-Card Styled Tab Control Bar */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-zinc-800 gap-4 pt-4">
-        <div className="flex flex-wrap -mb-[1px] gap-1 z-10">
-          {filters.map((f) => {
-            const isActive = filter === f.key
-            return (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilter(f.key)}
-                className={`relative px-5 py-3 text-sm font-medium rounded-t-xl transition-all duration-150 flex items-center gap-2.5 border border-b-0 ${
-                  isActive
-                    ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-gray-200 dark:border-zinc-800 shadow-sm font-semibold z-20"
-                    : "bg-gray-100/50 dark:bg-zinc-900/40 text-gray-500 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800/60 hover:text-gray-700 dark:hover:text-zinc-300"
-                }`}
-              >
-                <span>{f.label}</span>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                    isActive 
-                      ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400" 
-                      : "bg-gray-200 dark:bg-zinc-800 text-gray-500"
-                  }`}
-                >
-                  {f.count}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Global Action Trigger Button Container */}
-        <div className="pb-2.5">
-          <button
-            type="button"
-            disabled={selectedDocIds.length === 0 || deleteMultipleMutation.isPending}
-            onClick={handleDeleteTriggered}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
-              selectedDocIds.length > 0
-                ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
-                : "bg-gray-800/40 text-gray-500 border-gray-800 cursor-not-allowed"
+<div className="flex flex-col md:flex-row md:items-end justify-between border-b border-gray-200 dark:border-zinc-800 gap-4 pt-4">
+  <div className="flex flex-wrap -mb-[1px] gap-1 z-10">
+    {filters.map((f) => {
+      const isActive = filter === f.key
+      return (
+        <button
+          key={f.key}
+          type="button"
+          onClick={() => setFilter(f.key)}
+          className={`relative px-5 py-3 text-sm font-medium rounded-t-xl transition-all duration-200 flex items-center gap-2.5 border border-b-0
+            ${isActive
+              ? "bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-gray-200 dark:border-zinc-700 shadow-md font-semibold z-20 -translate-y-0.5"
+              : "bg-gray-100/50 dark:bg-zinc-900/40 text-gray-500 border-transparent hover:bg-gray-100 dark:hover:bg-zinc-800/70 hover:text-gray-700 dark:hover:text-zinc-300 hover:-translate-y-px"
+            }`}
+        >
+          <span>{f.label}</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              isActive
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-zinc-800 text-gray-500"
             }`}
           >
-            <span>
-              {deleteMultipleMutation.isPending
-                ? "Deleting..."
-                : selectedDocIds.length > 0
-                  ? `Delete Selected (${selectedDocIds.length})`
-                  : "Delete Selected"}
-            </span>
-          </button>
-        </div>
-      </div>
+            {f.count}
+          </span>
+        </button>
+      )
+    })}
+  </div>
+
+  <div className="pb-2.5">
+    <button
+      type="button"
+      disabled={selectedDocIds.length === 0 || deleteMultipleMutation.isPending}
+      onClick={handleDeleteTriggered}
+      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
+        selectedDocIds.length > 0
+          ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
+          : "bg-gray-800/40 text-gray-500 border-gray-800 cursor-not-allowed"
+      }`}
+    >
+      {deleteMultipleMutation.isPending
+        ? "Deleting..."
+        : selectedDocIds.length > 0
+          ? `Delete Selected (${selectedDocIds.length})`
+          : "Delete Selected"}
+    </button>
+  </div>
+</div>
 
       {isLoading ? (
         <p className="text-gray-400 text-sm">Loading asset pipelines...</p>
@@ -573,7 +538,7 @@ function HistoryPage() {
             onClick={() => setActiveModalUrl(null)}
             className="absolute top-4 right-4 z-[110] bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white px-4 py-2 text-sm font-medium rounded-md shadow-lg transition-colors border border-zinc-700/60"
           >
-            Close Escape
+            Close
           </button>
 
           <div 
