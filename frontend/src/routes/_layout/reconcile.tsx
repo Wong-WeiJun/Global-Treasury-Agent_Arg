@@ -4,6 +4,7 @@ import { ShieldAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import useAuth from "@/hooks/useAuth"
 import { FilesService, ReconciliationService } from "../../client"
+import { ReviewPanel } from "../../components/Common/ReviewPanel"
 import useCurrency from "../../hooks/useCurrency"
 import { useUserRole } from "../../hooks/useUserRole"
 
@@ -12,7 +13,6 @@ export const Route = createFileRoute("/_layout/reconcile")({
 })
 
 interface BankEntry {
-  // ✅ KEPT from main — id is needed for CSV import (crypto.randomUUID())
   id: string
   amount: string
   date: string
@@ -26,7 +26,6 @@ interface DocumentWithEntries {
   extractedData: any
   bankEntries: BankEntry[]
   collapsed: boolean
-  // ✅ KEPT from main — for document preview feature
   previewUrl?: string | null
   loadingPreview?: boolean
 }
@@ -39,15 +38,15 @@ const emptyEntry = (defaultPayer = ""): BankEntry => ({
   payer: defaultPayer,
 })
 
-// ✅ KEPT from backfront — light/dark mode support
+// ✅ Oggy67 — text-green-800 (darker, better contrast)
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     matched:
-      "bg-green-100 text-green-700 border border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
+      "bg-green-100 text-green-800 border border-green-300 dark:bg-green-900 dark:text-green-300 dark:border-green-700",
     fuzzy:
-      "bg-yellow-100 text-yellow-700 border border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700",
+      "bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700",
     unmatched:
-      "bg-red-100 text-red-700 border border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
+      "bg-red-100 text-red-800 border border-red-300 dark:bg-red-900 dark:text-red-300 dark:border-red-700",
   }
   const labels: Record<string, string> = {
     matched: "✓ Matched",
@@ -56,7 +55,7 @@ function StatusBadge({ status }: { status: string }) {
   }
   return (
     <span
-      className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-gray-800 text-gray-300"}`}
+      className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] ?? "bg-muted text-muted-foreground"}`}
     >
       {labels[status] ?? status}
     </span>
@@ -72,7 +71,6 @@ function ReconcilePage() {
 
   const defaultUserIdentity = currentUser?.full_name || currentUser?.email || ""
 
-  // ✅ KEPT from backfront — semicolon style
   const [documentsWithEntries, setDocumentsWithEntries] = useState<
     DocumentWithEntries[]
   >([])
@@ -86,7 +84,6 @@ function ReconcilePage() {
   const [error, setError] = useState<string | null>(null)
   const [_csvImporting, setCsvImporting] = useState(false)
 
-  // Document preview modal state
   const [previewModal, setPreviewModal] = useState<{
     url: string
     name: string
@@ -94,13 +91,11 @@ function ReconcilePage() {
   } | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
 
-  // Fetch available history documents
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
   })
 
-  // Close preview modal on Escape
   useEffect(() => {
     if (!previewModal) return
     const handler = (e: KeyboardEvent) => {
@@ -110,14 +105,12 @@ function ReconcilePage() {
     return () => window.removeEventListener("keydown", handler)
   }, [previewModal])
 
-  // Redirect viewers to dashboard safely via hooks pipeline
   useEffect(() => {
     if (role && !canReconcile) {
       navigate({ to: "/" })
     }
   }, [role, canReconcile, navigate])
 
-  // ── Date format helpers ────────────────────────────────────────────────────
   const toInputDate = (ddmmyyyy: string): string => {
     if (!ddmmyyyy) return ""
     if (/^\d{4}-\d{2}-\d{2}$/.test(ddmmyyyy)) return ddmmyyyy
@@ -140,9 +133,7 @@ function ReconcilePage() {
     if (yyyy && mm && dd) return `${dd}/${mm}/${yyyy}`
     return raw
   }
-  // ──────────────────────────────────────────────────────────────────────────
 
-  // Open document preview modal
   const handleOpenPreview = async (
     docId: string,
     docName: string,
@@ -194,7 +185,6 @@ function ReconcilePage() {
     )
   }
 
-  // ✅ KEPT from backfront — semicolon style
   const handleDropdownSelectHistory = async (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
@@ -227,7 +217,6 @@ function ReconcilePage() {
     e.target.value = ""
   }
 
-  // ✅ KEPT from backfront — semicolon style
   const handleBulkFileChange = async (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -293,7 +282,6 @@ function ReconcilePage() {
     queryClient.invalidateQueries({ queryKey: ["my-documents"] })
   }
 
-  // Bulk Reconciliation Call
   const handleBulkReconcile = async () => {
     if (documentsWithEntries.length === 0) {
       setError("Please upload or select documents for bulk reconciliation.")
@@ -304,7 +292,6 @@ function ReconcilePage() {
       (doc) => doc.bankEntries.filter((e) => e.amount && e.date).length === 0,
     )
 
-    // ✅ KEPT from backfront — semicolon style
     if (invalidDocs.length > 0) {
       setError(
         `Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`,
@@ -317,7 +304,6 @@ function ReconcilePage() {
     setBulkResults([])
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
-      // ✅ KEPT from backfront — semicolon style
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
       )
@@ -376,7 +362,6 @@ function ReconcilePage() {
     setBulkReconciling(true)
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
-      // ✅ KEPT from backfront — semicolon style
       const validEntries = docWithEntries.bankEntries.filter(
         (e) => e.amount && e.date,
       )
@@ -418,7 +403,7 @@ function ReconcilePage() {
     queryClient.invalidateQueries({ queryKey: ["my-documents"] })
   }
 
-  // ✅ KEPT from main — CSV date normalization (CSV change)
+  // ✅ CSV date normalization
   const handleCSVImport = (
     docIndex: number,
     e: React.ChangeEvent<HTMLInputElement>,
@@ -441,7 +426,7 @@ function ReconcilePage() {
             const [amount, date, payer, description] = line
               .split(",")
               .map((s) => s.trim())
-            // ✅ Normalise CSV date to dd/mm/yyyy (CSV change from main)
+            // Normalise CSV date to dd/mm/yyyy
             return {
               id: crypto.randomUUID(),
               amount: amount || "",
@@ -584,24 +569,22 @@ function ReconcilePage() {
     <div className="max-w-6xl mx-auto p-6 flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold">Bulk Reconciliation</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Match multiple payment proofs concurrently against bank statement
-          entries using AI pipelines.
+        {/* ✅ Oggy67 — semantic text-muted-foreground */}
+        <p className="text-muted-foreground text-sm mt-1">
+          Match multiple payment proofs concurrently against bank statement entries using AI pipelines.
         </p>
       </div>
 
       {/* Step 1: Upload or Select Section */}
       <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
           Step 1 — Choose Payment Proof Documents
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="bulk-file-upload"
-              className="text-xs text-gray-400 font-medium"
-            >
+            {/* ✅ Oggy67 — semantic text-muted-foreground */}
+            <label htmlFor="bulk-file-upload" className="text-xs text-muted-foreground font-medium">
               Upload New Documents (Parallel Pipeline Extraction)
             </label>
             <input
@@ -612,17 +595,13 @@ function ReconcilePage() {
               onChange={handleBulkFileChange}
               className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
-            <p className="text-xs text-gray-500">
-              Supports continuous native file uploads: Images, PDF, or XLSX
-              spreadsheets.
+            <p className="text-xs text-muted-foreground">
+              Supports continuous native file uploads: Images, PDF, or XLSX spreadsheets.
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="history-select-dropdown"
-              className="text-xs text-gray-400 font-medium"
-            >
+            <label htmlFor="history-select-dropdown" className="text-xs text-muted-foreground font-medium">
               Select From Document History
             </label>
             <select
@@ -643,9 +622,8 @@ function ReconcilePage() {
                   </option>
                 ))}
             </select>
-            <p className="text-xs text-gray-500">
-              Selecting a document instantly appends it to your current
-              workbench session below.
+            <p className="text-xs text-muted-foreground">
+              Selecting a document instantly appends it to your current workbench session below.
             </p>
           </div>
         </div>
@@ -653,19 +631,14 @@ function ReconcilePage() {
         {/* Upload Status Pipeline Tracking */}
         {uploadedFiles.length > 0 && (
           <div className="flex flex-col gap-2 mt-2">
-            <p className="text-xs text-gray-500 font-semibold">
-              Upload Progress Trackers
-            </p>
+            <p className="text-xs text-muted-foreground font-semibold">Upload Progress Trackers</p>
             <div className="flex flex-col gap-1">
               {uploadedFiles.map((file) => (
-                // ✅ KEPT from backfront — light/dark mode classes
                 <div
                   key={file.id}
-                  className="flex items-center justify-between px-3 py-2 bg-gray-200 dark:bg-gray-950 rounded-lg text-xs"
+                  className="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-950 rounded-lg text-xs"
                 >
-                  <span className="text-gray-700 dark:text-gray-300 truncate flex-1">
-                    {file.name}
-                  </span>
+                  <span className="text-foreground truncate flex-1">{file.name}</span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       file.status === "extracted"
@@ -692,10 +665,10 @@ function ReconcilePage() {
       {documentsWithEntries.length > 0 && (
         <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Step 2 — Configure Bank Entries for Each Document
             </h2>
-            <span className="text-xs text-blue-400 font-medium">
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
               {documentsWithEntries.length} Active Workbench Profiles
             </span>
           </div>
@@ -710,26 +683,27 @@ function ReconcilePage() {
               return (
                 <div
                   key={docWithEntries.docId}
-                  // ✅ KEPT from backfront — light/dark mode classes
-                  className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white/50 dark:bg-gray-900/10"
+
+                  className="border border-border rounded-lg overflow-hidden"
                 >
                   {/* Header Profile Info Bar */}
-                  {/* ✅ KEPT from backfront — light/dark mode classes */}
-                  <div className="bg-gray-200 dark:bg-gray-900 px-4 py-3 flex items-center justify-between border-b border-gray-300 dark:border-gray-800">
+                  {/* ✅ Oggy67 — semantic bg-muted border-border */}
+                  <div className="bg-muted px-4 py-3 flex items-center justify-between border-b border-border">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <button
                         type="button"
                         onClick={() => toggleDocumentCollapse(docIdx)}
-                        className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-xs font-mono"
+                        className="text-muted-foreground hover:text-foreground text-xs font-mono"
                       >
                         {docWithEntries.collapsed ? "▶" : "▼"}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">
+                        {/* ✅ Oggy67 — semantic text-foreground */}
+                        <p className="font-medium text-sm truncate text-foreground">
                           {docWithEntries.docName}
                         </p>
                         {docWithEntries.extractedData && (
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             Extracted: {docWithEntries.extractedData.currency}{" "}
                             {docWithEntries.extractedData.amount}
                             {docWithEntries.extractedData.myr_amount &&
@@ -750,7 +724,6 @@ function ReconcilePage() {
                     </div>
 
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* ✅ KEPT from main — preview button feature */}
                       {fileType !== "excel" && (
                         <button
                           type="button"
@@ -762,7 +735,7 @@ function ReconcilePage() {
                               fileType,
                             )
                           }
-                          className="text-blue-400 hover:text-blue-300 text-xs px-2.5 py-1 hover:bg-blue-950/40 border border-blue-900/50 rounded transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-xs px-2.5 py-1 hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {previewLoading ? (
                             <span className="animate-pulse">Loading…</span>
@@ -790,36 +763,43 @@ function ReconcilePage() {
                       <button
                         type="button"
                         onClick={() => removeDocument(docIdx)}
-                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 hover:bg-red-950/40 rounded transition-colors"
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs px-2 py-1 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
                       >
                         Remove Target
                       </button>
                     </div>
                   </div>
 
-                  {/* Main Collapse Sub-Panels Block */}
-                  {/* ✅ KEPT from backfront — simple show/hide */}
-                  {!docWithEntries.collapsed && (
-                    <div className="p-4 flex flex-col gap-4 bg-black/10">
+                  {/* ✅ Oggy67 — smooth CSS animation on collapse */}
+                  <div
+                    style={{
+                      maxHeight: docWithEntries.collapsed ? "0px" : "1200px",
+                      opacity: docWithEntries.collapsed ? 0 : 1,
+                      transition:
+                        "max-height 300ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* ✅ Oggy67 — semantic bg-muted/30 */}
+                    <div className="p-4 flex flex-col gap-4 bg-muted/30 dark:bg-black/10">
                       {docWithEntries.extractedData && (
-                        // ✅ KEPT from backfront — light/dark mode classes
                         <div className="bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40 rounded-lg p-3">
-                          <p className="text-xs text-blue-600 dark:text-blue-300 font-semibold mb-2">
+                          {/* ✅ Oggy67 — text-blue-700 */}
+                          <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-2">
                             💡 AI Extracted Content Preview
                           </p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                             <div>
-                              <span className="text-gray-500 block">
-                                Amount
-                              </span>
-                              <span className="text-gray-700 dark:text-gray-300 font-medium font-mono">
+                              <span className="text-muted-foreground block">Amount</span>
+
+                              <span className="text-foreground font-medium font-mono">
                                 {docWithEntries.extractedData.currency}{" "}
                                 {docWithEntries.extractedData.amount}
                               </span>
                             </div>
                             <div>
-                              <span className="text-gray-500 block">Date</span>
-                              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                              <span className="text-muted-foreground block">Date</span>
+                              <span className="text-foreground font-medium">
                                 {formatDisplayDate(
                                   docWithEntries.extractedData.date,
                                 )}
@@ -827,10 +807,10 @@ function ReconcilePage() {
                             </div>
                             {docWithEntries.extractedData.payer && (
                               <div>
-                                <span className="text-gray-500 block">
+                                <span className="text-muted-foreground block">
                                   Extracted Payer
                                 </span>
-                                <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">
+                                <span className="text-foreground font-medium truncate block">
                                   {docWithEntries.extractedData.payer}
                                 </span>
                               </div>
@@ -839,10 +819,11 @@ function ReconcilePage() {
                               docWithEntries.extractedData.currency !==
                                 baseCurrency && (
                                 <div>
-                                  <span className="text-gray-500 block">
+                                  <span className="text-muted-foreground block">
                                     Converted to Base Currency
                                   </span>
-                                  <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
+                                  {/* ✅ Oggy67 — text-green-700 */}
+                                  <span className="text-green-700 dark:text-green-400 font-semibold font-mono">
                                     {formatAmount(
                                       docWithEntries.extractedData.myr_amount,
                                       baseCurrency,
@@ -857,11 +838,12 @@ function ReconcilePage() {
                       {/* Target Bank Statement Entry Allocation */}
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">
+                          <p className="text-xs text-muted-foreground font-semibold">
                             Bank Statement Entry Allocation
                           </p>
                           <div className="flex gap-3 text-xs">
-                            <label className="text-blue-500 dark:text-blue-400 hover:underline cursor-pointer">
+                            {/* ✅ Oggy67 — text-blue-600 */}
+                            <label className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
                               Import Entry CSV
                               <input
                                 type="file"
@@ -873,14 +855,14 @@ function ReconcilePage() {
                             <button
                               type="button"
                               onClick={() => addDocumentEntry(docIdx)}
-                              className="text-blue-500 dark:text-blue-400 hover:underline"
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
                             >
                               + Add Entry Row
                             </button>
                           </div>
                         </div>
 
-                        {/* ✅ key={entry.id} from main — needed for CSV-imported entries */}
+                        {/* ✅ main — key={entry.id} needed for CSV-imported entries */}
                         {docWithEntries.bankEntries.map((entry, entryIdx) => (
                           <div
                             key={entry.id}
@@ -911,7 +893,8 @@ function ReconcilePage() {
                                   fromInputDate(e.target.value),
                                 )
                               }
-                              className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
+
+                              className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
                             />
                             <input
                               type="text"
@@ -925,7 +908,7 @@ function ReconcilePage() {
                                   e.target.value,
                                 )
                               }
-                              className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
+                              className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
                             />
                             <input
                               type="text"
@@ -939,7 +922,7 @@ function ReconcilePage() {
                                   e.target.value,
                                 )
                               }
-                              className="col-span-2 border rounded-lg px-3 py-2 text-sm bg-background text-gray-700 dark:text-gray-300"
+                              className="col-span-2 border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
                             />
                             <button
                               type="button"
@@ -947,7 +930,7 @@ function ReconcilePage() {
                                 removeDocumentEntry(docIdx, entryIdx)
                               }
                               disabled={docWithEntries.bankEntries.length === 1}
-                              className="col-span-1 text-red-500 dark:text-red-400 text-sm hover:text-red-700 dark:hover:text-red-300 disabled:opacity-20 text-center font-bold"
+                              className="col-span-1 text-red-600 dark:text-red-400 text-sm hover:text-red-700 dark:hover:text-red-300 disabled:opacity-20 text-center font-bold"
                             >
                               ✕
                             </button>
@@ -955,7 +938,7 @@ function ReconcilePage() {
                         ))}
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               )
             })}
@@ -985,14 +968,11 @@ function ReconcilePage() {
       {bulkResults.length > 0 && (
         <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            {/* ✅ KEPT from backfront — light/dark mode classes */}
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Bulk Reconciliation Results
-            </h2>
+            {/* ✅ Oggy67 — semantic text-foreground */}
+            <h2 className="text-lg font-semibold text-foreground">Bulk Reconciliation Results</h2>
             <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-400">
-                {bulkResults.filter((r) => !r.error).length} /{" "}
-                {bulkResults.length} Successful Operations
+              <span className="text-sm text-muted-foreground">
+                {bulkResults.filter((r) => !r.error).length} / {bulkResults.length} Successful Operations
               </span>
               <button
                 type="button"
@@ -1002,8 +982,7 @@ function ReconcilePage() {
                     `bulk-reconciliation-${Date.now()}.csv`,
                   )
                 }
-                // ✅ KEPT from backfront — light/dark mode classes
-                className="text-blue-500 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
+                className="text-blue-600 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
                 Download Results Sheet (CSV)
               </button>
@@ -1025,90 +1004,138 @@ function ReconcilePage() {
               const decision = r.result?.agent_decision
               const proof = r.result?.proof
               const fxResult = r.result?.fx_result
+              // ✅ Fixed from Oggy67 — was using undefined 'result' variable
+              const hasError = !!r.error
 
               return (
                 <div
                   key={r.docId}
-                  className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-3 bg-white/50 dark:bg-gray-900/20"
+
+                  className={`border rounded-lg p-4 transition-all ${
+                    hasError
+                      ? "border-red-300 bg-red-50 dark:border-red-700 dark:bg-red-950/10"
+                      : "border-border bg-muted/30"
+                  }`}
                 >
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <p className="font-medium text-sm text-gray-800 dark:text-gray-200 truncate">
-                      {r.docName}
-                    </p>
-                    {r.error ? (
-                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">
-                        ✗ Error
-                      </span>
-                    ) : decision ? (
-                      <StatusBadge status={decision.final_status} />
-                    ) : null}
-                  </div>
-
-                  {r.error && (
-                    <p className="text-xs text-red-600 dark:text-red-400">
-                      {r.error}
-                    </p>
-                  )}
-
-                  {!r.error && decision && (
-                    <>
-                      {proof && (
-                        <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-900 rounded-lg px-3 py-2 text-sm">
-                          <span className="font-semibold text-gray-800 dark:text-white">
-                            {proof.currency} {proof.amount}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate text-foreground">{r.docName}</p>
+                      {hasError ? (
+                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-mono">
+                          ✗ Error Details: {r.error}
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-4 mt-2">
+                          <StatusBadge status={decision?.final_status || "unknown"} />
+                          <span className="text-xs text-muted-foreground font-mono">
+                            Confidence Index: {Math.round((decision?.confidence ?? 0) * 100)}%
                           </span>
-                          {fxResult && proof.currency !== "MYR" && (
-                            <>
-                              <span className="text-gray-400">→</span>
-                              <span className="text-green-600 dark:text-green-400 font-semibold">
-                                {formatAmount(fxResult.to_amount, baseCurrency)}
-                              </span>
-                              <span className="text-gray-400 text-xs">
-                                @ {fxResult.rate} on{" "}
-                                {formatDisplayDate(fxResult.date)}
-                              </span>
-                            </>
+                          {proof && (
+                            <span className="text-xs text-foreground font-mono">
+                              {proof.currency} {proof.amount}
+                              {fxResult && proof.currency !== "MYR" && (
+                                <> → {formatAmount(fxResult.to_amount, baseCurrency)}</>
+                              )}
+                            </span>
                           )}
                         </div>
                       )}
+                    </div>
+                    {!hasError && (
+                      <button
+                        type="button"
+                        onClick={() => { navigate({ to: "/history" }) }}
+                        className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
+                      >
+                        Auditing File →
+                      </button>
+                    )}
+                  </div>
 
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {decision.explanation}
-                      </p>
+                  {!hasError && decision?.explanation && (
+                    <div className="mt-3 bg-muted rounded-lg px-3 py-2 border border-border">
+                      <p className="text-xs text-muted-foreground italic">"{decision.explanation}"</p>
+                    </div>
+                  )}
 
-                      {decision.discrepancy_reason && (
-                        <p className="text-sm text-yellow-600 dark:text-yellow-400">
-                          ⚠ {decision.discrepancy_reason}
-                        </p>
-                      )}
-
-                      <div className="flex flex-col gap-1">
-                        <div className="flex justify-between text-xs text-gray-400">
-                          <span>Confidence</span>
-                          <span>
-                            {Math.round((decision.confidence ?? 0) * 100)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              decision.final_status === "matched"
-                                ? "bg-green-500"
-                                : decision.final_status === "fuzzy"
-                                  ? "bg-yellow-500"
-                                  : "bg-red-500"
-                            }`}
-                            style={{
-                              width: `${(decision.confidence ?? 0) * 100}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </>
+                  {!hasError && r.result?.match_scores?.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <ReviewPanel
+                        documentId={r.docId}
+                        finalStatus={decision.final_status}
+                        matchScores={r.result.match_scores}
+                        confidence={decision.confidence}
+                        currentReviewStatus={null}
+                        currentCaseId={null}
+                        currentRiskScore={null}
+                        onSaved={() =>
+                          queryClient.invalidateQueries({
+                            queryKey: ["my-documents"],
+                          })
+                        }
+                      />
+                    </div>
                   )}
                 </div>
               )
             })}
+          </div>
+
+          {/* ✅ Oggy67 — Aggregate Operations Stats Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+            <div className="bg-green-50 border border-green-200 dark:bg-green-950/20 dark:border-green-800/40 rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-green-700 dark:text-green-400 font-semibold tracking-wide uppercase">
+                Auto-Approved Matching
+              </p>
+              <p className="text-3xl font-bold text-green-700 dark:text-green-400 font-mono mt-1">
+                {
+                  bulkResults.filter(
+                    (r) => r.result?.agent_decision?.final_status === "matched",
+                  ).length
+                }
+              </p>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800/40 rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-yellow-700 dark:text-yellow-400 font-semibold tracking-wide uppercase">
+                Requires Verification Review
+              </p>
+              <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-400 font-mono mt-1">
+                {
+                  bulkResults.filter((r) => {
+                    const status = r.result?.agent_decision?.final_status
+                    return status === "fuzzy" || status === "unmatched"
+                  }).length
+                }
+              </p>
+            </div>
+            <div className="bg-red-50 border border-red-200 dark:bg-red-950/20 dark:border-red-800/40 rounded-lg p-4 shadow-sm">
+              <p className="text-xs text-red-600 dark:text-red-400 font-semibold tracking-wide uppercase">
+                Failed Processing Pipeline Exception
+              </p>
+              <p className="text-3xl font-bold text-red-600 dark:text-red-400 font-mono mt-1">
+                {bulkResults.filter((r) => r.error).length}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-2">
+            {bulkResults.filter((r) => r.error).length > 0 && (
+              <button
+                type="button"
+                onClick={handleRetryFailed}
+                disabled={bulkReconciling}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+              >
+                Retry Failed Nodes ({bulkResults.filter((r) => r.error).length})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { navigate({ to: "/history" }) }}
+              className="bg-muted hover:bg-muted/80 border border-border text-foreground px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            >
+              View All in History Dashboard →
+            </button>
           </div>
         </section>
       )}
@@ -1117,6 +1144,7 @@ function ReconcilePage() {
       {previewModal && (
         <button
           type="button"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
           onClick={() => setPreviewModal(null)}
           onKeyDown={(e) => e.key === "Escape" && setPreviewModal(null)}
           aria-label="Close preview"
@@ -1130,13 +1158,13 @@ function ReconcilePage() {
             aria-label={previewModal?.name}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <p className="text-sm font-medium truncate text-gray-800 dark:text-gray-200">
+              <p className="text-sm font-medium truncate text-foreground">
                 {previewModal.name}
               </p>
               <button
                 type="button"
                 onClick={() => setPreviewModal(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-lg font-bold"
+                className="text-muted-foreground hover:text-foreground text-lg font-bold"
               >
                 ✕
               </button>
