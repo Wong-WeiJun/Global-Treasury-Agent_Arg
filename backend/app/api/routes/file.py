@@ -10,7 +10,6 @@ from app.models import (
     UploadResponse,
     ExtractedData,
     ExtractionResponse,
-    ReviewRequest,
 )
 from sqlmodel import select, func
 from app.fx import convert_to_myr
@@ -236,6 +235,7 @@ async def extract_document(
                 converted_rows.append(row)
 
             doc.extracted_data = {"rows": converted_rows}
+            doc.workflow_status = "EXTRACTED"
             flag_modified(doc, "extracted_data")  # ← add this
             session.add(doc)
             session.commit()
@@ -265,6 +265,7 @@ async def extract_document(
                 data["fx_rate"] = fx_result["rate"]
 
             doc.extracted_data = data
+            doc.workflow_status = "EXTRACTED"
             flag_modified(doc, "extracted_data")  # ← add this
             session.add(doc)
             session.commit()
@@ -282,27 +283,3 @@ async def extract_document(
         return ExtractionResponse(document_id=document_id, error=str(e))
 
 
-@router.post("/{document_id}/review")
-def review_document(
-    document_id: uuid.UUID,
-    body: ReviewRequest,
-    current_user: CurrentUser,
-    session: SessionDep,
-):
-    if body.status not in ("approved", "flagged", "exception"):
-        raise HTTPException(status_code=422, detail="Invalid status")
-
-    doc = session.get(Document, document_id)
-    if not doc:
-        raise HTTPException(status_code=404, detail="Document not found")
-    if doc.owner_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    doc.review_status = body.status
-    doc.review_note = body.note
-    doc.reviewed_at = datetime.now(timezone.utc)
-    session.add(doc)
-    session.commit()
-    session.refresh(doc)
-
-    return {"message": "Review saved", "review_status": body.status}
