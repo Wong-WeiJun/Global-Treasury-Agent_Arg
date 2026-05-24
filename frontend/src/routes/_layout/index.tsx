@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { FilesService } from "@/client"
 import useAuth from "@/hooks/useAuth"
+import useCurrency from "@/hooks/useCurrency"
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -74,6 +75,7 @@ function KPICard({
 
 function Dashboard() {
   const { user: currentUser } = useAuth()
+  const { baseCurrency, formatAmountCompact } = useCurrency()
 
   // Fetch documents for dashboard stats
   const { data: docs, isLoading } = useQuery({
@@ -183,7 +185,7 @@ function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Reconciled"
-          value={`RM ${(totalAmount / 1000).toFixed(1)}k`}
+          value={formatAmountCompact(totalAmount, baseCurrency)}
           subtitle={`${totalReconciled} documents`}
           icon={DollarSign}
           colorClass="bg-blue-950/40 text-blue-100 border-blue-800/60"

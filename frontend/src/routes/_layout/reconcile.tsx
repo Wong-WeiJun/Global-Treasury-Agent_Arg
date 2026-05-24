@@ -4,7 +4,8 @@ import { ShieldAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import useAuth from "@/hooks/useAuth"
 import { FilesService, ReconciliationService } from "../../client"
-import { ReviewPanel} from "../../components/Common/ReviewPanel"
+import { ReviewPanel } from "../../components/Common/ReviewPanel"
+import useCurrency from "../../hooks/useCurrency"
 import { useUserRole } from "../../hooks/useUserRole"
 
 export const Route = createFileRoute("/_layout/reconcile")({
@@ -58,6 +59,7 @@ function ReconcilePage() {
   const { canReconcile, role, isViewer } = useUserRole()
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuth()
+  const { baseCurrency, getSymbol, formatAmount } = useCurrency()
 
   const defaultUserIdentity = currentUser?.full_name || currentUser?.email || ""
 
@@ -74,13 +76,11 @@ function ReconcilePage() {
   const [error, setError] = useState<string | null>(null)
   const [_csvImporting, setCsvImporting] = useState(false)
 
-  // Fetch available history documents
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
   })
 
-  // Redirect viewers to dashboard safely via hooks pipeline
   useEffect(() => {
     if (role && !canReconcile) {
       navigate({ to: "/" })
@@ -98,7 +98,8 @@ function ReconcilePage() {
                 Access Restricted
               </h3>
               <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-4">
-                You do not have permission to access the Reconciliation page. This page is only available to Finance Managers, Admins, and Owners.
+                You do not have permission to access the Reconciliation page.
+                This page is only available to Finance Managers, Admins, and Owners.
               </p>
               <p className="text-xs text-yellow-700 dark:text-yellow-300">
                 Your current role: <strong>Viewer (Read-only)</strong>
@@ -117,15 +118,15 @@ function ReconcilePage() {
     )
   }
 
-  // Handle Multi-Document selection via standard Dropdown
-  const handleDropdownSelectHistory = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleDropdownSelectHistory = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     const targetDocId = e.target.value
     if (!targetDocId) return
 
     const targetDoc = docs?.data.find((d: any) => d.id === targetDocId)
     if (!targetDoc) return
 
-    // If already exists in current workbench stream, prevent re-duplication
     if (documentsWithEntries.some((d) => d.docId === targetDocId)) {
       setError("This document is already appended to your target tracking workbench.")
       return
@@ -141,12 +142,12 @@ function ReconcilePage() {
         collapsed: false,
       },
     ])
-    // Clear out select value to let users fire select events incrementally on identical files
     e.target.value = ""
   }
 
-  // Handle Parallel Uploads
-  const handleBulkFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
@@ -173,7 +174,9 @@ function ReconcilePage() {
 
         setUploadedFiles((prev) =>
           prev.map((f) =>
-            f.id === tempId ? { id: docId, name: file.name, status: "extracted" } : f,
+            f.id === tempId
+              ? { id: docId, name: file.name, status: "extracted" }
+              : f,
           ),
         )
 
@@ -206,7 +209,6 @@ function ReconcilePage() {
     queryClient.invalidateQueries({ queryKey: ["my-documents"] })
   }
 
-  // Bulk Reconciliation Call
   const handleBulkReconcile = async () => {
     if (documentsWithEntries.length === 0) {
       setError("Please upload or select documents for bulk reconciliation.")
@@ -218,7 +220,9 @@ function ReconcilePage() {
     )
 
     if (invalidDocs.length > 0) {
-      setError(`Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`)
+      setError(
+        `Please add bank entries for: ${invalidDocs.map((d) => d.docName).join(", ")}`,
+      )
       return
     }
 
@@ -227,7 +231,9 @@ function ReconcilePage() {
     setBulkResults([])
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
-      const validEntries = docWithEntries.bankEntries.filter((e) => e.amount && e.date)
+      const validEntries = docWithEntries.bankEntries.filter(
+        (e) => e.amount && e.date,
+      )
 
       try {
         const res = (await ReconciliationService.reconcileDocument({
@@ -283,7 +289,9 @@ function ReconcilePage() {
     setBulkReconciling(true)
 
     const reconcileDocument = async (docWithEntries: DocumentWithEntries) => {
-      const validEntries = docWithEntries.bankEntries.filter((e) => e.amount && e.date)
+      const validEntries = docWithEntries.bankEntries.filter(
+        (e) => e.amount && e.date,
+      )
       try {
         const res = (await ReconciliationService.reconcileDocument({
           requestBody: {
@@ -316,13 +324,16 @@ function ReconcilePage() {
 
     const retryResults = await Promise.all(failedDocs.map(reconcileDocument))
     setBulkResults((prev) =>
-      prev.map((r) => retryResults.find((rr) => rr.docId === r.docId) || r)
+      prev.map((r) => retryResults.find((rr) => rr.docId === r.docId) || r),
     )
     setBulkReconciling(false)
     queryClient.invalidateQueries({ queryKey: ["my-documents"] })
   }
 
-  const handleCSVImport = (docIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVImport = (
+    docIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -338,7 +349,9 @@ function ReconcilePage() {
         const entries: BankEntry[] = lines
           .slice(startIdx)
           .map((line) => {
-            const [amount, date, payer, description] = line.split(",").map((s) => s.trim())
+            const [amount, date, payer, description] = line
+              .split(",")
+              .map((s) => s.trim())
             return {
               amount: amount || "",
               date: date || "",
@@ -350,7 +363,9 @@ function ReconcilePage() {
 
         if (entries.length > 0) {
           setDocumentsWithEntries((prev) =>
-            prev.map((doc, idx) => (idx === docIndex ? { ...doc, bankEntries: entries } : doc))
+            prev.map((doc, idx) =>
+              idx === docIndex ? { ...doc, bankEntries: entries } : doc,
+            ),
           )
         } else {
           setError("CSV file contains no valid entries")
@@ -390,7 +405,10 @@ function ReconcilePage() {
         idx === docIndex
           ? {
               ...doc,
-              bankEntries: [...doc.bankEntries, emptyEntry(defaultUserIdentity)],
+              bankEntries: [
+                ...doc.bankEntries,
+                emptyEntry(defaultUserIdentity),
+              ],
             }
           : doc,
       ),
@@ -403,7 +421,9 @@ function ReconcilePage() {
         idx === docIndex
           ? {
               ...doc,
-              bankEntries: doc.bankEntries.filter((_, eIdx) => eIdx !== entryIndex),
+              bankEntries: doc.bankEntries.filter(
+                (_, eIdx) => eIdx !== entryIndex,
+              ),
             }
           : doc,
       ),
@@ -412,7 +432,9 @@ function ReconcilePage() {
 
   const toggleDocumentCollapse = (docIndex: number) => {
     setDocumentsWithEntries((prev) =>
-      prev.map((doc, idx) => (idx === docIndex ? { ...doc, collapsed: !doc.collapsed } : doc))
+      prev.map((doc, idx) =>
+        idx === docIndex ? { ...doc, collapsed: !doc.collapsed } : doc,
+      ),
     )
   }
 
@@ -461,7 +483,8 @@ function ReconcilePage() {
       <div>
         <h1 className="text-2xl font-bold">Bulk Reconciliation</h1>
         <p className="text-gray-500 text-sm mt-1">
-          Match multiple payment proofs concurrently against bank statement entries using AI pipelines.
+          Match multiple payment proofs concurrently against bank statement
+          entries using AI pipelines.
         </p>
       </div>
 
@@ -499,12 +522,15 @@ function ReconcilePage() {
               defaultValue=""
               className="border rounded-lg px-4 py-2 text-sm bg-background w-full"
             >
-              <option value="" disabled>Add a document from history...</option>
+              <option value="" disabled>
+                Add a document from history...
+              </option>
               {docs?.data
                 .filter((d: any) => d.file_type !== "excel")
                 .map((doc: any) => (
                   <option key={doc.id} value={doc.id}>
-                    {doc.original_filename} ({new Date(doc.uploaded_at).toLocaleDateString()})
+                    {doc.original_filename} (
+                    {new Date(doc.uploaded_at).toLocaleDateString()})
                   </option>
                 ))}
             </select>
@@ -531,7 +557,11 @@ function ReconcilePage() {
                           : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                     }`}
                   >
-                    {file.status === "extracted" ? "✓ Ready" : file.status === "uploading" ? "⏳ Processing..." : "✗ Error"}
+                    {file.status === "extracted"
+                      ? "✓ Ready"
+                      : file.status === "uploading"
+                        ? "⏳ Processing..."
+                        : "✗ Error"}
                   </span>
                 </div>
               ))}
@@ -569,7 +599,12 @@ function ReconcilePage() {
                       <p className="font-medium text-sm truncate text-gray-800 dark:text-gray-200">{docWithEntries.docName}</p>
                       {docWithEntries.extractedData && (
                         <p className="text-xs text-gray-500">
-                          Extracted Context Target: {docWithEntries.extractedData.currency} {docWithEntries.extractedData.amount}
+                          Extracted: {docWithEntries.extractedData.currency}{" "}
+                          {docWithEntries.extractedData.amount}
+                          {docWithEntries.extractedData.myr_amount &&
+                            docWithEntries.extractedData.currency !== baseCurrency && (
+                              <> → {formatAmount(docWithEntries.extractedData.myr_amount, baseCurrency)}</>
+                            )}
                         </p>
                       )}
                     </div>
@@ -606,12 +641,15 @@ function ReconcilePage() {
                               <span className="text-gray-700 dark:text-gray-300 font-medium truncate block">{docWithEntries.extractedData.payer}</span>
                             </div>
                           )}
-                          {docWithEntries.extractedData.myr_amount && (
-                            <div>
-                              <span className="text-gray-500 block">Converted Conversion (Base)</span>
-                              <span className="text-green-600 dark:text-green-400 font-semibold font-mono">MYR {docWithEntries.extractedData.myr_amount}</span>
-                            </div>
-                          )}
+                          {docWithEntries.extractedData.myr_amount &&
+                            docWithEntries.extractedData.currency !== baseCurrency && (
+                              <div>
+                                <span className="text-gray-500 block">Converted to Base Currency</span>
+                                <span className="text-green-600 dark:text-green-400 font-semibold font-mono">
+                                  {formatAmount(docWithEntries.extractedData.myr_amount, baseCurrency)}
+                                </span>
+                              </div>
+                            )}
                         </div>
                       </div>
                     )}
@@ -622,7 +660,7 @@ function ReconcilePage() {
                         <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold">Bank Statement Entry Allocation</p>
                         <div className="flex gap-3 text-xs">
                           <label className="text-blue-500 dark:text-blue-400 hover:underline cursor-pointer">
-                             Import Entry CSV
+                            Import Entry CSV
                             <input type="file" accept=".csv" onChange={(e) => handleCSVImport(docIdx, e)} className="hidden" />
                           </label>
                           <button type="button" onClick={() => addDocumentEntry(docIdx)} className="text-blue-500 dark:text-blue-400 hover:underline">
@@ -631,13 +669,12 @@ function ReconcilePage() {
                         </div>
                       </div>
 
-                      {/* Explicit Interactive Rows Array */}
                       <div className="flex flex-col gap-2">
                         {docWithEntries.bankEntries.map((entry, entryIdx) => (
                           <div key={entryIdx} className="grid grid-cols-12 gap-2 items-center">
                             <input
                               type="number"
-                              placeholder="Amount (MYR)"
+                              placeholder={`Amount (${getSymbol(baseCurrency)})`}
                               value={entry.amount}
                               onChange={(e) => updateDocumentEntry(docIdx, entryIdx, "amount", e.target.value)}
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background font-mono"
@@ -714,7 +751,7 @@ function ReconcilePage() {
                 onClick={() => downloadResultsCSV(bulkResults, `bulk-reconciliation-${Date.now()}.csv`)}
                 className="text-blue-500 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
-               Download Results Sheet (CSV)
+                Download Results Sheet (CSV)
               </button>
             </div>
           </div>
@@ -728,7 +765,9 @@ function ReconcilePage() {
                 <div
                   key={result.docId}
                   className={`border rounded-lg p-4 transition-all ${
-                    hasError ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/10" : "border-gray-300 bg-white/30 dark:border-gray-800 dark:bg-gray-900/30"
+                    hasError
+                      ? "border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/10"
+                      : "border-gray-300 bg-white/30 dark:border-gray-800 dark:bg-gray-900/30"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -761,7 +800,7 @@ function ReconcilePage() {
                       <p className="text-xs text-gray-600 dark:text-gray-400 italic">"{decision.explanation}"</p>
                     </div>
                   )}
-                  
+
                   {!hasError && result.result?.match_scores?.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-800">
                       <ReviewPanel
