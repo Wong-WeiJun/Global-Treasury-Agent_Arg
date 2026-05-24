@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
-from app.fx import list_currencies, convert, convert_to_myr, get_rate
 
+from app.fx import convert, convert_to_myr, get_rate, list_currencies
 
 router = APIRouter(prefix="/fx", tags=["fx"])
 

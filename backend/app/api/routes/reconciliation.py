@@ -1,13 +1,15 @@
-from fastapi import APIRouter, HTTPException
-from app.api.deps import CurrentUser, SessionDep
-from app.models import Document, ReconcileRequest, ReconcileResponse, Organization, User
-from app.reconciliation import reconcile
-from app.fx import convert_to_myr, convert
-from app.extraction import extract_from_image, extract_from_pdf
-from sqlalchemy.orm.attributes import flag_modified
-import boto3
-from app.core.config import settings
 import uuid
+
+import boto3
+from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm.attributes import flag_modified
+
+from app.api.deps import CurrentUser, SessionDep
+from app.core.config import settings
+from app.extraction import extract_from_image, extract_from_pdf
+from app.fx import convert
+from app.models import Document, Organization, ReconcileRequest, ReconcileResponse, User
+from app.reconciliation import reconcile
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
 
@@ -36,7 +38,9 @@ async def reconcile_document(
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, body.document_id)
     if not doc:
@@ -140,9 +144,10 @@ async def reconcile_document(
 
     # Auto-approve if AI result is MATCHED
     if doc.ai_result == "MATCHED":
-        from app.risk import calculate_risk_score, generate_journal_entry
-        from app.models import ReconciliationRecord
         from datetime import datetime, timezone
+
+        from app.models import ReconciliationRecord
+        from app.risk import calculate_risk_score, generate_journal_entry
 
         # Calculate risk
         match_scores = result.get("match_scores", [])
@@ -162,9 +167,7 @@ async def reconcile_document(
         # Generate journal entry
         fx_result = result.get("fx_result")
         proof = result.get("proof", {})
-        journal_entry = generate_journal_entry(
-            proof, fx_result, "approved", None
-        )
+        journal_entry = generate_journal_entry(proof, fx_result, "approved", None)
 
         # Create audit record for auto-approval
         record = ReconciliationRecord(

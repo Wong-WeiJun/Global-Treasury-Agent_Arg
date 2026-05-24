@@ -1,7 +1,8 @@
 import json
-import httpx
 from datetime import datetime
 from difflib import SequenceMatcher
+
+import httpx
 
 from app.core.config import settings
 

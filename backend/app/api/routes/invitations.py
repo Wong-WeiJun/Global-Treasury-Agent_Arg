@@ -1,22 +1,23 @@
+import secrets
+import uuid
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, HTTPException
+from sqlmodel import select
+
 from app.api.deps import CurrentUser, SessionDep
+from app.core.config import settings
 from app.models import (
     Invitation,
-    InvitationPublic,
-    InvitationCreate,
     InvitationAccept,
-    User,
-    UserCreate,
+    InvitationCreate,
+    InvitationPublic,
     Membership,
     Organization,
+    User,
+    UserCreate,
 )
-from sqlmodel import select
-import uuid
-from datetime import datetime, timezone, timedelta
-import secrets
 from app.utils import send_email
-from app.core.config import settings
-from app.core.security import get_password_hash
 
 router = APIRouter(prefix="/invitations", tags=["invitations"])
 
@@ -45,7 +46,9 @@ async def invite_member(
     )
 
     # Check if email is already a user in this organization
-    existing_user = session.exec(select(User).where(User.email == invitation_in.email)).first()
+    existing_user = session.exec(
+        select(User).where(User.email == invitation_in.email)
+    ).first()
     if existing_user and existing_user.organization_id == organization_id:
         raise HTTPException(
             status_code=400,
@@ -87,7 +90,9 @@ async def invite_member(
     org = session.get(Organization, organization_id)
 
     # Send invitation email
-    invitation_link = f"{settings.FRONTEND_HOST}/accept-invitation?token={invitation.token}"
+    invitation_link = (
+        f"{settings.FRONTEND_HOST}/accept-invitation?token={invitation.token}"
+    )
 
     email_html = f"""
     <html>
@@ -180,7 +185,10 @@ def cancel_invitation(
 
     # Check if user has permission
     check_organization_access(
-        session, current_user.id, invitation.organization_id, required_roles=["OWNER", "ADMIN"]
+        session,
+        current_user.id,
+        invitation.organization_id,
+        required_roles=["OWNER", "ADMIN"],
     )
 
     session.delete(invitation)

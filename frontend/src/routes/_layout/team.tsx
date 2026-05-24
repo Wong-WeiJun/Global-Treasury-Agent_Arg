@@ -422,7 +422,7 @@ function TeamManagement() {
                       onClick={() => {
                         if (
                           confirm(
-                            `Remove ${member.user_email} from the organization?`,
+                            `⚠️ WARNING: Remove ${member.user_email} from the organization?\n\nThis will permanently DELETE their user account and all associated data.\n\nThis action cannot be undone.`,
                           )
                         ) {
                           removeMemberMutation.mutate(member.id)
@@ -430,7 +430,7 @@ function TeamManagement() {
                       }}
                       disabled={removeMemberMutation.isPending}
                       className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors disabled:opacity-50"
-                      title="Remove member"
+                      title="Remove member and delete account"
                     >
                       <X className="size-4" />
                     </button>

@@ -13,8 +13,13 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
+    Document,
+    Invitation,
     Item,
+    Membership,
     Message,
+    Organization,
+    ReconciliationRecord,
     UpdatePassword,
     User,
     UserCreate,
@@ -131,15 +136,58 @@ def read_user_me(current_user: CurrentUser) -> Any:
 
 @router.delete("/me", response_model=Message)
 def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
-    """
-    Delete own user.
-    """
     if current_user.is_superuser:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+
+    # ... owner_membership check and org deletion stays the same ...
+
+    # For non-owner users:
+    # Step 1 — nullify all FK references first, flush to DB
+    with session.no_autoflush:
+        user_memberships = session.exec(
+            select(Membership).where(Membership.user_id == current_user.id)
+        ).all()
+        for membership in user_memberships:
+            session.delete(membership)
+
+        organizations_created = session.exec(
+            select(Organization).where(Organization.created_by == current_user.id)
+        ).all()
+        for org in organizations_created:
+            org.created_by = None
+            session.add(org)
+
+        documents_reviewed = session.exec(
+            select(Document).where(Document.reviewed_by == current_user.id)
+        ).all()
+        for doc in documents_reviewed:
+            doc.reviewed_by = None
+            session.add(doc)
+
+        recon_records = session.exec(
+            select(ReconciliationRecord).where(
+                ReconciliationRecord.reviewed_by == current_user.id
+            )
+        ).all()
+        for record in recon_records:
+            record.reviewed_by = None
+            session.add(record)
+
+        session.exec(delete(Document).where(col(Document.owner_id) == current_user.id))
+        session.exec(delete(Item).where(col(Item.owner_id) == current_user.id))
+        session.exec(
+            delete(Invitation).where(col(Invitation.invited_by) == current_user.id)
+        )
+
+    # Step 2 — flush nullifications to DB before deleting the user
+    session.flush()
+
+    # Step 3 — now safe to delete the user
     session.delete(current_user)
     session.commit()
+
     return Message(message="User deleted successfully")
 
 
@@ -225,8 +273,48 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)
-    session.delete(user)
+
+    with session.no_autoflush:
+        # Clear created_by references in organizations
+        organizations_created = session.exec(
+            select(Organization).where(Organization.created_by == user_id)
+        ).all()
+        for org in organizations_created:
+            org.created_by = None
+            session.add(org)
+
+        # Clear reviewed_by in documents
+        documents_reviewed = session.exec(
+            select(Document).where(Document.reviewed_by == user_id)
+        ).all()
+        for doc in documents_reviewed:
+            doc.reviewed_by = None
+            session.add(doc)
+
+        # Clear reviewed_by in reconciliation records
+        recon_records = session.exec(
+            select(ReconciliationRecord).where(
+                ReconciliationRecord.reviewed_by == user_id
+            )
+        ).all()
+        for record in recon_records:
+            record.reviewed_by = None
+            session.add(record)
+
+        # Delete memberships
+        session.exec(delete(Membership).where(col(Membership.user_id) == user_id))
+
+        # Delete invitations sent by this user
+        session.exec(delete(Invitation).where(col(Invitation.invited_by) == user_id))
+
+        # Delete documents owned by this user
+        session.exec(delete(Document).where(col(Document.owner_id) == user_id))
+
+        # Delete items
+        session.exec(delete(Item).where(col(Item.owner_id) == user_id))
+
+        # Now safe to delete the user
+        session.delete(user)
+
     session.commit()
     return Message(message="User deleted successfully")

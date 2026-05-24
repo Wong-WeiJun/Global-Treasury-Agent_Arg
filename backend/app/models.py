@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from pydantic import EmailStr, BaseModel, field_validator
-from sqlalchemy import DateTime, JSON, Column
+from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import JSON, Column, DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -53,7 +53,9 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
     )
-    organization_id: uuid.UUID | None = Field(default=None, foreign_key="organization.id")
+    organization_id: uuid.UUID | None = Field(
+        default=None, foreign_key="organization.id"
+    )
     display_currency: str | None = Field(default="MYR")  # User preference for viewing
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
@@ -188,7 +190,9 @@ class Membership(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
-    role: str = Field(default="VIEWER")  # OWNER, ADMIN, FINANCE_MANAGER, ANALYST, VIEWER
+    role: str = Field(
+        default="VIEWER"
+    )  # OWNER, ADMIN, FINANCE_MANAGER, ANALYST, VIEWER
     joined_at: datetime = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore
@@ -268,7 +272,9 @@ class Document(SQLModel, table=True):
     fx_rate_timestamp: datetime | None = None  # When FX conversion was performed
 
     # AI Result (machine-generated, never overwritten by human action)
-    ai_result: str | None = Field(default=None)  # "MATCHED" | "FUZZY_MATCH" | "UNMATCHED"
+    ai_result: str | None = Field(
+        default=None
+    )  # "MATCHED" | "FUZZY_MATCH" | "UNMATCHED"
     ai_confidence: float | None = None  # 0.0 to 1.0
     ai_explanation: str | None = None  # Why AI made this decision
 
@@ -403,7 +409,9 @@ class ReconciliationRecord(SQLModel, table=True):
 
     # Decision
     action: str  # "approved" | "flagged" | "exception" | "rejected"
-    exception_type: str | None = None  # "BANK_FEE" | "PARTIAL_PAYMENT" | "FX_SPREAD" etc.
+    exception_type: str | None = (
+        None  # "BANK_FEE" | "PARTIAL_PAYMENT" | "FX_SPREAD" etc.
+    )
     note: str | None = None
     ai_explanation: str | None = None
 

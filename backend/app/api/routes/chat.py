@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException
-import httpx
 import re
-from app.models import ChatRequest, ChatResponse
+
+import httpx
+from fastapi import APIRouter, HTTPException
+
 from app.core.config import settings
+from app.models import ChatRequest, ChatResponse
 
 router = APIRouter()
 

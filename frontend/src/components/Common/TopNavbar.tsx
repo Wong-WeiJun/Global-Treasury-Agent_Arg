@@ -95,7 +95,7 @@ export function TopNavbar() {
           <h1>MyAudit</h1>
         </RouterLink>
 
-        {/* REST OF LEFT SIDE ITEMS 
+        {/* REST OF LEFT SIDE ITEMS
         <nav className="flex items-center gap-1">
           {leftSideItems.map((item) => {
             const isActive = currentPath === item.path
