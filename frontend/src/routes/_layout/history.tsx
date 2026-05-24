@@ -498,10 +498,6 @@ function HistoryPage() {
   })
 
   useEffect(() => {
-    setSelectedDocIds([])
-  }, [])
-
-  useEffect(() => {
     if (!activeModalUrl) return
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setActiveModalUrl(null)

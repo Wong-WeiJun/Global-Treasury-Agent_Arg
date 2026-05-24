@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_layout/reconcile")({
 })
 
 interface BankEntry {
+  id: string
   amount: string
   date: string
   description: string
@@ -30,6 +31,7 @@ interface DocumentWithEntries {
 }
 
 const emptyEntry = (defaultPayer = ""): BankEntry => ({
+  id: crypto.randomUUID(),
   amount: "",
   date: "",
   description: "",
@@ -391,6 +393,7 @@ function ReconcilePage() {
             const [amount, date, payer, description] = line.split(",").map((s) => s.trim())
             // Normalise CSV date to dd/mm/yyyy
             return {
+              id: crypto.randomUUID(),
               amount: amount || "",
               date: date ? fromInputDate(date) : "",
               payer: payer || "",
@@ -772,7 +775,7 @@ function ReconcilePage() {
                         {/* Explicit Interactive Rows Array */}
                         <div className="flex flex-col gap-2">
                           {docWithEntries.bankEntries.map((entry, entryIdx) => (
-                            <div key={entryIdx} className="grid grid-cols-12 gap-2 items-center">
+                            <div key={entry.id} className="grid grid-cols-12 gap-2 items-center">
                               <input
                                 type="number"
                                 placeholder={`Amount (${getSymbol(baseCurrency)})`}
