@@ -412,7 +412,9 @@ export function ReviewPanel({
                           (line: any, i: number) => (
                             <tr key={i} className="border-t border-border">
                               <td className="pr-4 py-1">
-                                <p className="text-foreground">{line.account}</p>
+                                <p className="text-foreground">
+                                  {line.account}
+                                </p>
                                 <p className="text-muted-foreground text-xs">
                                   {line.description}
                                 </p>
