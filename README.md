@@ -1,235 +1,512 @@
-# Full Stack FastAPI Template
+# MyAudit (The Global Treasury Agent)
 
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Docker+Compose%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Docker%20Compose/badge.svg" alt="Test Docker Compose"></a>
-<a href="https://github.com/fastapi/full-stack-fastapi-template/actions?query=workflow%3A%22Test+Backend%22" target="_blank"><img src="https://github.com/fastapi/full-stack-fastapi-template/workflows/Test%20Backend/badge.svg" alt="Test Backend"></a>
-<a href="https://coverage-badge.samuelcolvin.workers.dev/redirect/fastapi/full-stack-fastapi-template" target="_blank"><img src="https://coverage-badge.samuelcolvin.workers.dev/fastapi/full-stack-fastapi-template.svg" alt="Coverage"></a>
+> Multi-Agent Financial Operations Intelligence Platform for Autonomous Cross-Border Reconciliation
 
-## Technology Stack and Features
+---
 
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-  - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-  - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-  - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-  - 💃 Using TypeScript, hooks, [Vite](https://vitejs.dev), and other parts of a modern frontend stack.
-  - 🎨 [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) for the frontend components.
-  - 🤖 An automatically generated frontend client.
-  - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-  - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- 📬 [Mailcatcher](https://mailcatcher.me) for local email testing during development.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+# Overview
 
-### Dashboard Login
+AI Treasury Operations Platform is an enterprise-inspired multi-agent financial intelligence system designed to automate treasury workflows for organizations handling cross-border payments, invoices, receipts, and bank transactions.
 
-[![API docs](img/login.png)](https://github.com/fastapi/full-stack-fastapi-template)
+The platform combines:
+- AI-powered document extraction
+- Multi-currency reconciliation
+- Historical FX normalization
+- Autonomous matching agents
+- Human-in-the-loop approval workflows
+- Exception intelligence
+- Investigation and risk analysis
+- Collaborative organization workspaces
 
-### Dashboard - Admin
+The system is designed to simulate a modern AI-native treasury operations environment with explainable AI, auditability, and operational intelligence.
 
-[![API docs](img/dashboard.png)](https://github.com/fastapi/full-stack-fastapi-template)
+---
 
-### Dashboard - Items
+# Core Features
 
-[![API docs](img/dashboard-items.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## AI Document Extraction
+- OCR-based extraction from invoices, receipts, and payment proofs
+- Structured financial field extraction
+- Currency detection
+- Confidence scoring
+- AI-enhanced parsing and interpretation
 
-### Dashboard - Dark Mode
+---
 
-[![API docs](img/dashboard-dark.png)](https://github.com/fastapi/full-stack-fastapi-template)
+## Autonomous Reconciliation Engine
+- AI fuzzy matching
+- Smart transaction linking
+- Historical FX normalization
+- Confidence-based recommendations
+- Duplicate transaction detection
 
-### Interactive API Documentation
+### AI Result Types
+- MATCHED
+- FUZZY_MATCH
+- UNMATCHED
 
-[![API docs](img/docs.png)](https://github.com/fastapi/full-stack-fastapi-template)
+---
 
-## How To Use It
+## Human-in-the-Loop Treasury Workflow
 
-You can **just fork or clone** this repository and use it as is.
+Treasury operators can:
+- Approve reconciliations
+- Flag transactions for investigation
+- Mark discrepancies as acceptable exceptions
 
-✨ It just works. ✨
+### Workflow Statuses
+- PENDING_ACTION
+- APPROVED
+- UNDER_REVIEW
+- EXCEPTION_APPROVED
+- REJECTED
 
-### How to Use a Private Repository
+---
 
-If you want to have a private repository, GitHub won't allow you to simply fork it as it doesn't allow changing the visibility of forks.
+## Exception Intelligence System
 
-But you can do the following:
+Supports intelligent handling of:
+- FX differences
+- Bank fees
+- Partial payments
+- Refunds
+- Split payments
+- Manual adjustments
 
-- Create a new GitHub repo, for example `my-full-stack`.
-- Clone this repository manually, set the name with the name of the project you want to use, for example `my-full-stack`:
+---
 
-```bash
-git clone git@github.com:fastapi/full-stack-fastapi-template.git my-full-stack
+## Multi-Currency Treasury Engine
+- Historical FX conversion
+- Organization base currencies
+- Currency normalization
+- FX analytics
+- Cross-border payment intelligence
+
+---
+
+## Organization & Team Management
+- Multi-tenant organization system
+- Organization switching
+- Invite-based collaboration
+- Role-based access control
+- Team activity tracking
+
+### Roles
+- OWNER
+- ADMIN
+- FINANCE_MANAGER
+- ANALYST
+- VIEWER
+
+---
+
+## AI Investigation & Risk Analysis
+- Suspicious transaction detection
+- Risk scoring
+- Payer anomaly detection
+- Duplicate payment analysis
+- AI-generated investigation summaries
+
+---
+
+## AI Analytics & Learning
+- Approval pattern analysis
+- Auto-match optimization
+- Exception trend detection
+- Treasury insights
+- Operational intelligence
+
+---
+
+# Technology Stack and Features
+
+## Backend
+- ⚡ FastAPI for the Python backend API
+- 🧰 SQLModel for ORM and database interactions
+- 🔍 Pydantic for validation and settings management
+- 💾 PostgreSQL as the relational database
+- 🔒 Secure password hashing
+- 🔑 JWT authentication
+- 📫 Email-based password recovery
+- ✅ Pytest testing framework
+
+---
+
+## Frontend
+- 🚀 React frontend
+- 💃 TypeScript + Hooks + Vite
+- 🎨 Tailwind CSS + shadcn/ui
+- 🤖 Automatically generated frontend API client
+- 🧪 Playwright E2E testing
+- 🦇 Dark mode support
+
+---
+
+## Infrastructure
+- 🐋 Docker Compose for development and production
+- 📞 Traefik reverse proxy / load balancer
+- 📬 Mailcatcher for local email testing
+- 🚢 Deployment-ready Docker setup
+- 🏭 GitHub Actions CI/CD workflows
+
+---
+
+## AI & Financial Services
+- AWS Textract for OCR extraction
+- Chutes AI for intelligent document understanding
+- Morpheus AI for reconciliation intelligence
+- Frankfurter FX API for historical exchange rates
+
+---
+
+# Multi-Agent Architecture
+
+## Document Extraction Agent
+Handles:
+- OCR
+- Structured extraction
+- Currency recognition
+- Confidence scoring
+
+---
+
+## FX Normalization Agent
+Handles:
+- Historical exchange rates
+- Currency conversion
+- Base currency alignment
+
+---
+
+## Reconciliation Agent
+Handles:
+- AI fuzzy matching
+- Confidence scoring
+- Transaction linking
+- Duplicate detection
+
+---
+
+## Risk & Investigation Agent
+Handles:
+- Fraud indicators
+- Suspicious payer analysis
+- Risk scoring
+- Investigation summaries
+
+---
+
+## Exception Intelligence Agent
+Handles:
+- FX spread analysis
+- Bank fee detection
+- Partial payment analysis
+- Exception classification
+
+---
+
+## Analytics & Learning Agent
+Handles:
+- Operational insights
+- AI learning
+- Trend analysis
+- Workflow optimization
+
+---
+
+# Dashboard Features
+
+## Executive Overview
+- Total reconciled value
+- Auto-match rate
+- Pending investigations
+- Exception counts
+- High-risk alerts
+
+---
+
+## Operational Queue
+- Transactions requiring review
+- Risk prioritization
+- Investigation workflows
+
+---
+
+## FX Analytics
+- Currency distribution
+- FX exposure
+- Historical conversion tracking
+- FX anomaly detection
+
+---
+
+## AI Attention Center
+AI-generated operational alerts:
+- Suspicious transactions
+- Recurring discrepancies
+- Duplicate payment warnings
+- Exception trends
+
+---
+
+# Human Review Workflow
+
+## Approve
+Marks reconciliation as approved and updates audit logs.
+
+---
+
+## Flag for Review
+Creates investigation cases for manual review.
+
+---
+
+## Mark as Exception
+Accepts discrepancies with structured justification.
+
+---
+
+# Multi-Tenant Organization System
+
+Each organization includes:
+- Base currency
+- Timezone
+- FX provider
+- Team members
+- Role permissions
+
+All financial operations are organization-scoped.
+
+---
+
+# Security Features
+
+- JWT authentication
+- Role-based access control
+- Organization isolation
+- Audit logging
+- Secure password hashing
+- Protected API routes
+
+---
+
+# Project Structure
+
+```text
+backend/
+frontend/
+docker/
+scripts/
 ```
 
-- Enter into the new directory:
+---
 
-```bash
-cd my-full-stack
+# Running the System
+
+## Prerequisites
+
+Install:
+- Docker
+- Docker Compose
+- Bun
+- Python 3.11+
+- UV package manager
+
+---
+
+# Environment Setup
+
+Create a `.env` file:
+
+```env
+# Domain
+# This would be set to the production domain with an env var on deployment
+# used by Traefik to transmit traffic and aqcuire TLS certificates
+DOMAIN=localhost
+# To test the local Traefik config
+# DOMAIN=localhost.tiangolo.com
+
+# Used by the backend to generate links in emails to the frontend
+FRONTEND_HOST=http://localhost:5173
+# In staging and production, set this env var to the frontend host, e.g.
+# FRONTEND_HOST=https://dashboard.example.com
+
+# Environment: local, staging, production
+ENVIRONMENT=local
+
+PROJECT_NAME="MyAudit"
+STACK_NAME=MyAudit-Project
+
+# Backend
+BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://localhost.tiangolo.com"
+SECRET_KEY=changethis
+FIRST_SUPERUSER=changethis
+FIRST_SUPERUSER_PASSWORD=changethis
+
+# Emails (This configuration is for development)
+SMTP_HOST=mailcatcher
+SMTP_USER=
+SMTP_PASSWORD=
+EMAILS_FROM_EMAIL=noreply@myaudit.dev
+SMTP_TLS=False
+SMTP_SSL=False
+SMTP_PORT=1025
+
+# Postgres
+POSTGRES_SERVER=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=app
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=changethis
+
+SENTRY_DSN=
+
+# Configure these with your own Docker registry images
+DOCKER_IMAGE_BACKEND=backend
+DOCKER_IMAGE_FRONTEND=frontend
+
+#Chutes
+CHUTES_API_KEY=your-key
+
+#S3 Access Configurations
+S3_BUCKET_NAME=your-bucket-name
+S3_REGION=ap-southeast-2
+S3_ACCESS_KEY_ID=your-key
+S3_SECRET_ACCESS_KEY=your-key
+
+#Morpheus
+MORPHEUS_API_KEY=your-key
 ```
 
-- Set the new origin to your new repository, copy it from the GitHub interface, for example:
+---
+
+# Start Full Stack (Recommended)
 
 ```bash
-git remote set-url origin git@github.com:octocat/my-full-stack.git
+docker compose watch
 ```
 
-- Add this repo as another "remote" to allow you to get updates later:
+---
+
+# Access Services
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend API | http://localhost:8000 |
+| API Docs | http://localhost:8000/docs |
+| Adminer | http://localhost:8080 |
+| Traefik Dashboard | http://localhost:8090 |
+| Mailcatcher | http://localhost:1080 |
+
+---
+
+# Frontend Development
 
 ```bash
-git remote add upstream git@github.com:fastapi/full-stack-fastapi-template.git
+bun install
+bun run dev
 ```
 
-- Push the code to your new repository:
+---
+
+# Backend Development
 
 ```bash
-git push -u origin master
+cd backend
+
+uv sync
+
+source .venv/bin/activate
+
+fastapi dev app/main.py
 ```
 
-### Update From the Original Template
+---
 
-After cloning the repository, and after doing changes, you might want to get the latest changes from this original template.
-
-- Make sure you added the original repository as a remote, you can check it with:
+# Database Migrations
 
 ```bash
-git remote -v
+docker compose exec backend bash
 
-origin    git@github.com:octocat/my-full-stack.git (fetch)
-origin    git@github.com:octocat/my-full-stack.git (push)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (fetch)
-upstream    git@github.com:fastapi/full-stack-fastapi-template.git (push)
+alembic revision --autogenerate -m "migration"
+alembic upgrade head
 ```
 
-- Pull the latest changes without merging:
+---
+
+# Running Tests
+
+## Backend Tests
 
 ```bash
-git pull --no-commit upstream master
+bash ./scripts/test.sh
 ```
 
-This will download the latest changes from this template without committing them, that way you can check everything is right before committing.
+---
 
-- If there are conflicts, solve them in your editor.
-
-- Once you are done, commit the changes:
+## Frontend E2E Tests
 
 ```bash
-git merge --continue
+bun run test
 ```
 
-### Configure
+---
 
-You can then update configs in the `.env` files to customize your configurations.
+# Generate Frontend API Client
 
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
+After backend API changes:
 
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+bash ./scripts/generate-client.sh
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+---
 
-## How To Use It - Alternative With Copier
+# Deployment
 
-This repository also supports generating a new project using [Copier](https://copier.readthedocs.io).
+The project supports deployment using Docker Compose with:
+- Traefik reverse proxy
+- Automatic HTTPS
+- GitHub Actions CI/CD
 
-It will copy all the files, ask you configuration questions, and update the `.env` files with your answers.
+---
 
-### Install Copier
+# Database Entities
 
-You can install Copier with:
+Core entities:
+- Users
+- Organizations
+- Memberships
+- Transactions
+- Reconciliations
+- Investigations
+- Exceptions
+- Audit Logs
 
-```bash
-pip install copier
-```
+---
 
-Or better, if you have [`pipx`](https://pipx.pypa.io/), you can run it with:
+# System Vision
 
-```bash
-pipx install copier
-```
+This platform is designed to evolve beyond traditional reconciliation software into an:
 
-**Note**: If you have `pipx`, installing copier is optional, you could run it directly.
+> AI Treasury Operations Operating System
 
-### Generate a Project With Copier
+The long-term goal is to create an intelligent financial operations platform capable of:
+- autonomous reconciliation
+- treasury intelligence
+- operational risk analysis
+- financial anomaly detection
+- collaborative finance workflows
 
-Decide a name for your new project's directory, you will use it below. For example, `my-awesome-project`.
+while maintaining:
+- explainability
+- auditability
+- human oversight
 
-Go to the directory that will be the parent of your project, and run the command with your project's name:
+---
 
-```bash
-copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
 
-If you have `pipx` and you didn't install `copier`, you can run it directly:
+# License
 
-```bash
-pipx run copier copy https://github.com/fastapi/full-stack-fastapi-template my-awesome-project --trust
-```
-
-**Note** the `--trust` option is necessary to be able to execute a [post-creation script](https://github.com/fastapi/full-stack-fastapi-template/blob/master/.copier/update_dotenv.py) that updates your `.env` files.
-
-### Input Variables
-
-Copier will ask you for some data, you might want to have at hand before generating the project.
-
-But don't worry, you can just update any of that in the `.env` files afterwards.
-
-The input variables, with their default values (some auto generated) are:
-
-- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
-- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
-- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
-- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
-- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
-- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
-- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
-- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
-- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
-- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
-- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
-
-## Backend Development
-
-Backend docs: [backend/README.md](./backend/README.md).
-
-## Frontend Development
-
-Frontend docs: [frontend/README.md](./frontend/README.md).
-
-## Deployment
-
-Deployment docs: [deployment.md](./deployment.md).
-
-## Development
-
-General development docs: [development.md](./development.md).
-
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
-
-## Release Notes
-
-Check the file [release-notes.md](./release-notes.md).
-
-## License
-
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
-# Global-Treasury-Agent
-# Global-Treasury-Agent
+MIT License
