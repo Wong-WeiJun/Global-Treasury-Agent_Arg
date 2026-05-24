@@ -63,17 +63,6 @@ export function TopNavbar() {
   const router = useRouterState()
   const currentPath = router.location.pathname
 
-  // LEFT SIDE: Items, Chat, Team, Organization (if superuser), Admin (if superuser)
-  const leftSideItems: NavigationItem[] = [
-    { icon: UsersRound, title: "Team", path: "/team" },
-    ...(currentUser?.is_superuser
-      ? [
-          { icon: Building2, title: "Organization", path: "/organization" },
-          { icon: Users, title: "Admin", path: "/admin" },
-        ]
-      : []),
-  ]
-
   // RIGHT SIDE: Dashboard, Documents (Reconcile only for Finance Manager+)
   const rightSideItems: NavigationItem[] = [
     { icon: Home, title: "Dashboard", path: "/" },
@@ -81,6 +70,13 @@ export function TopNavbar() {
       ? [{ icon: GitMerge, title: "Reconcile", path: "/reconcile" }]
       : []),
     { icon: History, title: "History", path: "/history" },
+    { icon: UsersRound, title: "Team", path: "/team" },
+    ...(currentUser?.is_superuser
+      ? [
+          { icon: Building2, title: "Organization", path: "/organization" },
+          { icon: Users, title: "Admin", path: "/admin" },
+        ]
+      : []),
   ]
 
   return (
@@ -99,7 +95,7 @@ export function TopNavbar() {
           <h1>MyAudit</h1>
         </RouterLink>
 
-        {/* REST OF LEFT SIDE ITEMS */}
+        {/* REST OF LEFT SIDE ITEMS 
         <nav className="flex items-center gap-1">
           {leftSideItems.map((item) => {
             const isActive = currentPath === item.path
@@ -118,7 +114,7 @@ export function TopNavbar() {
               </RouterLink>
             )
           })}
-        </nav>
+        </nav>*/}
       </div>
 
       {/* RIGHT SIDE ITEMS */}
@@ -193,6 +189,12 @@ export function TopNavbar() {
                 <DropdownMenuItem className="cursor-pointer gap-2 py-2">
                   <Settings className="size-4 text-muted-foreground" />
                   User Settings
+                </DropdownMenuItem>
+              </RouterLink>
+              <RouterLink to="/team">
+                <DropdownMenuItem className="cursor-pointer gap-2 py-2">
+                  <Settings className="size-4 text-muted-foreground" />
+                  Team
                 </DropdownMenuItem>
               </RouterLink>
               <DropdownMenuItem
