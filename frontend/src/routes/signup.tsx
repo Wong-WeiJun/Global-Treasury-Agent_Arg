@@ -85,7 +85,7 @@ function SignUp() {
     <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
       <AuthLayout>
         {/* Glassmorphic card containment layer for maximum readability */}
-        <div className="w-full max-w-md bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50">
+        <div className="w-full max-w-2xl bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
