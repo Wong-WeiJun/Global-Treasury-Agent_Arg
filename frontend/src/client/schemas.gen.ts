@@ -201,6 +201,39 @@ export const DocumentPublicSchema = {
             ],
             title: 'Reconciliation Result'
         },
+        ai_result: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ai Result'
+        },
+        ai_confidence: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ai Confidence'
+        },
+        ai_explanation: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ai Explanation'
+        },
         workflow_status: {
             type: 'string',
             title: 'Workflow Status',
@@ -240,6 +273,18 @@ export const DocumentPublicSchema = {
             ],
             title: 'Reviewed At'
         },
+        reviewed_by: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reviewed By'
+        },
         exception_type: {
             anyOf: [
                 {
@@ -272,6 +317,17 @@ export const DocumentPublicSchema = {
                 }
             ],
             title: 'Risk Score'
+        },
+        risk_level: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Risk Level'
         }
     },
     type: 'object',
@@ -701,6 +757,18 @@ export const ReconciliationRecordPublicSchema = {
             format: 'date-time',
             title: 'Created At'
         },
+        reviewed_by: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reviewed By'
+        },
         confidence: {
             type: 'number',
             title: 'Confidence'
@@ -708,6 +776,17 @@ export const ReconciliationRecordPublicSchema = {
         risk_score: {
             type: 'integer',
             title: 'Risk Score'
+        },
+        risk_level: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Risk Level'
         },
         fx_rate: {
             anyOf: [
@@ -790,6 +869,17 @@ export const ReconciliationRecordPublicSchema = {
             ],
             title: 'Assigned To'
         },
+        priority: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Priority'
+        },
         risk_factors: {
             anyOf: [
                 {
@@ -816,7 +906,7 @@ export const ReconciliationRecordPublicSchema = {
         }
     },
     type: 'object',
-    required: ['id', 'document_id', 'created_at', 'confidence', 'risk_score', 'fx_rate', 'normalized_amount_myr', 'action', 'exception_type', 'note', 'ai_explanation', 'case_id', 'assigned_to', 'risk_factors', 'journal_entry'],
+    required: ['id', 'document_id', 'created_at', 'reviewed_by', 'confidence', 'risk_score', 'risk_level', 'fx_rate', 'normalized_amount_myr', 'action', 'exception_type', 'note', 'ai_explanation', 'case_id', 'assigned_to', 'priority', 'risk_factors', 'journal_entry'],
     title: 'ReconciliationRecordPublic'
 } as const;
 

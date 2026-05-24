@@ -39,7 +39,8 @@ function Dashboard() {
             operations.
           </p>
           <p className="text-sm text-zinc-400 mt-4">
-            Welcome back, {currentUser?.full_name || currentUser?.email || "User"}
+            Welcome back,{" "}
+            {currentUser?.full_name || currentUser?.email || "User"}
           </p>
         </div>
       </section>

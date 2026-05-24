@@ -47,13 +47,18 @@ export type DocumentPublic = {
     reconciliation_result?: ({
     [key: string]: unknown;
 } | null);
+    ai_result?: (string | null);
+    ai_confidence?: (number | null);
+    ai_explanation?: (string | null);
     workflow_status?: string;
     review_status?: (string | null);
     review_note?: (string | null);
     reviewed_at?: (string | null);
+    reviewed_by?: (string | null);
     exception_type?: (string | null);
     case_id?: (string | null);
     risk_score?: (number | null);
+    risk_level?: (string | null);
 };
 
 export type DocumentsPublic = {
@@ -139,8 +144,10 @@ export type ReconciliationRecordPublic = {
     id: string;
     document_id: string;
     created_at: string;
+    reviewed_by: (string | null);
     confidence: number;
     risk_score: number;
+    risk_level: (string | null);
     fx_rate: (number | null);
     normalized_amount_myr: (number | null);
     action: string;
@@ -149,6 +156,7 @@ export type ReconciliationRecordPublic = {
     ai_explanation: (string | null);
     case_id: (string | null);
     assigned_to: (string | null);
+    priority: (string | null);
     risk_factors: ({
     [key: string]: unknown;
 } | null);

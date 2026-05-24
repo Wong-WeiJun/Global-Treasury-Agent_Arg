@@ -459,9 +459,9 @@ export function ReviewPanel({
         </div>
         <div className="bg-blue-950/30 border border-blue-800/50 rounded px-3 py-2">
           <p className="text-xs text-blue-400">
-            <span className="font-semibold">Note:</span> Your decision will update
-            the workflow status, but the original AI result will remain unchanged
-            for audit purposes.
+            <span className="font-semibold">Note:</span> Your decision will
+            update the workflow status, but the original AI result will remain
+            unchanged for audit purposes.
           </p>
         </div>
       </div>

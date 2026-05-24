@@ -88,6 +88,10 @@ function DocumentRow({ doc }: { doc: any }) {
       queryClient.invalidateQueries({ queryKey: ["my-documents"] }),
   })
 
+  const handleDownloadSingle = () => {
+    downloadDocumentsCSV([doc], `${doc.original_filename}_result.csv`)
+  }
+
   const handleToggle = async () => {
     if (!expanded && !previewUrl && doc.file_type !== "excel") {
       setLoadingPreview(true)
@@ -136,6 +140,14 @@ function DocumentRow({ doc }: { doc: any }) {
               className="text-blue-400 hover:underline text-xs"
             >
               {expanded ? "Hide" : "View"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadSingle}
+              className="text-green-400 hover:underline text-xs"
+              title="Download result as CSV"
+            >
+              Download
             </button>
             <button
               type="button"
@@ -233,10 +245,7 @@ function DocumentRow({ doc }: { doc: any }) {
                   <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">
                     Processing Timeline
                   </p>
-                  <Timeline
-                    status={doc.workflow_status}
-                    caseId={doc.case_id}
-                  />
+                  <Timeline status={doc.workflow_status} caseId={doc.case_id} />
                 </div>
 
                 {!recon ? (
@@ -401,6 +410,54 @@ function DocumentRow({ doc }: { doc: any }) {
   )
 }
 
+function downloadDocumentsCSV(docs: any[], filename: string) {
+  const csvRows = [
+    [
+      "Document",
+      "AI Result",
+      "Confidence",
+      "Amount",
+      "Currency",
+      "Date",
+      "Payer",
+      "Payee",
+      "Workflow Status",
+      "Risk Level",
+      "Explanation",
+      "Uploaded At",
+    ].join(","),
+  ]
+
+  for (const doc of docs) {
+    const extracted = doc.extracted_data || {}
+    csvRows.push(
+      [
+        `"${doc.original_filename || ""}"`,
+        doc.ai_result || "",
+        Math.round((doc.ai_confidence || 0) * 100),
+        extracted.amount || "",
+        extracted.currency || "",
+        extracted.date || "",
+        `"${extracted.payer || ""}"`,
+        `"${extracted.payee || ""}"`,
+        doc.workflow_status || "",
+        doc.risk_level || "",
+        `"${(doc.ai_explanation || "").replace(/"/g, '""')}"`,
+        new Date(doc.uploaded_at).toLocaleString(),
+      ].join(","),
+    )
+  }
+
+  const csvContent = csvRows.join("\n")
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+  const url = window.URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  window.URL.revokeObjectURL(url)
+}
+
 function HistoryPage() {
   const [filter, setFilter] = useState<string>("all")
 
@@ -421,22 +478,22 @@ function HistoryPage() {
     {
       key: "high_risk",
       label: "High Risk",
-      count:
-        data?.data.filter((d: any) => d.risk_level === "HIGH").length || 0,
+      count: data?.data.filter((d: any) => d.risk_level === "HIGH").length || 0,
     },
     {
       key: "exceptions",
       label: "Exceptions",
       count:
-        data?.data.filter((d: any) => d.workflow_status === "EXCEPTION_APPROVED")
-          .length || 0,
+        data?.data.filter(
+          (d: any) => d.workflow_status === "EXCEPTION_APPROVED",
+        ).length || 0,
     },
     {
       key: "approved",
       label: "Approved",
       count:
-        data?.data.filter((d: any) => d.workflow_status === "APPROVED").length ||
-        0,
+        data?.data.filter((d: any) => d.workflow_status === "APPROVED")
+          .length || 0,
     },
     {
       key: "under_review",
@@ -462,40 +519,55 @@ function HistoryPage() {
   return (
     <div className="max-w-7xl mx-auto p-6 flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold">
-          Treasury Operations Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold">Treasury Operations Dashboard</h1>
         <p className="text-gray-500 text-sm mt-1">
           Autonomous cross-border payment reconciliation, discrepancy
           investigation, and exception management.
         </p>
       </div>
 
-      {/* Smart Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {filters.map((f) => (
-          <button
-            key={f.key}
-            type="button"
-            onClick={() => setFilter(f.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-              filter === f.key
-                ? "bg-blue-600 text-white border border-blue-500"
-                : "bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-600"
-            }`}
-          >
-            {f.label}
-            <span
-              className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+      {/* Smart Filters and Bulk Export */}
+      <div className="flex gap-2 flex-wrap items-center justify-between">
+        <div className="flex gap-2 flex-wrap">
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                 filter === f.key
-                  ? "bg-blue-700 text-white"
-                  : "bg-gray-700 text-gray-400"
+                  ? "bg-blue-600 text-white border border-blue-500"
+                  : "bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-600"
               }`}
             >
-              {f.count}
-            </span>
+              {f.label}
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                  filter === f.key
+                    ? "bg-blue-700 text-white"
+                    : "bg-gray-700 text-gray-400"
+                }`}
+              >
+                {f.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {filteredDocs && filteredDocs.length > 0 && (
+          <button
+            type="button"
+            onClick={() =>
+              downloadDocumentsCSV(
+                filteredDocs,
+                `history_export_${filter}_${new Date().toISOString().split("T")[0]}.csv`,
+              )
+            }
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-green-600 text-white border border-green-500 hover:bg-green-700 transition-all flex items-center gap-2"
+          >
+            📥 Export Filtered ({filteredDocs.length})
           </button>
-        ))}
+        )}
       </div>
 
       {isLoading ? (
