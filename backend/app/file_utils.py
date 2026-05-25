@@ -57,9 +57,9 @@ def process_and_prepare_file(
 
             return output.read(), new_filename, "image/jpeg"
 
-    # Handle PDFs and Excel (xls, xlsx)
-    elif extension in ["pdf", "xls", "xlsx"]:
-        # We do not alter the bytes of PDFs or Excel files
+    # Handle PDFs, Excel (xls, xlsx), and CSV
+    elif extension in ["pdf", "xls", "xlsx", "csv"]:
+        # We do not alter the bytes of PDFs, Excel files, or CSVs
         new_filename = f"{uuid.uuid4().hex}.{extension}"
         return content, new_filename, content_type
 

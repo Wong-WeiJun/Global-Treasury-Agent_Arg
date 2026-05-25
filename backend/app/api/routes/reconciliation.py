@@ -435,10 +435,14 @@ async def suggest_matches(
     # Get transactions within date range (±7 days) and amount range (±10%)
     date_min = doc_date - timedelta(days=7)
     date_max = doc_date + timedelta(days=7)
-    amount_min = base_amount * 0.9
-    amount_max = base_amount * 1.1
 
-    # Query unmatched transactions
+    # Handle both positive and negative amounts (debits/credits)
+    amount_abs = abs(base_amount)
+    amount_min = amount_abs * 0.9
+    amount_max = amount_abs * 1.1
+
+    # Query unmatched transactions - compare absolute values
+    from sqlalchemy import func as sql_func
     stmt = (
         select(BankTransaction)
         .where(
@@ -446,13 +450,17 @@ async def suggest_matches(
             BankTransaction.status == "unmatched",
             BankTransaction.date >= str(date_min),
             BankTransaction.date <= str(date_max),
-            BankTransaction.amount >= amount_min,
-            BankTransaction.amount <= amount_max,
+            sql_func.abs(BankTransaction.amount) >= amount_min,
+            sql_func.abs(BankTransaction.amount) <= amount_max,
         )
         .limit(10)
     )
 
     candidates = session.exec(stmt).all()
+
+    # Debug logging
+    print(f"[DEBUG] Found {len(candidates)} candidate transactions for doc {document_id}")
+    print(f"[DEBUG] Search params: date={doc_date}, amount={base_amount}, range={amount_min}-{amount_max}")
 
     # Stage 2: Score each candidate
     suggestions = []
@@ -535,8 +543,8 @@ def _score_transaction_match(
         scores["date"] = 0
 
     # Vendor/payer similarity (30%)
-    payer = extracted.get("payer", "").lower()
-    payee = extracted.get("payee", "").lower()
+    payer = (extracted.get("payer") or "").lower()
+    payee = (extracted.get("payee") or "").lower()
     description = transaction.description.lower()
 
     vendor_score = 0

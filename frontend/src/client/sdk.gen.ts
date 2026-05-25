@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, InvitationsInviteMemberData, InvitationsInviteMemberResponse, InvitationsListInvitationsData, InvitationsListInvitationsResponse, InvitationsCancelInvitationData, InvitationsCancelInvitationResponse, InvitationsAcceptInvitationData, InvitationsAcceptInvitationResponse, InvitationsVerifyInvitationData, InvitationsVerifyInvitationResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MembershipsListMyOrganizationsResponse, MembershipsListOrganizationMembersData, MembershipsListOrganizationMembersResponse, MembershipsAddOrganizationMemberData, MembershipsAddOrganizationMemberResponse, MembershipsUpdateMembershipData, MembershipsUpdateMembershipResponse, MembershipsRemoveMembershipData, MembershipsRemoveMembershipResponse, OrganizationsListOrganizationsData, OrganizationsListOrganizationsResponse, OrganizationsCreateOrganizationData, OrganizationsCreateOrganizationResponse, OrganizationsGetOrganizationData, OrganizationsGetOrganizationResponse, OrganizationsUpdateOrganizationData, OrganizationsUpdateOrganizationResponse, OrganizationsDeleteOrganizationData, OrganizationsDeleteOrganizationResponse, OrganizationsGetOrganizationSettingsData, OrganizationsGetOrganizationSettingsResponse, OrganizationsUpdateOrganizationSettingsData, OrganizationsUpdateOrganizationSettingsResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, InvitationsInviteMemberData, InvitationsInviteMemberResponse, InvitationsListInvitationsData, InvitationsListInvitationsResponse, InvitationsCancelInvitationData, InvitationsCancelInvitationResponse, InvitationsAcceptInvitationData, InvitationsAcceptInvitationResponse, InvitationsVerifyInvitationData, InvitationsVerifyInvitationResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LearningRecordCorrectionData, LearningRecordCorrectionResponse, LearningGetLearningInsightsResponse, LearningGetCorrectionsData, LearningGetCorrectionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MembershipsListMyOrganizationsResponse, MembershipsListOrganizationMembersData, MembershipsListOrganizationMembersResponse, MembershipsAddOrganizationMemberData, MembershipsAddOrganizationMemberResponse, MembershipsUpdateMembershipData, MembershipsUpdateMembershipResponse, MembershipsRemoveMembershipData, MembershipsRemoveMembershipResponse, OrganizationsListOrganizationsData, OrganizationsListOrganizationsResponse, OrganizationsCreateOrganizationData, OrganizationsCreateOrganizationResponse, OrganizationsGetOrganizationData, OrganizationsGetOrganizationResponse, OrganizationsUpdateOrganizationData, OrganizationsUpdateOrganizationResponse, OrganizationsDeleteOrganizationData, OrganizationsDeleteOrganizationResponse, OrganizationsGetOrganizationSettingsData, OrganizationsGetOrganizationSettingsResponse, OrganizationsUpdateOrganizationSettingsData, OrganizationsUpdateOrganizationSettingsResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReconciliationSuggestMatchesData, ReconciliationSuggestMatchesResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, StatementsUploadBankStatementData, StatementsUploadBankStatementResponse, StatementsListStatementsData, StatementsListStatementsResponse, StatementsGetStatementTransactionsData, StatementsGetStatementTransactionsResponse, StatementsGetUnmatchedTransactionsData, StatementsGetUnmatchedTransactionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class ChatService {
     /**
@@ -468,6 +468,68 @@ export class ItemsService {
     }
 }
 
+export class LearningService {
+    /**
+     * Record Correction
+     * Record a user correction to AI decision for continuous learning.
+     *
+     * When a user manually overrides an AI reconciliation decision, this endpoint
+     * should be called to teach the AI from the correction.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns CorrectionResponse Successful Response
+     * @throws ApiError
+     */
+    public static recordCorrection(data: LearningRecordCorrectionData): CancelablePromise<LearningRecordCorrectionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/learning/record-correction',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Learning Insights
+     * Get AI learning insights for the user's organization.
+     *
+     * Shows what the AI has learned from user corrections, including vendor
+     * preferences and reconciliation patterns.
+     * @returns LearningInsightsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLearningInsights(): CancelablePromise<LearningGetLearningInsightsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/learning/insights'
+        });
+    }
+    
+    /**
+     * Get Corrections
+     * Get recent user corrections for the organization.
+     * @param data The data for the request.
+     * @param data.limit
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getCorrections(data: LearningGetCorrectionsData = {}): CancelablePromise<LearningGetCorrectionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/learning/correction-history',
+            query: {
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class LoginService {
     /**
      * Login Access Token
@@ -884,6 +946,28 @@ export class ReconciliationService {
             }
         });
     }
+    
+    /**
+     * Suggest Matches
+     * Find and rank candidate bank transactions for a document.
+     * Uses rule-based filtering + scoring to suggest matches.
+     * @param data The data for the request.
+     * @param data.documentId
+     * @returns SuggestMatchesResponse Successful Response
+     * @throws ApiError
+     */
+    public static suggestMatches(data: ReconciliationSuggestMatchesData): CancelablePromise<ReconciliationSuggestMatchesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/reconciliation/suggest-matches/{document_id}',
+            path: {
+                document_id: data.documentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
 }
 
 export class ReviewService {
@@ -955,6 +1039,100 @@ export class ReviewService {
     }
 }
 
+export class StatementsService {
+    /**
+     * Upload Bank Statement
+     * Upload and parse a bank statement (CSV or XLSX).
+     * Automatically extracts transactions and stores them.
+     * @param data The data for the request.
+     * @param data.formData
+     * @returns BankStatementPublic Successful Response
+     * @throws ApiError
+     */
+    public static uploadBankStatement(data: StatementsUploadBankStatementData): CancelablePromise<StatementsUploadBankStatementResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/statements/upload',
+            formData: data.formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * List Statements
+     * List all bank statements for current organization
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns BankStatementPublic Successful Response
+     * @throws ApiError
+     */
+    public static listStatements(data: StatementsListStatementsData = {}): CancelablePromise<StatementsListStatementsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/statements/',
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Statement Transactions
+     * Get all transactions from a specific statement
+     * @param data The data for the request.
+     * @param data.statementId
+     * @param data.skip
+     * @param data.limit
+     * @returns BankTransactionsPublic Successful Response
+     * @throws ApiError
+     */
+    public static getStatementTransactions(data: StatementsGetStatementTransactionsData): CancelablePromise<StatementsGetStatementTransactionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/statements/{statement_id}/transactions',
+            path: {
+                statement_id: data.statementId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Unmatched Transactions
+     * Get all unmatched transactions for the organization
+     * @param data The data for the request.
+     * @param data.limit
+     * @returns BankTransactionsPublic Successful Response
+     * @throws ApiError
+     */
+    public static getUnmatchedTransactions(data: StatementsGetUnmatchedTransactionsData = {}): CancelablePromise<StatementsGetUnmatchedTransactionsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/statements/transactions/unmatched',
+            query: {
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
 export class UsersService {
     /**
      * Read Users
@@ -1014,9 +1192,6 @@ export class UsersService {
     
     /**
      * Delete User Me
-     * Delete own user.
-     * If the user is an OWNER of an organization, the entire organization
-     * and all its members will be deleted.
      * @returns Message Successful Response
      * @throws ApiError
      */

@@ -50,6 +50,179 @@ export const BankEntrySchema = {
     title: 'BankEntry'
 } as const;
 
+export const BankStatementPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        uploaded_by: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Uploaded By'
+        },
+        original_filename: {
+            type: 'string',
+            title: 'Original Filename'
+        },
+        uploaded_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Uploaded At'
+        },
+        parsed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Parsed At'
+        },
+        statement_month: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Statement Month'
+        },
+        bank_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Bank Name'
+        },
+        account_number: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Account Number'
+        }
+    },
+    type: 'object',
+    required: ['id', 'organization_id', 'uploaded_by', 'original_filename', 'uploaded_at', 'parsed_at', 'statement_month', 'bank_name', 'account_number'],
+    title: 'BankStatementPublic'
+} as const;
+
+export const BankTransactionPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        statement_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Statement Id'
+        },
+        organization_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Organization Id'
+        },
+        date: {
+            type: 'string',
+            title: 'Date'
+        },
+        amount: {
+            type: 'number',
+            title: 'Amount'
+        },
+        currency: {
+            type: 'string',
+            title: 'Currency'
+        },
+        description: {
+            type: 'string',
+            title: 'Description'
+        },
+        reference: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Reference'
+        },
+        matched_document_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Matched Document Id'
+        },
+        confidence_score: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Confidence Score'
+        },
+        status: {
+            type: 'string',
+            title: 'Status'
+        }
+    },
+    type: 'object',
+    required: ['id', 'statement_id', 'organization_id', 'date', 'amount', 'currency', 'description', 'reference', 'matched_document_id', 'confidence_score', 'status'],
+    title: 'BankTransactionPublic'
+} as const;
+
+export const BankTransactionsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/BankTransactionPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'BankTransactionsPublic'
+} as const;
+
 export const Body_files_upload_fileSchema = {
     properties: {
         file: {
@@ -120,6 +293,19 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const Body_statements_upload_bank_statementSchema = {
+    properties: {
+        file: {
+            type: 'string',
+            format: 'binary',
+            title: 'File'
+        }
+    },
+    type: 'object',
+    required: ['file'],
+    title: 'Body_statements-upload_bank_statement'
+} as const;
+
 export const ChatRequestSchema = {
     properties: {
         message: {
@@ -151,6 +337,71 @@ export const ChatResponseSchema = {
     type: 'object',
     required: ['reply'],
     title: 'ChatResponse'
+} as const;
+
+export const CorrectionRequestSchema = {
+    properties: {
+        document_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Document Id'
+        },
+        user_decision: {
+            type: 'string',
+            title: 'User Decision'
+        },
+        user_matched_index: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Matched Index'
+        },
+        user_note: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'User Note'
+        }
+    },
+    type: 'object',
+    required: ['document_id', 'user_decision'],
+    title: 'CorrectionRequest',
+    description: 'Request to record a user correction for AI learning.'
+} as const;
+
+export const CorrectionResponseSchema = {
+    properties: {
+        correction_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Correction Id'
+        },
+        learned_patterns: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Learned Patterns'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['correction_id', 'learned_patterns', 'message'],
+    title: 'CorrectionResponse',
+    description: 'Response after recording a correction.'
 } as const;
 
 export const DocumentPublicSchema = {
@@ -820,6 +1071,33 @@ export const ItemsPublicSchema = {
     title: 'ItemsPublic'
 } as const;
 
+export const LearningInsightsResponseSchema = {
+    properties: {
+        vendor_preferences: {
+            items: {
+                '$ref': '#/components/schemas/VendorPreferencePublic'
+            },
+            type: 'array',
+            title: 'Vendor Preferences'
+        },
+        reconciliation_patterns: {
+            items: {
+                '$ref': '#/components/schemas/ReconciliationPatternPublic'
+            },
+            type: 'array',
+            title: 'Reconciliation Patterns'
+        },
+        total_corrections: {
+            type: 'integer',
+            title: 'Total Corrections'
+        }
+    },
+    type: 'object',
+    required: ['vendor_preferences', 'reconciliation_patterns', 'total_corrections'],
+    title: 'LearningInsightsResponse',
+    description: 'Learning insights for an organization.'
+} as const;
+
 export const MemberWithUserSchema = {
     properties: {
         id: {
@@ -1221,6 +1499,48 @@ export const ReconcileResponseSchema = {
     title: 'ReconcileResponse'
 } as const;
 
+export const ReconciliationPatternPublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        pattern_type: {
+            type: 'string',
+            title: 'Pattern Type'
+        },
+        pattern_name: {
+            type: 'string',
+            title: 'Pattern Name'
+        },
+        pattern_rule: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Pattern Rule'
+        },
+        learned_from_count: {
+            type: 'integer',
+            title: 'Learned From Count'
+        },
+        success_rate: {
+            type: 'number',
+            title: 'Success Rate'
+        }
+    },
+    type: 'object',
+    required: ['id', 'pattern_type', 'pattern_name', 'pattern_rule', 'learned_from_count', 'success_rate'],
+    title: 'ReconciliationPatternPublic',
+    description: 'Public representation of a learned reconciliation pattern.'
+} as const;
+
 export const ReconciliationRecordPublicSchema = {
     properties: {
         id: {
@@ -1456,6 +1776,51 @@ export const ReviewActionRequestSchema = {
     type: 'object',
     required: ['action'],
     title: 'ReviewActionRequest'
+} as const;
+
+export const SuggestMatchesResponseSchema = {
+    properties: {
+        document_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Document Id'
+        },
+        extracted_data: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Extracted Data'
+        },
+        suggested_matches: {
+            items: {
+                '$ref': '#/components/schemas/SuggestedMatch'
+            },
+            type: 'array',
+            title: 'Suggested Matches'
+        }
+    },
+    type: 'object',
+    required: ['document_id', 'extracted_data', 'suggested_matches'],
+    title: 'SuggestMatchesResponse'
+} as const;
+
+export const SuggestedMatchSchema = {
+    properties: {
+        transaction: {
+            '$ref': '#/components/schemas/BankTransactionPublic'
+        },
+        confidence: {
+            type: 'number',
+            title: 'Confidence'
+        },
+        explanation: {
+            type: 'string',
+            title: 'Explanation'
+        }
+    },
+    type: 'object',
+    required: ['transaction', 'confidence', 'explanation'],
+    title: 'SuggestedMatch',
+    description: 'A suggested bank transaction match for a document'
 } as const;
 
 export const TokenSchema = {
@@ -1798,4 +2163,60 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const VendorPreferencePublicSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        canonical_vendor_name: {
+            type: 'string',
+            title: 'Canonical Vendor Name'
+        },
+        vendor_aliases: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Vendor Aliases'
+        },
+        typical_amount_range: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Typical Amount Range'
+        },
+        is_recurring: {
+            type: 'boolean',
+            title: 'Is Recurring'
+        },
+        learned_from_count: {
+            type: 'integer',
+            title: 'Learned From Count'
+        },
+        confidence: {
+            type: 'number',
+            title: 'Confidence'
+        }
+    },
+    type: 'object',
+    required: ['id', 'canonical_vendor_name', 'vendor_aliases', 'typical_amount_range', 'is_recurring', 'learned_from_count', 'confidence'],
+    title: 'VendorPreferencePublic',
+    description: 'Public representation of a learned vendor preference.'
 } as const;

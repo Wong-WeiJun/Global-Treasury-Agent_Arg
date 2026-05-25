@@ -33,14 +33,25 @@ interface KPICardProps {
 }
 
 const GRADIENTS: Record<KPICardProps["gradient"], string> = {
-  danger:  "from-[#ffbf96] to-[#fe7096] dark:from-[#c0392b]/80 dark:to-[#8e1a2e]/80",
-  info:    "from-[#90caf9] to-[#047edf] dark:from-[#1565c0]/80 dark:to-[#0d47a1]/80",
-  success: "from-[#84d9d2] to-[#07cdae] dark:from-[#00695c]/80 dark:to-[#004d40]/80",
-  warning: "from-[#f6d365] to-[#fda085] dark:from-[#e65100]/80 dark:to-[#bf360c]/80",
-  primary: "from-[#da8cff] to-[#9a55ff] dark:from-[#6a0dad]/80 dark:to-[#4a0080]/80",
+  danger:
+    "from-[#ffbf96] to-[#fe7096] dark:from-[#c0392b]/80 dark:to-[#8e1a2e]/80",
+  info: "from-[#90caf9] to-[#047edf] dark:from-[#1565c0]/80 dark:to-[#0d47a1]/80",
+  success:
+    "from-[#84d9d2] to-[#07cdae] dark:from-[#00695c]/80 dark:to-[#004d40]/80",
+  warning:
+    "from-[#f6d365] to-[#fda085] dark:from-[#e65100]/80 dark:to-[#bf360c]/80",
+  primary:
+    "from-[#da8cff] to-[#9a55ff] dark:from-[#6a0dad]/80 dark:to-[#4a0080]/80",
 }
 
-function KPICard({ title, value, subtitle, icon: Icon, gradient, link }: KPICardProps) {
+function KPICard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  gradient,
+  link,
+}: KPICardProps) {
   const card = (
     <div
       className={`relative overflow-hidden bg-gradient-to-r ${GRADIENTS[gradient]} rounded-xl p-6 text-white shadow-md transition-all duration-200 ${link ? "cursor-pointer hover:shadow-xl hover:scale-[1.02]" : ""}`}
@@ -49,7 +60,9 @@ function KPICard({ title, value, subtitle, icon: Icon, gradient, link }: KPICard
       <div className="absolute right-4 top-6 size-16 rounded-full bg-white/10" />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-wider text-white/80 mb-2">{title}</p>
+          <p className="text-sm font-medium uppercase tracking-wider text-white/80 mb-2">
+            {title}
+          </p>
           <p className="text-3xl font-bold">{value}</p>
           {subtitle && <p className="text-xs text-white/70 mt-2">{subtitle}</p>}
         </div>
@@ -71,9 +84,13 @@ function SectionCard({
   className?: string
 }) {
   return (
-    <div className={`bg-white dark:bg-[#1e1e2f] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 ${className}`}>
+    <div
+      className={`bg-white dark:bg-[#1e1e2f] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 ${className}`}
+    >
       <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="text-base font-semibold text-gray-800 dark:text-white">{title}</h2>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-white">
+          {title}
+        </h2>
       </div>
       <div className="p-6">{children}</div>
     </div>
@@ -115,14 +132,20 @@ function SvgBarChart({ data }: { data: BarDatum[] }) {
         {yTicks.map((tick) => (
           <g key={tick}>
             <line
-              x1={0} y1={yPos(tick)}
-              x2={innerW} y2={yPos(tick)}
-              stroke="#e5e7eb" strokeDasharray="3 3"
+              x1={0}
+              y1={yPos(tick)}
+              x2={innerW}
+              y2={yPos(tick)}
+              stroke="#e5e7eb"
+              strokeDasharray="3 3"
             />
             <text
-              x={-6} y={yPos(tick)}
-              textAnchor="end" dominantBaseline="middle"
-              fontSize={10} fill="#9ca3af"
+              x={-6}
+              y={yPos(tick)}
+              textAnchor="end"
+              dominantBaseline="middle"
+              fontSize={10}
+              fill="#9ca3af"
             >
               {tick}
             </text>
@@ -139,9 +162,10 @@ function SvgBarChart({ data }: { data: BarDatum[] }) {
             <g key={d.label}>
               {/* Rounded top bar via path */}
               <path
-                d={barH > r
-                  ? `M${x},${y + r} Q${x},${y} ${x + r},${y} L${x + barWidth - r},${y} Q${x + barWidth},${y} ${x + barWidth},${y + r} L${x + barWidth},${y + barH} L${x},${y + barH} Z`
-                  : `M${x},${y} L${x + barWidth},${y} L${x + barWidth},${y + barH} L${x},${y + barH} Z`
+                d={
+                  barH > r
+                    ? `M${x},${y + r} Q${x},${y} ${x + r},${y} L${x + barWidth - r},${y} Q${x + barWidth},${y} ${x + barWidth},${y + r} L${x + barWidth},${y + barH} L${x},${y + barH} Z`
+                    : `M${x},${y} L${x + barWidth},${y} L${x + barWidth},${y + barH} L${x},${y + barH} Z`
                 }
                 fill={d.color}
                 opacity={0.9}
@@ -149,16 +173,23 @@ function SvgBarChart({ data }: { data: BarDatum[] }) {
               {/* Value label on top */}
               {d.count > 0 && (
                 <text
-                  x={x + barWidth / 2} y={y - 4}
-                  textAnchor="middle" fontSize={10} fill="#6b7280" fontWeight="600"
+                  x={x + barWidth / 2}
+                  y={y - 4}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fill="#6b7280"
+                  fontWeight="600"
                 >
                   {d.count}
                 </text>
               )}
               {/* X-axis label */}
               <text
-                x={x + barWidth / 2} y={innerH + 16}
-                textAnchor="middle" fontSize={11} fill="#6b7280"
+                x={x + barWidth / 2}
+                y={innerH + 16}
+                textAnchor="middle"
+                fontSize={11}
+                fill="#6b7280"
               >
                 {d.label}
               </text>
@@ -174,7 +205,14 @@ function SvgBarChart({ data }: { data: BarDatum[] }) {
 }
 
 // ─── Colour palette ───────────────────────────────────────────────────────────
-const CHART_COLORS = ["#9a55ff", "#07cdae", "#fe7096", "#fda085", "#047edf", "#f6d365"]
+const CHART_COLORS = [
+  "#9a55ff",
+  "#07cdae",
+  "#fe7096",
+  "#fda085",
+  "#047edf",
+  "#f6d365",
+]
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard() {
@@ -190,27 +228,49 @@ function Dashboard() {
 
   // KPIs
   const totalReconciled = documents.length
-  const pendingReviews = documents.filter((d) => d.workflow_status === "PENDING_ACTION").length
-  const exceptionCases = documents.filter((d) => d.workflow_status === "EXCEPTION_APPROVED").length
+  const pendingReviews = documents.filter(
+    (d) => d.workflow_status === "PENDING_ACTION",
+  ).length
+  const exceptionCases = documents.filter(
+    (d) => d.workflow_status === "EXCEPTION_APPROVED",
+  ).length
   const highRiskAlerts = documents.filter((d) => d.risk_level === "HIGH").length
-  const approvedCount  = documents.filter((d) => d.workflow_status === "APPROVED").length
-  const matchedDocs    = documents.filter((d) => d.ai_result === "MATCHED").length
-  const autoMatchRate  = documents.length > 0 ? Math.round((matchedDocs / documents.length) * 100) : 0
-  const totalAmount    = documents.reduce((sum, d) => sum + (d.base_amount || d.original_amount || 0), 0)
+  const approvedCount = documents.filter(
+    (d) => d.workflow_status === "APPROVED",
+  ).length
+  const matchedDocs = documents.filter((d) => d.ai_result === "MATCHED").length
+  const autoMatchRate =
+    documents.length > 0
+      ? Math.round((matchedDocs / documents.length) * 100)
+      : 0
+  const totalAmount = documents.reduce(
+    (sum, d) => sum + (d.base_amount || d.original_amount || 0),
+    0,
+  )
 
   const needsAttention = documents
-    .filter((d) => d.workflow_status === "PENDING_ACTION" || d.risk_level === "HIGH" || d.ai_result === "UNMATCHED")
+    .filter(
+      (d) =>
+        d.workflow_status === "PENDING_ACTION" ||
+        d.risk_level === "HIGH" ||
+        d.ai_result === "UNMATCHED",
+    )
     .slice(0, 5)
 
   const recentActivity = [...documents]
-    .sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime(),
+    )
     .slice(0, 5)
 
   // AI Insights
   const aiInsights: { type: string; message: string; severity: string }[] = []
   const fuzzyMatches = documents.filter((d) => d.ai_result === "FUZZY_MATCH")
   if (fuzzyMatches.length > 0) {
-    const avgConf = fuzzyMatches.reduce((sum, d) => sum + (d.ai_confidence || 0), 0) / fuzzyMatches.length
+    const avgConf =
+      fuzzyMatches.reduce((sum, d) => sum + (d.ai_confidence || 0), 0) /
+      fuzzyMatches.length
     aiInsights.push({
       type: "pattern",
       message: `${Math.round(avgConf * 100)}% average confidence on fuzzy matches — AI learning patterns`,
@@ -233,25 +293,33 @@ function Dashboard() {
   })
   const currencyChartData: BarDatum[] = Array.from(currencyMap.entries())
     .sort((a, b) => b[1] - a[1])
-    .map(([currency, count], i) => ({ label: currency, count, color: CHART_COLORS[i % CHART_COLORS.length] }))
+    .map(([currency, count], i) => ({
+      label: currency,
+      count,
+      color: CHART_COLORS[i % CHART_COLORS.length],
+    }))
 
   // Reconciliation chart data
-  const unmatchedDocs = documents.filter((d) => d.ai_result === "UNMATCHED").length
+  const unmatchedDocs = documents.filter(
+    (d) => d.ai_result === "UNMATCHED",
+  ).length
   const reconciliationChartData: BarDatum[] = [
-    { label: "Matched",    count: matchedDocs,       color: "#07cdae" },
-    { label: "Fuzzy",      count: fuzzyMatches.length, color: "#fda085" },
-    { label: "Unmatched",  count: unmatchedDocs,      color: "#fe7096" },
-    { label: "Approved",   count: approvedCount,      color: "#9a55ff" },
+    { label: "Matched", count: matchedDocs, color: "#07cdae" },
+    { label: "Fuzzy", count: fuzzyMatches.length, color: "#fda085" },
+    { label: "Unmatched", count: unmatchedDocs, color: "#fe7096" },
+    { label: "Approved", count: approvedCount, color: "#9a55ff" },
   ]
 
   const hasFxNormalization = documents.some(
-    (d) => d.original_currency && d.base_currency && d.original_currency !== d.base_currency,
+    (d) =>
+      d.original_currency &&
+      d.base_currency &&
+      d.original_currency !== d.base_currency,
   )
 
   return (
     <div className="min-h-screen bg-[#f5f4f8] dark:bg-[#13131f] p-6">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
-
         {/* ── Page Header ── */}
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-[#da8cff] to-[#9a55ff] shadow-md">
@@ -272,10 +340,37 @@ function Dashboard() {
 
         {/* ── KPI Cards ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <KPICard title="Total Reconciled"  value={formatAmountCompact(totalAmount, baseCurrency)} subtitle={`${totalReconciled} documents`}          icon={DollarSign}    gradient="info"    link="/history" />
-          <KPICard title="Auto-Match Rate"   value={`${autoMatchRate}%`}                            subtitle={`${matchedDocs} of ${documents.length} auto-matched`} icon={CheckCircle2}  gradient="success" />
-          <KPICard title="Pending Reviews"   value={pendingReviews}                                  subtitle="requires attention"                          icon={Clock}         gradient="warning" link="/history" />
-          <KPICard title="High Risk Alerts"  value={highRiskAlerts}                                  subtitle={`${exceptionCases} exception cases`}         icon={AlertTriangle} gradient="danger"  link="/history" />
+          <KPICard
+            title="Total Reconciled"
+            value={formatAmountCompact(totalAmount, baseCurrency)}
+            subtitle={`${totalReconciled} documents`}
+            icon={DollarSign}
+            gradient="info"
+            link="/history"
+          />
+          <KPICard
+            title="Auto-Match Rate"
+            value={`${autoMatchRate}%`}
+            subtitle={`${matchedDocs} of ${documents.length} auto-matched`}
+            icon={CheckCircle2}
+            gradient="success"
+          />
+          <KPICard
+            title="Pending Reviews"
+            value={pendingReviews}
+            subtitle="requires attention"
+            icon={Clock}
+            gradient="warning"
+            link="/history"
+          />
+          <KPICard
+            title="High Risk Alerts"
+            value={highRiskAlerts}
+            subtitle={`${exceptionCases} exception cases`}
+            icon={AlertTriangle}
+            gradient="danger"
+            link="/history"
+          />
         </div>
 
         {/* ── AI Attention Center ── */}
@@ -285,7 +380,9 @@ function Dashboard() {
               <div className="p-2 rounded-lg bg-gradient-to-br from-[#da8cff] to-[#9a55ff]">
                 <Zap className="size-4 text-white" />
               </div>
-              <h2 className="text-base font-semibold text-gray-800 dark:text-white">AI Attention Center</h2>
+              <h2 className="text-base font-semibold text-gray-800 dark:text-white">
+                AI Attention Center
+              </h2>
             </div>
             <div className="p-6 space-y-4">
               {aiInsights.length > 0 && (
@@ -363,7 +460,6 @@ function Dashboard() {
 
         {/* ── Charts Row ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
           {/* Reconciliation Summary */}
           <SectionCard title="Reconciliation Summary">
             {isLoading ? (
@@ -381,8 +477,13 @@ function Dashboard() {
                 <div className="flex flex-wrap gap-3 mt-3">
                   {reconciliationChartData.map((item) => (
                     <div key={item.label} className="flex items-center gap-1.5">
-                      <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.label}</span>
+                      <span
+                        className="inline-block size-2.5 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.label}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -399,7 +500,9 @@ function Dashboard() {
             ) : currencyChartData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 gap-2">
                 <DollarSign className="size-10 text-gray-300" />
-                <p className="text-sm text-gray-400">No currency data available</p>
+                <p className="text-sm text-gray-400">
+                  No currency data available
+                </p>
               </div>
             ) : (
               <>
@@ -407,16 +510,24 @@ function Dashboard() {
                 <div className="flex flex-wrap gap-3 mt-3">
                   {currencyChartData.map((item) => (
                     <div key={item.label} className="flex items-center gap-1.5">
-                      <span className="inline-block size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.label}</span>
+                      <span
+                        className="inline-block size-2.5 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {item.label}
+                      </span>
                     </div>
                   ))}
                 </div>
                 {hasFxNormalization && (
                   <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
-                    <p className="text-xs text-green-800 dark:text-green-300 font-semibold">💱 FX Normalization Active</p>
+                    <p className="text-xs text-green-800 dark:text-green-300 font-semibold">
+                      💱 FX Normalization Active
+                    </p>
                     <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-                      Multi-currency transactions automatically converted to base currency.
+                      Multi-currency transactions automatically converted to
+                      base currency.
                     </p>
                   </div>
                 )}
@@ -433,7 +544,10 @@ function Dashboard() {
             <div className="flex flex-col items-center py-10 gap-3">
               <FileText className="size-12 text-gray-300" />
               <p className="text-sm text-gray-400">No documents yet</p>
-              <Link to="/reconcile" className="text-sm font-medium text-[#9a55ff] hover:text-purple-700">
+              <Link
+                to="/reconcile"
+                className="text-sm font-medium text-[#9a55ff] hover:text-purple-700"
+              >
                 Upload your first document →
               </Link>
             </div>
@@ -443,7 +557,10 @@ function Dashboard() {
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
                     {["Document", "Date", "AI Result", "Status"].map((h) => (
-                      <th key={h} className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider pb-3 pr-4">
+                      <th
+                        key={h}
+                        className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider pb-3 pr-4"
+                      >
                         {h}
                       </th>
                     ))}
@@ -451,7 +568,10 @@ function Dashboard() {
                 </thead>
                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                   {recentActivity.map((doc) => (
-                    <tr key={doc.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors">
+                    <tr
+                      key={doc.id}
+                      className="hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors"
+                    >
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
                           <div
@@ -490,7 +610,10 @@ function Dashboard() {
                       </td>
                       <td className="py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
                         {doc.workflow_status
-                          ? doc.workflow_status.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
+                          ? doc.workflow_status
+                              .replace(/_/g, " ")
+                              .toLowerCase()
+                              .replace(/^\w/, (c) => c.toUpperCase())
                           : "Processing"}
                       </td>
                     </tr>
@@ -504,9 +627,33 @@ function Dashboard() {
         {/* ── Quick Actions ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {[
-            { to: "/reconcile", label: "Upload Documents", sub: "Start AI reconciliation workflow", icon: FileText, from: "#90caf9", to_: "#047edf", accent: "#047edf" },
-            { to: "/history",   label: "Review Queue",     sub: `${pendingReviews} items need attention`, icon: Clock,     from: "#da8cff", to_: "#9a55ff", accent: "#9a55ff" },
-            { to: "/team",      label: "Team Activity",    sub: "Manage organisation members",      icon: TrendingUp, from: "#84d9d2", to_: "#07cdae", accent: "#07cdae" },
+            {
+              to: "/reconcile",
+              label: "Upload Documents",
+              sub: "Start AI reconciliation workflow",
+              icon: FileText,
+              from: "#90caf9",
+              to_: "#047edf",
+              accent: "#047edf",
+            },
+            {
+              to: "/history",
+              label: "Review Queue",
+              sub: `${pendingReviews} items need attention`,
+              icon: Clock,
+              from: "#da8cff",
+              to_: "#9a55ff",
+              accent: "#9a55ff",
+            },
+            {
+              to: "/team",
+              label: "Team Activity",
+              sub: "Manage organisation members",
+              icon: TrendingUp,
+              from: "#84d9d2",
+              to_: "#07cdae",
+              accent: "#07cdae",
+            },
           ].map(({ to, label, sub, icon: Icon, from, to_, accent }) => (
             <Link
               key={to}
@@ -516,19 +663,25 @@ function Dashboard() {
             >
               <div
                 className="mb-4 size-12 flex items-center justify-center rounded-xl shadow"
-                style={{ background: `linear-gradient(135deg, ${from}, ${to_})` }}
+                style={{
+                  background: `linear-gradient(135deg, ${from}, ${to_})`,
+                }}
               >
                 <Icon className="size-6 text-white" />
               </div>
-              <h3 className="font-semibold text-gray-800 dark:text-white mb-1">{label}</h3>
+              <h3 className="font-semibold text-gray-800 dark:text-white mb-1">
+                {label}
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">{sub}</p>
-              <div className="mt-4 flex items-center gap-1 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accent }}>
+              <div
+                className="mt-4 flex items-center gap-1 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ color: accent }}
+              >
                 Go <ArrowRight className="size-3.5" />
               </div>
             </Link>
           ))}
         </div>
-
       </div>
     </div>
   )

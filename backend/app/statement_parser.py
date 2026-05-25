@@ -21,6 +21,8 @@ COLUMN_MAPPINGS = {
         "posting date",
         "trans date",
         "txn date",
+        "payment date",
+        "transaction_date",
     ],
     "description": [
         "description",
@@ -30,12 +32,16 @@ COLUMN_MAPPINGS = {
         "particulars",
         "narration",
         "memo",
+        "payee",
+        "vendor",
+        "merchant",
+        "remarks",
     ],
-    "amount": ["amount", "value", "transaction amount"],
-    "debit": ["debit", "withdrawal", "withdrawals", "dr"],
-    "credit": ["credit", "deposit", "deposits", "cr"],
+    "amount": ["amount", "value", "transaction amount", "total", "sum"],
+    "debit": ["debit", "withdrawal", "withdrawals", "dr", "paid", "payment"],
+    "credit": ["credit", "deposit", "deposits", "cr", "received"],
     "balance": ["balance", "running balance", "closing balance"],
-    "reference": ["reference", "ref", "transaction ref", "ref no"],
+    "reference": ["reference", "ref", "transaction ref", "ref no", "reference number"],
 }
 
 
@@ -182,8 +188,11 @@ def parse_csv(csv_bytes: bytes) -> list[dict]:
     columns = _detect_columns(headers)
 
     if not columns.get("date") or not columns.get("description"):
+        found_cols = ", ".join([f'"{h}"' for h in headers[:10]])  # Show first 10
         raise ValueError(
-            "Could not detect date and description columns. Please check your CSV format."
+            f"Could not detect required columns (date & description). "
+            f"Found columns: {found_cols}. "
+            f"Please ensure your CSV has 'Date' and 'Description' columns."
         )
 
     transactions = []
@@ -215,8 +224,11 @@ def parse_xlsx(xlsx_bytes: bytes) -> list[dict]:
     columns = _detect_columns(headers)
 
     if not columns.get("date") or not columns.get("description"):
+        found_cols = ", ".join([f'"{h}"' for h in headers[:10] if h])  # Show first 10 non-empty
         raise ValueError(
-            "Could not detect date and description columns. Please check your XLSX format."
+            f"Could not detect required columns (date & description). "
+            f"Found columns: {found_cols}. "
+            f"Please ensure your file has 'Date' and 'Description' columns."
         )
 
     transactions = []
@@ -251,6 +263,14 @@ def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
     ]
     """
     filename_lower = filename.lower()
+
+    # Check if this looks like a receipt file (not a bank statement)
+    if "receipt" in filename_lower or "invoice" in filename_lower:
+        raise ValueError(
+            f"This appears to be a receipt/invoice file, not a bank statement. "
+            f"Bank statements should contain multiple transaction rows with dates, amounts, and descriptions. "
+            f"Please upload a CSV/XLSX file exported from your bank."
+        )
 
     if filename_lower.endswith(".csv"):
         return parse_csv(file_bytes)

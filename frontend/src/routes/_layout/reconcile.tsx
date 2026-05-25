@@ -1,9 +1,19 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ShieldAlert } from "lucide-react"
+import {
+  CheckCircle,
+  FileText,
+  ShieldAlert,
+  Upload,
+  XCircle,
+} from "lucide-react"
 import { useEffect, useState } from "react"
 import useAuth from "@/hooks/useAuth"
-import { FilesService, ReconciliationService } from "../../client"
+import {
+  FilesService,
+  ReconciliationService,
+  StatementsService,
+} from "../../client"
 import { ReviewPanel } from "../../components/Common/ReviewPanel"
 import useCurrency from "../../hooks/useCurrency"
 import { useUserRole } from "../../hooks/useUserRole"
@@ -89,9 +99,28 @@ function ReconcilePage() {
   } | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
 
+  // Bank statement upload state
+  const [statementUploading, setStatementUploading] = useState(false)
+  const [statementUploadError, setStatementUploadError] = useState<
+    string | null
+  >(null)
+
+  // Suggested matches per document
+  const [suggestedMatches, setSuggestedMatches] = useState<Record<string, any>>(
+    {},
+  )
+  const [loadingSuggestions, setLoadingSuggestions] = useState<
+    Record<string, boolean>
+  >({})
+
   const { data: docs } = useQuery({
     queryKey: ["my-documents"],
     queryFn: () => FilesService.listMyDocuments(),
+  })
+
+  const { data: statements, refetch: refetchStatements } = useQuery({
+    queryKey: ["bank-statements"],
+    queryFn: () => StatementsService.listStatements({ limit: 100 }),
   })
 
   useEffect(() => {
@@ -183,6 +212,72 @@ function ReconcilePage() {
     )
   }
 
+  // Handle bank statement upload
+  const handleStatementUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setStatementUploading(true)
+    setStatementUploadError(null)
+
+    try {
+      await StatementsService.uploadBankStatement({
+        formData: { file },
+      })
+      refetchStatements()
+      e.target.value = "" // Reset input
+    } catch (err: any) {
+      setStatementUploadError(err?.body?.detail || "Failed to upload statement")
+    } finally {
+      setStatementUploading(false)
+    }
+  }
+
+  // Load suggested matches for a document
+  const loadSuggestedMatches = async (docId: string) => {
+    setLoadingSuggestions((prev) => ({ ...prev, [docId]: true }))
+    try {
+      const response = await ReconciliationService.suggestMatches({
+        documentId: docId,
+      })
+      setSuggestedMatches((prev) => ({ ...prev, [docId]: response }))
+
+      // Auto-populate the best match if confidence >= 80%
+      const bestMatch = response.suggested_matches?.[0]
+      if (bestMatch && bestMatch.confidence >= 0.8) {
+        setDocumentsWithEntries((prev) =>
+          prev.map((doc) => {
+            if (
+              doc.docId === docId &&
+              doc.bankEntries.length === 1 &&
+              !doc.bankEntries[0].amount
+            ) {
+              return {
+                ...doc,
+                bankEntries: [
+                  {
+                    ...doc.bankEntries[0],
+                    amount: Math.abs(bestMatch.transaction.amount).toString(),
+                    date: fromInputDate(bestMatch.transaction.date),
+                    description: bestMatch.transaction.description,
+                    payer: bestMatch.transaction.description.split(" ")[0], // Extract first word as payer
+                  },
+                ],
+              }
+            }
+            return doc
+          }),
+        )
+      }
+    } catch (err) {
+      console.error("Failed to load suggestions:", err)
+    } finally {
+      setLoadingSuggestions((prev) => ({ ...prev, [docId]: false }))
+    }
+  }
+
   const handleDropdownSelectHistory = async (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
@@ -213,6 +308,9 @@ function ReconcilePage() {
       },
     ])
     e.target.value = ""
+
+    // Auto-load suggested matches
+    loadSuggestedMatches(targetDoc.id)
   }
 
   const handleBulkFileChange = async (
@@ -261,6 +359,9 @@ function ReconcilePage() {
             collapsed: false,
           },
         ])
+
+        // Auto-load suggested matches
+        loadSuggestedMatches(docId)
 
         return { success: true, docId }
       } catch (err: any) {
@@ -565,9 +666,89 @@ function ReconcilePage() {
       <div>
         <h1 className="text-2xl font-bold">Bulk Reconciliation</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Match multiple payment proofs concurrently against bank statement entries using AI pipelines.
+          Match multiple payment proofs concurrently against bank statement
+          entries using AI pipelines.
         </p>
       </div>
+
+      {/* Step 0: Bank Statement Upload (NEW!) */}
+      <section className="flex flex-col gap-4 border-2 border-blue-500 dark:border-blue-700 rounded-lg p-4 bg-blue-50 dark:bg-blue-950/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              Step 0 — Upload Bank Statement (Optional but Recommended)
+            </h2>
+            <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+              Upload your CSV/XLSX bank statement to enable AI auto-matching.
+              The system will automatically suggest matches for your receipts.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          <div className="flex flex-col gap-2 flex-1">
+            <label
+              htmlFor="statement-upload"
+              className="text-xs font-medium text-blue-700 dark:text-blue-400"
+            >
+              Upload Bank Statement (CSV or XLSX)
+            </label>
+            <input
+              id="statement-upload"
+              type="file"
+              accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+              onChange={handleStatementUpload}
+              disabled={statementUploading}
+              className="border-2 border-blue-300 dark:border-blue-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            {statementUploading && (
+              <p className="text-xs text-blue-600 dark:text-blue-400 animate-pulse flex items-center gap-2">
+                <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                Parsing statement...
+              </p>
+            )}
+            {statementUploadError && (
+              <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                <XCircle className="w-3 h-3" />
+                {statementUploadError}
+              </p>
+            )}
+          </div>
+
+          {statements && statements.length > 0 && (
+            <div className="flex flex-col gap-2 flex-1">
+              <p className="text-xs font-medium text-blue-700 dark:text-blue-400">
+                Uploaded Statements ({statements.length})
+              </p>
+              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                {statements.slice(0, 5).map((stmt: any) => (
+                  <div
+                    key={stmt.id}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 rounded text-xs"
+                  >
+                    <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="truncate flex-1 text-foreground">
+                      {stmt.original_filename}
+                    </span>
+                    {stmt.parsed_at && (
+                      <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {statements && statements.length > 0 && (
+          <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-3 py-2 rounded border border-blue-200 dark:border-blue-800">
+            ✨ <strong>Smart Matching Enabled:</strong> When you add receipts
+            below, the system will automatically search uploaded statements and
+            suggest the best matching transactions.
+          </div>
+        )}
+      </section>
 
       {/* Step 1: Upload or Select Section */}
       <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
@@ -577,7 +758,10 @@ function ReconcilePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="bulk-file-upload" className="text-xs text-muted-foreground font-medium">
+            <label
+              htmlFor="bulk-file-upload"
+              className="text-xs text-muted-foreground font-medium"
+            >
               Upload New Documents (Parallel Pipeline Extraction)
             </label>
             <input
@@ -589,12 +773,16 @@ function ReconcilePage() {
               className="border rounded-lg px-3 py-1.5 text-sm bg-background file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
             <p className="text-xs text-muted-foreground">
-              Supports continuous native file uploads: Images, PDF, or XLSX spreadsheets.
+              Supports continuous native file uploads: Images, PDF, or XLSX
+              spreadsheets.
             </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="history-select-dropdown" className="text-xs text-muted-foreground font-medium">
+            <label
+              htmlFor="history-select-dropdown"
+              className="text-xs text-muted-foreground font-medium"
+            >
               Select From Document History
             </label>
             <select
@@ -616,21 +804,26 @@ function ReconcilePage() {
                 ))}
             </select>
             <p className="text-xs text-muted-foreground">
-              Selecting a document instantly appends it to your current workbench session below.
+              Selecting a document instantly appends it to your current
+              workbench session below.
             </p>
           </div>
         </div>
 
-                {uploadedFiles.length > 0 && (
+        {uploadedFiles.length > 0 && (
           <div className="flex flex-col gap-2 mt-2">
-            <p className="text-xs text-muted-foreground font-semibold">Upload Progress Trackers</p>
+            <p className="text-xs text-muted-foreground font-semibold">
+              Upload Progress Trackers
+            </p>
             <div className="flex flex-col gap-1">
               {uploadedFiles.map((file) => (
                 <div
                   key={file.id}
                   className="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-gray-950 rounded-lg text-xs"
                 >
-                  <span className="text-foreground truncate flex-1">{file.name}</span>
+                  <span className="text-foreground truncate flex-1">
+                    {file.name}
+                  </span>
                   <span
                     className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                       file.status === "extracted"
@@ -775,7 +968,9 @@ function ReconcilePage() {
                           </p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                             <div>
-                              <span className="text-muted-foreground block">Amount</span>
+                              <span className="text-muted-foreground block">
+                                Amount
+                              </span>
 
                               <span className="text-foreground font-medium font-mono">
                                 {docWithEntries.extractedData.currency}{" "}
@@ -783,7 +978,9 @@ function ReconcilePage() {
                               </span>
                             </div>
                             <div>
-                              <span className="text-muted-foreground block">Date</span>
+                              <span className="text-muted-foreground block">
+                                Date
+                              </span>
                               <span className="text-foreground font-medium">
                                 {formatDisplayDate(
                                   docWithEntries.extractedData.date,
@@ -818,6 +1015,157 @@ function ReconcilePage() {
                           </div>
                         </div>
                       )}
+
+                      {/* AI Suggested Matches Section (NEW!) */}
+                      {loadingSuggestions[docWithEntries.docId] && (
+                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-300 dark:border-blue-800 rounded-lg p-4">
+                          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-400">
+                            <span className="inline-block w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            Searching bank statements for matching
+                            transactions...
+                          </div>
+                        </div>
+                      )}
+
+                      {suggestedMatches[docWithEntries.docId]
+                        ?.suggested_matches &&
+                        suggestedMatches[docWithEntries.docId].suggested_matches
+                          .length > 0 && (
+                          <div className="bg-green-50 dark:bg-green-950/20 border-2 border-green-400 dark:border-green-800 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-sm font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
+                                AI Suggested Matches Found
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  loadSuggestedMatches(docWithEntries.docId)
+                                }
+                                className="text-xs text-green-700 dark:text-green-400 hover:underline"
+                              >
+                                Refresh
+                              </button>
+                            </div>
+
+                            <div className="flex flex-col gap-2">
+                              {suggestedMatches[
+                                docWithEntries.docId
+                              ].suggested_matches
+                                .slice(0, 3)
+                                .map((match: any, idx: number) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    className={`border rounded-lg p-3 cursor-pointer transition-all text-left w-full ${
+                                      idx === 0
+                                        ? "bg-white dark:bg-gray-900 border-green-500 dark:border-green-700 shadow-sm"
+                                        : "bg-white/50 dark:bg-gray-900/50 border-green-300 dark:border-green-900 hover:bg-white dark:hover:bg-gray-900"
+                                    }`}
+                                    onClick={() => {
+                                      const txn = match.transaction
+                                      setDocumentsWithEntries((prev) =>
+                                        prev.map((doc, i) => {
+                                          if (
+                                            i === docIdx &&
+                                            doc.bankEntries.length > 0
+                                          ) {
+                                            return {
+                                              ...doc,
+                                              bankEntries: [
+                                                {
+                                                  ...doc.bankEntries[0],
+                                                  amount: Math.abs(
+                                                    txn.amount,
+                                                  ).toString(),
+                                                  date: fromInputDate(txn.date),
+                                                  description: txn.description,
+                                                  payer:
+                                                    txn.description.split(
+                                                      " ",
+                                                    )[0],
+                                                },
+                                              ],
+                                            }
+                                          }
+                                          return doc
+                                        }),
+                                      )
+                                    }}
+                                  >
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          {idx === 0 && (
+                                            <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-semibold rounded">
+                                              BEST MATCH
+                                            </span>
+                                          )}
+                                          <span
+                                            className={`text-xs font-medium ${
+                                              match.confidence >= 0.8
+                                                ? "text-green-700 dark:text-green-400"
+                                                : match.confidence >= 0.6
+                                                  ? "text-yellow-700 dark:text-yellow-400"
+                                                  : "text-gray-700 dark:text-gray-400"
+                                            }`}
+                                          >
+                                            {(match.confidence * 100).toFixed(
+                                              0,
+                                            )}
+                                            % confidence
+                                          </span>
+                                        </div>
+                                        <p className="text-sm font-semibold text-foreground mb-1">
+                                          {formatAmount(
+                                            Math.abs(match.transaction.amount),
+                                            match.transaction.currency,
+                                          )}{" "}
+                                          •{" "}
+                                          {formatDisplayDate(
+                                            match.transaction.date,
+                                          )}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                          {match.transaction.description}
+                                        </p>
+                                        <p className="text-xs text-green-700 dark:text-green-500 mt-1">
+                                          {match.explanation}
+                                        </p>
+                                      </div>
+                                      <span className="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded">
+                                        Use This
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))}
+                            </div>
+
+                            {suggestedMatches[docWithEntries.docId]
+                              .suggested_matches.length > 3 && (
+                              <p className="text-xs text-muted-foreground mt-2">
+                                +
+                                {suggestedMatches[docWithEntries.docId]
+                                  .suggested_matches.length - 3}{" "}
+                                more matches available
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                      {suggestedMatches[docWithEntries.docId] &&
+                        suggestedMatches[docWithEntries.docId].suggested_matches
+                          ?.length === 0 &&
+                        !loadingSuggestions[docWithEntries.docId] && (
+                          <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-800 rounded-lg p-3">
+                            <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                              ℹ️ No matching transactions found in uploaded bank
+                              statements. You can manually enter the bank entry
+                              below or upload a statement containing this
+                              transaction.
+                            </p>
+                          </div>
+                        )}
 
                       {/* Target Bank Statement Entry Allocation */}
                       <div className="flex flex-col gap-2">
@@ -874,7 +1222,6 @@ function ReconcilePage() {
                                   fromInputDate(e.target.value),
                                 )
                               }
-
                               className="col-span-3 border rounded-lg px-3 py-2 text-sm bg-background text-foreground"
                             />
                             <input
@@ -933,7 +1280,7 @@ function ReconcilePage() {
         </div>
       )}
 
-            <button
+      <button
         type="button"
         onClick={handleBulkReconcile}
         disabled={bulkReconciling || documentsWithEntries.length === 0}
@@ -948,10 +1295,13 @@ function ReconcilePage() {
       {bulkResults.length > 0 && (
         <section className="flex flex-col gap-4 border rounded-lg p-4 bg-gray-100 dark:bg-gray-900">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-lg font-semibold text-foreground">Bulk Reconciliation Results</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Bulk Reconciliation Results
+            </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                {bulkResults.filter((r) => !r.error).length} / {bulkResults.length} Successful Operations
+                {bulkResults.filter((r) => !r.error).length} /{" "}
+                {bulkResults.length} Successful Operations
               </span>
               <button
                 type="button"
@@ -996,22 +1346,34 @@ function ReconcilePage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-foreground">{r.docName}</p>
+                      <p className="font-medium text-sm truncate text-foreground">
+                        {r.docName}
+                      </p>
                       {hasError ? (
                         <p className="text-xs text-red-600 dark:text-red-400 mt-1 font-mono">
                           ✗ Error Details: {r.error}
                         </p>
                       ) : (
                         <div className="flex items-center gap-4 mt-2">
-                          <StatusBadge status={decision?.final_status || "unknown"} />
+                          <StatusBadge
+                            status={decision?.final_status || "unknown"}
+                          />
                           <span className="text-xs text-muted-foreground font-mono">
-                            Confidence Index: {Math.round((decision?.confidence ?? 0) * 100)}%
+                            Confidence Index:{" "}
+                            {Math.round((decision?.confidence ?? 0) * 100)}%
                           </span>
                           {proof && (
                             <span className="text-xs text-foreground font-mono">
                               {proof.currency} {proof.amount}
                               {fxResult && proof.currency !== "MYR" && (
-                                <> → {formatAmount(fxResult.to_amount, baseCurrency)}</>
+                                <>
+                                  {" "}
+                                  →{" "}
+                                  {formatAmount(
+                                    fxResult.to_amount,
+                                    baseCurrency,
+                                  )}
+                                </>
                               )}
                             </span>
                           )}
@@ -1021,7 +1383,9 @@ function ReconcilePage() {
                     {!hasError && (
                       <button
                         type="button"
-                        onClick={() => { navigate({ to: "/history" }) }}
+                        onClick={() => {
+                          navigate({ to: "/history" })
+                        }}
                         className="text-blue-600 dark:text-blue-400 hover:underline text-xs"
                       >
                         Auditing File →
@@ -1031,7 +1395,9 @@ function ReconcilePage() {
 
                   {!hasError && decision?.explanation && (
                     <div className="mt-3 bg-muted rounded-lg px-3 py-2 border border-border">
-                      <p className="text-xs text-muted-foreground italic">"{decision.explanation}"</p>
+                      <p className="text-xs text-muted-foreground italic">
+                        "{decision.explanation}"
+                      </p>
                     </div>
                   )}
 
@@ -1106,7 +1472,9 @@ function ReconcilePage() {
             )}
             <button
               type="button"
-              onClick={() => { navigate({ to: "/history" }) }}
+              onClick={() => {
+                navigate({ to: "/history" })
+              }}
               className="bg-muted hover:bg-muted/80 border border-border text-foreground px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
             >
               View All in History Dashboard →

@@ -132,7 +132,7 @@ function DocumentRow({
   const decision = recon?.agent_decision
   const fxResult = recon?.fx_result
   const proof = recon?.proof
-  const { isViewer} = useUserRole()
+  const { isViewer } = useUserRole()
 
   const riskColorMap: Record<string, string> = {
     HIGH: "bg-red-50 border-l-2 border-l-red-500 dark:bg-red-950/20",
@@ -143,7 +143,6 @@ function DocumentRow({
   const computedRowStyle = riskColorMap[doc.risk_level] ?? ""
 
   return (
-    
     <>
       <tr
         onClick={(e) => {
@@ -156,15 +155,16 @@ function DocumentRow({
           ${expanded ? "bg-gray-100 dark:bg-gray-800/60" : "hover:bg-gray-50 dark:hover:bg-gray-50/5"}`}
       >
         {!isViewer && (
-        <td className="px-4 py-3 text-center">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={onSelectToggle}
-            onClick={(e) => e.stopPropagation()}
-            className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
-          />
-        </td>)}
+          <td className="px-4 py-3 text-center">
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onSelectToggle}
+              onClick={(e) => e.stopPropagation()}
+              className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
+            />
+          </td>
+        )}
 
         <td className="px-4 py-3 font-medium text-sm flex items-center gap-2 text-gray-800 dark:text-gray-200">
           <span
@@ -236,21 +236,21 @@ function DocumentRow({
                   )}
                   {previewUrl && doc.file_type === "image" && (
                     <button
-  type="button"
-  onClick={() => onTriggerModalPreview(previewUrl)}
-  className="group relative flex items-center justify-center w-full text-left focus:outline-none rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-zoom-in"
->
-  <img
-    src={previewUrl}
-    alt={doc.original_filename}
-    className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
-  />
-  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-    <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">
-      Expand Size
-    </span>
-  </div>
-</button>
+                      type="button"
+                      onClick={() => onTriggerModalPreview(previewUrl)}
+                      className="group relative flex items-center justify-center w-full text-left focus:outline-none rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-zoom-in"
+                    >
+                      <img
+                        src={previewUrl}
+                        alt={doc.original_filename}
+                        className="rounded-lg max-w-full object-contain max-h-64 transition-transform duration-200 group-hover:scale-[1.01]"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <span className="bg-black/70 text-white text-[10px] font-medium px-2 py-1 rounded">
+                          Expand Size
+                        </span>
+                      </div>
+                    </button>
                   )}
                   {doc.file_type === "excel" && (
                     <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-4 py-6 flex flex-col items-center gap-2 border border-gray-200 dark:border-gray-700">
@@ -486,7 +486,7 @@ function DocumentRow({
 }
 
 function HistoryPage() {
-  const { isViewer} = useUserRole()
+  const { isViewer } = useUserRole()
   const [filter, setFilter] = useState<string>("all")
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
   const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null)
@@ -634,27 +634,27 @@ function HistoryPage() {
         </div>
 
         {!isViewer && (
-  <div className="pb-2.5">
-    <button
-      type="button"
-      disabled={
-        selectedDocIds.length === 0 || deleteMultipleMutation.isPending
-      }
-      onClick={handleDeleteTriggered}
-      className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
-        selectedDocIds.length > 0
-          ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
-          : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800/40 dark:text-gray-500 dark:border-gray-800"
-      }`}
-    >
-      {deleteMultipleMutation.isPending
-        ? "Deleting..."
-        : selectedDocIds.length > 0
-          ? `Delete Selected (${selectedDocIds.length})`
-          : "Delete Selected"}
-    </button>
-  </div>
-)}
+          <div className="pb-2.5">
+            <button
+              type="button"
+              disabled={
+                selectedDocIds.length === 0 || deleteMultipleMutation.isPending
+              }
+              onClick={handleDeleteTriggered}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition-all border ${
+                selectedDocIds.length > 0
+                  ? "bg-red-600 text-white border-red-500 hover:bg-red-700 active:scale-[0.98]"
+                  : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed dark:bg-gray-800/40 dark:text-gray-500 dark:border-gray-800"
+              }`}
+            >
+              {deleteMultipleMutation.isPending
+                ? "Deleting..."
+                : selectedDocIds.length > 0
+                  ? `Delete Selected (${selectedDocIds.length})`
+                  : "Delete Selected"}
+            </button>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -675,17 +675,18 @@ function HistoryPage() {
             <thead className="bg-gray-100 dark:bg-gray-800/40 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
               <tr>
                 {!isViewer && (
-  <th className="px-4 py-3 text-center w-12">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedDocIds.length === filteredDocs.length &&
-                      filteredDocs.length > 0
-                    }
-                    onChange={toggleSelectAll}
-                    className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
-                  />
-                </th>)}
+                  <th className="px-4 py-3 text-center w-12">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedDocIds.length === filteredDocs.length &&
+                        filteredDocs.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="rounded border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-blue-600 focus:ring-blue-500 focus:ring-offset-white dark:focus:ring-offset-gray-900 h-4 w-4"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 font-semibold">
                   Filename
                 </th>

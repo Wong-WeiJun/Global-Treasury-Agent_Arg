@@ -77,9 +77,7 @@ function OnboardingPage() {
                   alt="Logo"
                   className="mx-auto h-14 w-auto object-contain mb-3"
                 />
-                <h2 className="text-2xl font-bold tracking-tight">
-                  Welcome!
-                </h2>
+                <h2 className="text-2xl font-bold tracking-tight">Welcome!</h2>
                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                   Let's set up your organization to get started
                 </p>
