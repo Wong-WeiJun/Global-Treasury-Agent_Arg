@@ -13,6 +13,7 @@ from app.api.routes import (
     private,
     reconciliation,
     review,
+    statements,
     users,
     utils,
 )
@@ -32,6 +33,7 @@ api_router.include_router(learning.router)
 api_router.include_router(organizations.router)
 api_router.include_router(memberships.router)
 api_router.include_router(invitations.router)
+api_router.include_router(statements.router, prefix="/statements", tags=["statements"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
