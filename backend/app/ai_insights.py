@@ -48,7 +48,11 @@ Extract the standard fields, but also perform deep semantic analysis:
    - Recurring pattern hint: Does this look like a subscription or regular payment?
    - Merchant consistency: Are vendor name formats consistent (e.g., "AMZN" vs "Amazon.com")?
 
-CRITICAL: Return a JSON object with both standard fields AND intelligence fields.
+CRITICAL INSTRUCTIONS:
+1. Return ONLY a valid JSON object - no markdown, no code blocks, no explanations
+2. Properly escape all special characters in strings (use \\" for quotes, \\\\ for backslashes)
+3. Keep string values concise to avoid formatting issues
+4. Return both standard fields AND intelligence fields
 
 Standard fields:
 - amount: transaction amount as number
@@ -56,12 +60,12 @@ Standard fields:
 - date: YYYY-MM-DD format
 - payer: sender name
 - payee: recipient name
-- description: payment description
+- description: payment description (max 100 chars, escape quotes)
 
 Intelligence fields:
 - is_business_expense: boolean or null
 - tax_category: string or null
-- business_purpose: string or null
+- business_purpose: string or null (max 50 chars, escape quotes)
 - vendor_type: string or null
 - duplicate_risk: "high" | "medium" | "low" | null
 - anomaly_flags: array of strings
@@ -81,7 +85,7 @@ Example response:
   "description": "Cloud hosting services",
   "is_business_expense": true,
   "tax_category": "Software/SaaS",
-  "business_purpose": "Infrastructure hosting for production application",
+  "business_purpose": "Infrastructure hosting",
   "vendor_type": "Service Provider",
   "duplicate_risk": "low",
   "anomaly_flags": [],
@@ -93,6 +97,7 @@ Example response:
 }
 
 If a field cannot be determined, set it to null. Be conservative with business categorization.
+Return ONLY the JSON object, nothing else.
 """
 
 
@@ -165,7 +170,40 @@ async def analyze_document_with_intelligence(
         if text.startswith("json"):
             text = text[4:]
 
-    return json.loads(text.strip())
+    text = text.strip()
+
+    # Try to parse JSON with error recovery
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        # If JSON parsing fails, try to extract just the standard fields
+        # and return a minimal valid response
+        import re
+
+        # Try to extract individual fields using regex as fallback
+        amount_match = re.search(r'"amount"\s*:\s*([0-9.]+)', text)
+        currency_match = re.search(r'"currency"\s*:\s*"([A-Z]{3})"', text)
+        date_match = re.search(r'"date"\s*:\s*"(\d{4}-\d{2}-\d{2})"', text)
+        payer_match = re.search(r'"payer"\s*:\s*"([^"]*?)"', text)
+        payee_match = re.search(r'"payee"\s*:\s*"([^"]*?)"', text)
+        description_match = re.search(r'"description"\s*:\s*"([^"]*?)"', text)
+
+        # Build a minimal response with extracted fields
+        fallback_response = {
+            "amount": float(amount_match.group(1)) if amount_match else None,
+            "currency": currency_match.group(1) if currency_match else "MYR",
+            "date": date_match.group(1) if date_match else None,
+            "payer": payer_match.group(1) if payer_match else None,
+            "payee": payee_match.group(1) if payee_match else None,
+            "description": description_match.group(1) if description_match else None,
+        }
+
+        # If we got at least amount, return the fallback
+        if fallback_response["amount"]:
+            return fallback_response
+
+        # Otherwise, re-raise the original error
+        raise
 
 
 async def check_for_duplicates(
@@ -199,8 +237,8 @@ async def check_for_duplicates(
     # Extract key fields for comparison
     new_amount = extracted_data.get("amount")
     new_date = extracted_data.get("date")
-    new_vendor = extracted_data.get("payee", "").lower()
-    new_description = extracted_data.get("description", "").lower()
+    new_vendor = (extracted_data.get("payee") or "").lower()
+    new_description = (extracted_data.get("description") or "").lower()
 
     if not new_amount or not new_date:
         return {
@@ -230,8 +268,8 @@ async def check_for_duplicates(
     for doc in recent_documents:
         doc_amount = doc.get("amount")
         doc_date = doc.get("date")
-        doc_vendor = doc.get("payee", "").lower()
-        doc_description = doc.get("description", "").lower()
+        doc_vendor = (doc.get("payee") or "").lower()
+        doc_description = (doc.get("description") or "").lower()
 
         if not doc_amount or not doc_date:
             continue
