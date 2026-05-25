@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Javascript\\\\Global-Treasury-Agent_Arg\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(Test-Path \"c:\\\\Javascript\\\\Global-Treasury-Agent_Arg\\\\README.md\")"
+    ]
+  }
+}

@@ -1,356 +1,104 @@
-# MyAudit (The Global Treasury Agent)
+# MyAudit — Global Treasury Agent
 
 > Multi-Agent Financial Operations Intelligence Platform for Autonomous Cross-Border Reconciliation
 
----
-
-# Overview
-
-AI Treasury Operations Platform is an enterprise-inspired multi-agent financial intelligence system designed to automate treasury workflows for organizations handling cross-border payments, invoices, receipts, and bank transactions.
-
-The platform combines:
-- AI-powered document extraction
-- Multi-currency reconciliation
-- Historical FX normalization
-- Autonomous matching agents
-- Human-in-the-loop approval workflows
-- Exception intelligence
-- Investigation and risk analysis
-- Collaborative organization workspaces
-
-The system is designed to simulate a modern AI-native treasury operations environment with explainable AI, auditability, and operational intelligence.
+An enterprise-grade platform that automates treasury workflows by combining AI-powered document extraction, multi-currency reconciliation, and human-in-the-loop approval workflows.
 
 ---
 
-# Core Features
+## Features
 
-## AI Document Extraction
-- OCR-based extraction from invoices, receipts, and payment proofs
-- Structured financial field extraction
-- Currency detection
-- Confidence scoring
-- AI-enhanced parsing and interpretation
-
----
-
-## Autonomous Reconciliation Engine
-- AI fuzzy matching
-- Smart transaction linking
-- Historical FX normalization
-- Confidence-based recommendations
-- Duplicate transaction detection
-
-### AI Result Types
-- MATCHED
-- FUZZY_MATCH
-- UNMATCHED
+- **AI Document Extraction** — OCR via AWS Textract and Chutes AI; structured field parsing with confidence scoring
+- **Autonomous Reconciliation** — Fuzzy matching and smart transaction linking powered by Morpheus AI
+- **Multi-Currency Support** — Historical FX normalization via Frankfurter API with organization-specific base currencies
+- **Human-in-the-Loop Approvals** — Treasury operators approve, reject, or escalate every AI decision with full audit trails
+- **Exception Intelligence** — Handles FX differences, bank fees, partial payments, refunds, and split payments
+- **Risk & Fraud Analysis** — Suspicious transaction detection, risk scoring, and payer anomaly detection
+- **Multi-Tenant RBAC** — Organization-scoped data isolation with 5 user roles (Owner, Admin, Finance Manager, Analyst, Viewer)
+- **Analytics & Learning** — Approval pattern analysis, auto-match rate optimization, and exception trend reporting
 
 ---
 
-## Human-in-the-Loop Treasury Workflow
+## Tech Stack
 
-Treasury operators can:
-- Approve reconciliations
-- Flag transactions for investigation
-- Mark discrepancies as acceptable exceptions
-
-### Workflow Statuses
-- PENDING_ACTION
-- APPROVED
-- UNDER_REVIEW
-- EXCEPTION_APPROVED
-- REJECTED
-
----
-
-## Exception Intelligence System
-
-Supports intelligent handling of:
-- FX differences
-- Bank fees
-- Partial payments
-- Refunds
-- Split payments
-- Manual adjustments
+| Layer | Technology |
+|---|---|
+| **Backend** | FastAPI (Python), SQLModel, PostgreSQL, Alembic |
+| **Frontend** | React 19, TypeScript, Vite, TanStack Router / Query / Table |
+| **UI** | Tailwind CSS 4, shadcn/ui, Radix UI, dark mode |
+| **AI / ML** | Chutes AI (extraction), Morpheus AI (reconciliation), AWS Textract (OCR) |
+| **Storage** | AWS S3 |
+| **FX Rates** | Frankfurter API |
+| **Infrastructure** | Docker Compose, Traefik (reverse proxy + TLS), GitHub Actions |
+| **Testing** | Pytest, Playwright E2E |
 
 ---
 
-## Multi-Currency Treasury Engine
-- Historical FX conversion
-- Organization base currencies
-- Currency normalization
-- FX analytics
-- Cross-border payment intelligence
+## Project Structure
 
----
-
-## Organization & Team Management
-- Multi-tenant organization system
-- Organization switching
-- Invite-based collaboration
-- Role-based access control
-- Team activity tracking
-
-### Roles
-- OWNER
-- ADMIN
-- FINANCE_MANAGER
-- ANALYST
-- VIEWER
-
----
-
-## AI Investigation & Risk Analysis
-- Suspicious transaction detection
-- Risk scoring
-- Payer anomaly detection
-- Duplicate payment analysis
-- AI-generated investigation summaries
-
----
-
-## AI Analytics & Learning
-- Approval pattern analysis
-- Auto-match optimization
-- Exception trend detection
-- Treasury insights
-- Operational intelligence
-
----
-
-# Technology Stack and Features
-
-## Backend
-- ⚡ FastAPI for the Python backend API
-- 🧰 SQLModel for ORM and database interactions
-- 🔍 Pydantic for validation and settings management
-- 💾 PostgreSQL as the relational database
-- 🔒 Secure password hashing
-- 🔑 JWT authentication
-- 📫 Email-based password recovery
-- ✅ Pytest testing framework
-
----
-
-## Frontend
-- 🚀 React frontend
-- 💃 TypeScript + Hooks + Vite
-- 🎨 Tailwind CSS + shadcn/ui
-- 🤖 Automatically generated frontend API client
-- 🧪 Playwright E2E testing
-- 🦇 Dark mode support
-
----
-
-## Infrastructure
-- 🐋 Docker Compose for development and production
-- 📞 Traefik reverse proxy / load balancer
-- 📬 Mailcatcher for local email testing
-- 🚢 Deployment-ready Docker setup
-- 🏭 GitHub Actions CI/CD workflows
-
----
-
-## AI & Financial Services
-- AWS Textract for OCR extraction
-- Chutes AI for intelligent document understanding
-- Morpheus AI for reconciliation intelligence
-- Frankfurter FX API for historical exchange rates
-
----
-
-# Multi-Agent Architecture
-
-## Document Extraction Agent
-Handles:
-- OCR
-- Structured extraction
-- Currency recognition
-- Confidence scoring
-
----
-
-## FX Normalization Agent
-Handles:
-- Historical exchange rates
-- Currency conversion
-- Base currency alignment
-
----
-
-## Reconciliation Agent
-Handles:
-- AI fuzzy matching
-- Confidence scoring
-- Transaction linking
-- Duplicate detection
-
----
-
-## Risk & Investigation Agent
-Handles:
-- Fraud indicators
-- Suspicious payer analysis
-- Risk scoring
-- Investigation summaries
-
----
-
-## Exception Intelligence Agent
-Handles:
-- FX spread analysis
-- Bank fee detection
-- Partial payment analysis
-- Exception classification
-
----
-
-## Analytics & Learning Agent
-Handles:
-- Operational insights
-- AI learning
-- Trend analysis
-- Workflow optimization
-
----
-
-# Dashboard Features
-
-## Executive Overview
-- Total reconciled value
-- Auto-match rate
-- Pending investigations
-- Exception counts
-- High-risk alerts
-
----
-
-## Operational Queue
-- Transactions requiring review
-- Risk prioritization
-- Investigation workflows
-
----
-
-## FX Analytics
-- Currency distribution
-- FX exposure
-- Historical conversion tracking
-- FX anomaly detection
-
----
-
-## AI Attention Center
-AI-generated operational alerts:
-- Suspicious transactions
-- Recurring discrepancies
-- Duplicate payment warnings
-- Exception trends
-
----
-
-# Human Review Workflow
-
-## Approve
-Marks reconciliation as approved and updates audit logs.
-
----
-
-## Flag for Review
-Creates investigation cases for manual review.
-
----
-
-## Mark as Exception
-Accepts discrepancies with structured justification.
-
----
-
-# Multi-Tenant Organization System
-
-Each organization includes:
-- Base currency
-- Timezone
-- FX provider
-- Team members
-- Role permissions
-
-All financial operations are organization-scoped.
-
----
-
-# Security Features
-
-- JWT authentication
-- Role-based access control
-- Organization isolation
-- Audit logging
-- Secure password hashing
-- Protected API routes
-
----
-
-# Project Structure
-
-```text
-backend/
-frontend/
-docker/
-scripts/
+```
+Global-Treasury-Agent_Arg/
+├── backend/
+│   └── app/
+│       ├── api/routes/          # REST endpoints
+│       ├── core/                # Config, database session, security
+│       ├── models.py            # SQLModel entity definitions
+│       ├── reconciliation.py    # Reconciliation engine
+│       ├── extraction.py        # Document extraction pipeline
+│       ├── statement_parser.py  # Financial statement parsing
+│       ├── fx.py                # FX rate handling
+│       ├── risk.py              # Risk & fraud analysis
+│       ├── ai_learning.py       # Analytics & learning agent
+│       ├── proactive_reconciliation.py
+│       ├── crud.py
+│       ├── main.py              # FastAPI entry point
+│       └── alembic/             # Database migrations
+├── frontend/
+│   └── src/
+│       ├── routes/              # Page-level components
+│       ├── components/          # Shared UI components
+│       ├── client/              # Auto-generated OpenAPI client
+│       └── hooks/
+├── .github/workflows/           # CI/CD pipelines
+├── compose.yml
+├── compose.override.yml         # Dev overrides (hot reload)
+├── compose.traefik.yml
+├── scripts/
+│   ├── test.sh
+│   ├── generate-client.sh
+│   └── test-local.sh
+├── development.md
+├── deployment.md
+└── CONTRIBUTING.md
 ```
 
 ---
 
-# Running the System
+## Getting Started
 
-## Prerequisites
+### Prerequisites
 
-Install:
-- Docker
-- Docker Compose
-- Bun
+- [Docker](https://docs.docker.com/get-docker/) & Docker Compose v2
+- [Bun](https://bun.sh)
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Python 3.11+
-- UV package manager
 
----
+### Environment Setup
 
-# Environment Setup
-
-Create a `.env` file:
+Create a `.env` file in the project root. Key variables:
 
 ```env
-# Domain
-# This would be set to the production domain with an env var on deployment
-# used by Traefik to transmit traffic and aqcuire TLS certificates
 DOMAIN=localhost
-# To test the local Traefik config
-# DOMAIN=localhost.tiangolo.com
-
-# Used by the backend to generate links in emails to the frontend
 FRONTEND_HOST=http://localhost:5173
-# In staging and production, set this env var to the frontend host, e.g.
-# FRONTEND_HOST=https://dashboard.example.com
-
-# Environment: local, staging, production
 ENVIRONMENT=local
 
 PROJECT_NAME="MyAudit"
 STACK_NAME=MyAudit-Project
 
-# Backend
-BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://localhost.tiangolo.com"
+BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173"
 SECRET_KEY=changethis
-FIRST_SUPERUSER=changethis
+FIRST_SUPERUSER=admin@example.com
 FIRST_SUPERUSER_PASSWORD=changethis
-
-# Emails (This configuration is for development)
-SMTP_HOST=mailcatcher
-SMTP_USER=
-SMTP_PASSWORD=
-EMAILS_FROM_EMAIL=noreply@myaudit.dev
-SMTP_TLS=False
-SMTP_SSL=False
-SMTP_PORT=1025
 
 # Postgres
 POSTGRES_SERVER=localhost
@@ -359,103 +107,70 @@ POSTGRES_DB=app
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=changethis
 
-SENTRY_DSN=
+# Email (dev — Mailcatcher)
+SMTP_HOST=mailcatcher
+SMTP_PORT=1025
+SMTP_TLS=False
+SMTP_SSL=False
+EMAILS_FROM_EMAIL=noreply@myaudit.dev
 
-# Configure these with your own Docker registry images
-DOCKER_IMAGE_BACKEND=backend
-DOCKER_IMAGE_FRONTEND=frontend
-
-#Chutes
+# AI services
 CHUTES_API_KEY=your-key
+MORPHEUS_API_KEY=your-key
 
-#S3 Access Configurations
+# AWS S3
 S3_BUCKET_NAME=your-bucket-name
 S3_REGION=ap-southeast-2
 S3_ACCESS_KEY_ID=your-key
 S3_SECRET_ACCESS_KEY=your-key
 
-#Morpheus
-MORPHEUS_API_KEY=your-key
+# Optional
+SENTRY_DSN=
 ```
 
----
-
-# Start Full Stack (Recommended)
+### Quick Start
 
 ```bash
 docker compose watch
 ```
 
----
-
-# Access Services
-
 | Service | URL |
 |---|---|
 | Frontend | http://localhost:5173 |
 | Backend API | http://localhost:8000 |
-| API Docs | http://localhost:8000/docs |
-| Adminer | http://localhost:8080 |
-| Traefik Dashboard | http://localhost:8090 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Adminer (DB) | http://localhost:8080 |
 | Mailcatcher | http://localhost:1080 |
+| Traefik Dashboard | http://localhost:8090 |
 
----
+### Local Development (without Docker)
 
-# Frontend Development
-
+**Backend:**
 ```bash
+cd backend
+uv sync
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+fastapi dev app/main.py
+```
+
+**Frontend:**
+```bash
+cd frontend
 bun install
 bun run dev
 ```
 
----
-
-# Backend Development
-
-```bash
-cd backend
-
-uv sync
-
-source .venv/bin/activate
-
-fastapi dev app/main.py
-```
-
----
-
-# Database Migrations
+### Database Migrations
 
 ```bash
 docker compose exec backend bash
-
-alembic revision --autogenerate -m "migration"
+alembic revision --autogenerate -m "describe_change"
 alembic upgrade head
 ```
 
----
+### Regenerate Frontend API Client
 
-# Running Tests
-
-## Backend Tests
-
-```bash
-bash ./scripts/test.sh
-```
-
----
-
-## Frontend E2E Tests
-
-```bash
-bun run test
-```
-
----
-
-# Generate Frontend API Client
-
-After backend API changes:
+Run this after any backend route changes:
 
 ```bash
 bash ./scripts/generate-client.sh
@@ -463,50 +178,84 @@ bash ./scripts/generate-client.sh
 
 ---
 
-# Deployment
+## Testing
 
-The project supports deployment using Docker Compose with:
-- Traefik reverse proxy
-- Automatic HTTPS
-- GitHub Actions CI/CD
+```bash
+# Backend (Pytest)
+bash ./scripts/test.sh
 
----
-
-# Database Entities
-
-Core entities:
-- Users
-- Organizations
-- Memberships
-- Transactions
-- Reconciliations
-- Investigations
-- Exceptions
-- Audit Logs
+# Frontend E2E (Playwright)
+cd frontend && bun run test
+```
 
 ---
 
-# System Vision
+## Multi-Agent Architecture
 
-This platform is designed to evolve beyond traditional reconciliation software into an:
+| Agent | Responsibility |
+|---|---|
+| **Document Extraction** | OCR, structured field parsing, currency recognition |
+| **FX Normalization** | Historical rate lookup, multi-currency conversion |
+| **Reconciliation** | Fuzzy matching, confidence scoring, duplicate detection |
+| **Risk & Investigation** | Fraud detection, payer anomaly analysis, risk scoring |
+| **Exception Intelligence** | FX spread detection, bank fee analysis, partial payment handling |
+| **Analytics & Learning** | Operational insights, auto-match optimization, trend analysis |
 
-> AI Treasury Operations Operating System
+### Transaction Workflow
 
-The long-term goal is to create an intelligent financial operations platform capable of:
-- autonomous reconciliation
-- treasury intelligence
-- operational risk analysis
-- financial anomaly detection
-- collaborative finance workflows
-
-while maintaining:
-- explainability
-- auditability
-- human oversight
+```
+PENDING_EXTRACTION → EXTRACTED → PENDING_ACTION ┬→ APPROVED
+                                                 ├→ UNDER_REVIEW → EXCEPTION_APPROVED
+                                                 └→ REJECTED
+```
 
 ---
 
+## API Reference
 
-# License
+All routes are under `/api/v1/`. Interactive docs at `/docs` (Swagger) and `/redoc`.
+
+| Route | Description |
+|---|---|
+| `POST /login` | Authenticate and receive JWT |
+| `GET/POST /users` | User management |
+| `GET/POST /organizations` | Multi-tenant org management |
+| `GET/POST /memberships` | RBAC membership |
+| `POST /invitations` | Team invitation emails |
+| `POST /file` | Upload and process financial documents |
+| `GET/POST /reconciliation` | Reconciliation workflow |
+| `POST /review` | Approve / reject / escalate |
+| `GET /fx` | FX rate queries |
+| `GET /statements` | Financial statement parsing |
+| `POST /chat` | Multi-agent conversation interface |
+| `GET /learning` | Analytics and learning data |
+
+---
+
+## Deployment
+
+See [deployment.md](deployment.md) for production setup with Docker Compose, Traefik, and automatic HTTPS via Let's Encrypt. CI/CD pipelines in [.github/workflows/](.github/workflows/) handle automated testing and deployment to staging and production.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines, branching strategy, and pull request process.
+
+---
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for the security policy and vulnerability reporting.
+
+- JWT authentication with configurable token expiry
+- Argon2/bcrypt password hashing
+- Organization-scoped data isolation
+- Role-based access control (5 permission tiers)
+- Full audit logging of all financial decisions
+
+---
+
+## License
 
 MIT License

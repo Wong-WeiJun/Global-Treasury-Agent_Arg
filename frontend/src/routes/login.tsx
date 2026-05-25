@@ -71,7 +71,7 @@ function Login() {
     <div className="dark min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex items-center justify-center p-4">
       <AuthLayout>
         {/* Glassmorphic card containment layer for maximum readability */}
-        <div className="w-full max-w-[480px] aspect-[3/4] overflow-y-auto bg-black/40 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-800/50">
+        <div className="w-full max-w-[480px] aspect-[3/4] overflow-y-auto bg-black/40 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-800/50 text-white">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
@@ -83,7 +83,7 @@ function Login() {
                   alt="Brand Logo"
                   className="h-14 w-auto object-contain mb-1"
                 />
-                <h1 className="text-2xl font-bold tracking-tight">
+                <h1 className="text-2xl font-bold tracking-tight text-white">
                   Login to your account
                 </h1>
               </div>
@@ -143,7 +143,7 @@ function Login() {
                 </LoadingButton>
               </div>
 
-              <div className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="text-center text-sm text-white/70">
                 Don't have an account yet?{" "}
                 <RouterLink
                   to="/signup"
