@@ -23,6 +23,7 @@ dependencies = [
     "pillow",
     "openpyxl>=3.1.5",
     "pymupdf>=1.27.2.3",
+    "reportlab>=4.0.0",
 ]
 
 [dependency-groups]

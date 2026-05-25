@@ -661,6 +661,49 @@ function ReconcilePage() {
     window.URL.revokeObjectURL(url)
   }
 
+  const downloadReconciliationReport = async (results: any[]) => {
+    try {
+      // Use the API client's base URL and auth
+      const token = localStorage.getItem("access_token")
+      if (!token) {
+        alert("You must be logged in to generate reports")
+        return
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/reports/reconciliation-pdf`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          results: results,
+          include_summary: true,
+          include_details: true,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("PDF generation failed:", errorText)
+        throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`)
+      }
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `reconciliation-report-${Date.now()}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error("Failed to download PDF report:", err)
+      alert(`Failed to generate PDF report: ${err instanceof Error ? err.message : "Unknown error"}`)
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-6 flex flex-col gap-8">
       <div>
@@ -1321,7 +1364,16 @@ function ReconcilePage() {
                 }
                 className="text-blue-600 dark:text-blue-400 hover:underline text-xs flex items-center gap-1"
               >
+                <FileText className="w-3 h-3" />
                 Download Results Sheet (CSV)
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadReconciliationReport(bulkResults)}
+                className="text-purple-600 dark:text-purple-400 hover:underline text-xs flex items-center gap-1"
+              >
+                <FileText className="w-3 h-3" />
+                Download Report (PDF)
               </button>
               {bulkResults.some((r) => r.error) && (
                 <button
