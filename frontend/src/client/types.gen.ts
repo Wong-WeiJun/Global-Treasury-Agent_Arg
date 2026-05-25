@@ -11,6 +11,37 @@ export type BankEntry = {
     payer?: (string | null);
 };
 
+export type BankStatementPublic = {
+    id: string;
+    organization_id: string;
+    uploaded_by: string;
+    original_filename: string;
+    uploaded_at: string;
+    parsed_at: (string | null);
+    statement_month: (string | null);
+    bank_name: (string | null);
+    account_number: (string | null);
+};
+
+export type BankTransactionPublic = {
+    id: string;
+    statement_id: string;
+    organization_id: string;
+    date: string;
+    amount: number;
+    currency: string;
+    description: string;
+    reference: (string | null);
+    matched_document_id: (string | null);
+    confidence_score: (number | null);
+    status: string;
+};
+
+export type BankTransactionsPublic = {
+    data: Array<BankTransactionPublic>;
+    count: number;
+};
+
 export type Body_files_upload_file = {
     file: (Blob | File);
 };
@@ -24,6 +55,10 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type Body_statements_upload_bank_statement = {
+    file: (Blob | File);
+};
+
 export type ChatRequest = {
     message: string;
     history?: Array<{
@@ -33,6 +68,25 @@ export type ChatRequest = {
 
 export type ChatResponse = {
     reply: string;
+};
+
+/**
+ * Request to record a user correction for AI learning.
+ */
+export type CorrectionRequest = {
+    document_id: string;
+    user_decision: string;
+    user_matched_index?: (number | null);
+    user_note?: (string | null);
+};
+
+/**
+ * Response after recording a correction.
+ */
+export type CorrectionResponse = {
+    correction_id: string;
+    learned_patterns: Array<(string)>;
+    message: string;
 };
 
 export type DocumentPublic = {
@@ -141,6 +195,15 @@ export type ItemUpdate = {
     description?: (string | null);
 };
 
+/**
+ * Learning insights for an organization.
+ */
+export type LearningInsightsResponse = {
+    vendor_preferences: Array<VendorPreferencePublic>;
+    reconciliation_patterns: Array<ReconciliationPatternPublic>;
+    total_corrections: number;
+};
+
 export type MembershipCreate = {
     user_id: string;
     organization_id: string;
@@ -237,6 +300,20 @@ export type ReconcileResponse = {
     };
 };
 
+/**
+ * Public representation of a learned reconciliation pattern.
+ */
+export type ReconciliationPatternPublic = {
+    id: string;
+    pattern_type: string;
+    pattern_name: string;
+    pattern_rule: ({
+    [key: string]: unknown;
+} | null);
+    learned_from_count: number;
+    success_rate: number;
+};
+
 export type ReconciliationRecordPublic = {
     id: string;
     document_id: string;
@@ -269,6 +346,23 @@ export type ReviewActionRequest = {
     note?: (string | null);
     exception_type?: (string | null);
     priority?: (string | null);
+};
+
+/**
+ * A suggested bank transaction match for a document
+ */
+export type SuggestedMatch = {
+    transaction: BankTransactionPublic;
+    confidence: number;
+    explanation: string;
+};
+
+export type SuggestMatchesResponse = {
+    document_id: string;
+    extracted_data: {
+        [key: string]: unknown;
+    };
+    suggested_matches: Array<SuggestedMatch>;
 };
 
 export type Token = {
@@ -336,6 +430,21 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * Public representation of a learned vendor preference.
+ */
+export type VendorPreferencePublic = {
+    id: string;
+    canonical_vendor_name: string;
+    vendor_aliases: (Array<(string)> | null);
+    typical_amount_range: ({
+    [key: string]: unknown;
+} | null);
+    is_recurring: boolean;
+    learned_from_count: number;
+    confidence: number;
 };
 
 export type ChatChatData = {
@@ -482,6 +591,20 @@ export type ItemsDeleteItemData = {
 
 export type ItemsDeleteItemResponse = (Message);
 
+export type LearningRecordCorrectionData = {
+    requestBody: CorrectionRequest;
+};
+
+export type LearningRecordCorrectionResponse = (CorrectionResponse);
+
+export type LearningGetLearningInsightsResponse = (LearningInsightsResponse);
+
+export type LearningGetCorrectionsData = {
+    limit?: number;
+};
+
+export type LearningGetCorrectionsResponse = (unknown);
+
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
 };
@@ -593,6 +716,12 @@ export type ReconciliationReconcileDocumentData = {
 
 export type ReconciliationReconcileDocumentResponse = (ReconcileResponse);
 
+export type ReconciliationSuggestMatchesData = {
+    documentId: string;
+};
+
+export type ReconciliationSuggestMatchesResponse = (SuggestMatchesResponse);
+
 export type ReviewReviewDocumentData = {
     documentId: string;
     requestBody: ReviewActionRequest;
@@ -612,6 +741,33 @@ export type ReviewAskAiQuestionData = {
 };
 
 export type ReviewAskAiQuestionResponse = (unknown);
+
+export type StatementsUploadBankStatementData = {
+    formData: Body_statements_upload_bank_statement;
+};
+
+export type StatementsUploadBankStatementResponse = (BankStatementPublic);
+
+export type StatementsListStatementsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type StatementsListStatementsResponse = (Array<BankStatementPublic>);
+
+export type StatementsGetStatementTransactionsData = {
+    limit?: number;
+    skip?: number;
+    statementId: string;
+};
+
+export type StatementsGetStatementTransactionsResponse = (BankTransactionsPublic);
+
+export type StatementsGetUnmatchedTransactionsData = {
+    limit?: number;
+};
+
+export type StatementsGetUnmatchedTransactionsResponse = (BankTransactionsPublic);
 
 export type UsersReadUsersData = {
     limit?: number;

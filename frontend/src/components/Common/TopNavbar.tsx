@@ -48,9 +48,7 @@ function UserInfo({ fullName, email }: UserInfoProps) {
         <p className="text-sm font-medium text-white truncate max-w-30">
           {fullName || "User"}
         </p>
-        <p className="text-xs text-blue-300 truncate max-w-35">
-          {email}
-        </p>
+        <p className="text-xs text-blue-300 truncate max-w-35">{email}</p>
       </div>
     </div>
   )

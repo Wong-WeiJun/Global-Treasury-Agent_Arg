@@ -501,6 +501,87 @@ class InvitationAccept(SQLModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class BankStatement(SQLModel, table=True):
+    """Uploaded bank statement file"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
+    uploaded_by: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+
+    original_filename: str
+    s3_key: str
+    file_hash: str = Field(index=True)  # SHA256 for duplicate detection
+
+    uploaded_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+    parsed_at: datetime | None = None
+
+    # Metadata
+    statement_month: str | None = None  # e.g., "2026-05"
+    bank_name: str | None = None
+    account_number: str | None = None
+
+
+class BankStatementPublic(SQLModel):
+    id: uuid.UUID
+    organization_id: uuid.UUID
+    uploaded_by: uuid.UUID
+    original_filename: str
+    uploaded_at: datetime
+    parsed_at: datetime | None
+    statement_month: str | None
+    bank_name: str | None
+    account_number: str | None
+
+
+class BankTransaction(SQLModel, table=True):
+    """Individual transaction parsed from a bank statement"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    statement_id: uuid.UUID = Field(foreign_key="bankstatement.id", nullable=False)
+    organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
+
+    # Transaction data
+    date: str  # YYYY-MM-DD
+    amount: float
+    currency: str = Field(default="MYR")
+    description: str
+    reference: str | None = None
+
+    # Reconciliation state
+    matched_document_id: uuid.UUID | None = Field(
+        default=None, foreign_key="document.id"
+    )
+    confidence_score: float | None = None
+    status: str = Field(default="unmatched")  # "unmatched" | "suggested" | "confirmed"
+
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class BankTransactionPublic(SQLModel):
+    id: uuid.UUID
+    statement_id: uuid.UUID
+    organization_id: uuid.UUID
+    date: str
+    amount: float
+    currency: str
+    description: str
+    reference: str | None
+    matched_document_id: uuid.UUID | None
+    confidence_score: float | None
+    status: str
+
+
+class BankTransactionsPublic(SQLModel):
+    data: list[BankTransactionPublic]
+    count: int
+
+
 # Import AI Learning Models so Alembic discovers them for migrations
 # These are defined in ai_learning.py
 from app.ai_learning import UserCorrection, VendorPreference, ReconciliationPattern  # noqa
@@ -520,4 +601,6 @@ __all__ = [
     "UserCorrection",
     "VendorPreference",
     "ReconciliationPattern",
+    "BankStatement",
+    "BankTransaction",
 ]

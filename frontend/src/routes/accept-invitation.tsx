@@ -104,7 +104,8 @@ function AcceptInvitationPage() {
             Invalid or Expired Invitation
           </h2>
           <p className="text-sm text-zinc-400 mb-4">
-            {(error as any).body?.detail || "This invitation is no longer valid."}
+            {(error as any).body?.detail ||
+              "This invitation is no longer valid."}
           </p>
           <button
             type="button"
