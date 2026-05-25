@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
 
 from app.api.deps import CurrentUser, get_db
-from app.core.s3 import upload_file_to_s3
+from app.file_utils import upload_document
 from app.models import (
     BankStatement,
     BankStatementPublic,
@@ -54,8 +54,7 @@ async def upload_bank_statement(
         )
 
     # Upload to S3
-    s3_key = f"statements/{current_user.organization_id}/{uuid.uuid4()}_{file.filename}"
-    s3_url = upload_file_to_s3(file_bytes, s3_key, file.content_type or "application/octet-stream")
+    s3_key = await upload_document(file_bytes, file.filename or "statement", current_user.organization_id)
 
     # Create statement record
     statement = BankStatement(
