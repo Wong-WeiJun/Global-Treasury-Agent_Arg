@@ -794,9 +794,7 @@ function ReconcilePage() {
               <option value="" disabled>
                 Add a document from history...
               </option>
-              {docs?.data
-                .filter((d: any) => d.file_type !== "excel")
-                .map((doc: any) => (
+              {docs?.data.map((doc: any) => (
                   <option key={doc.id} value={doc.id}>
                     {doc.original_filename} (
                     {new Date(doc.uploaded_at).toLocaleDateString("en-GB")})
@@ -990,10 +988,20 @@ function ReconcilePage() {
                             {docWithEntries.extractedData.payer && (
                               <div>
                                 <span className="text-muted-foreground block">
-                                  Extracted Payer
+                                  Payer
                                 </span>
                                 <span className="text-foreground font-medium truncate block">
                                   {docWithEntries.extractedData.payer}
+                                </span>
+                              </div>
+                            )}
+                            {docWithEntries.extractedData.payee && (
+                              <div>
+                                <span className="text-muted-foreground block">
+                                  Payee
+                                </span>
+                                <span className="text-foreground font-medium truncate block">
+                                  {docWithEntries.extractedData.payee}
                                 </span>
                               </div>
                             )}
