@@ -206,45 +206,33 @@ async def accept_invitation(
     Accept an invitation and create a new user account.
     Public endpoint - no authentication required.
     """
-    # Find invitation by token
     invitation = session.exec(
         select(Invitation).where(Invitation.token == accept_data.token)
     ).first()
-
     if not invitation:
         raise HTTPException(status_code=404, detail="Invalid invitation token")
-
     if invitation.accepted_at:
         raise HTTPException(status_code=400, detail="Invitation already accepted")
 
-    # Make both datetimes timezone-aware for comparison
-    now = datetime.now(timezone.utc)
     expires_at = invitation.expires_at
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
-
-    if expires_at < now:
+    if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Invitation expired")
 
-    # Check if user already exists
     existing_user = session.exec(
         select(User).where(User.email == invitation.email)
     ).first()
 
     if existing_user:
-        # User exists, just add membership
         existing_membership = session.exec(
-            select(Membership)
-            .where(Membership.user_id == existing_user.id)
-            .where(Membership.organization_id == invitation.organization_id)
+            select(Membership).where(Membership.user_id == existing_user.id)
         ).first()
-
         if existing_membership:
             raise HTTPException(
                 status_code=400,
-                detail="User is already a member of this organization",
+                detail="You already belong to an organization. Leave your current organization before accepting a new invitation.",
             )
-
         membership = Membership(
             user_id=existing_user.id,
             organization_id=invitation.organization_id,
@@ -252,27 +240,26 @@ async def accept_invitation(
         )
         session.add(membership)
     else:
-        # Create new user
         from app import crud
 
-        user_in = UserCreate(
-            email=invitation.email,
-            password=accept_data.password,
-            full_name=None,
+        new_user = crud.create_user(
+            session=session,
+            user_create=UserCreate(
+                email=invitation.email,
+                password=accept_data.password,
+                full_name=None,
+            ),
         )
-        new_user = crud.create_user(session=session, user_create=user_in)
         new_user.organization_id = invitation.organization_id
         session.add(new_user)
-
-        # Create membership
-        membership = Membership(
-            user_id=new_user.id,
-            organization_id=invitation.organization_id,
-            role=invitation.role,
+        session.add(
+            Membership(
+                user_id=new_user.id,
+                organization_id=invitation.organization_id,
+                role=invitation.role,
+            )
         )
-        session.add(membership)
 
-    # Mark invitation as accepted
     invitation.accepted_at = datetime.now(timezone.utc)
     session.add(invitation)
     session.commit()
