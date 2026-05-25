@@ -13,9 +13,13 @@ const socialLinks = [
   },
 ]
 
-export function Footer() {
+interface FooterProps {
+  transparent?: boolean
+}
+
+export function Footer({ transparent }: FooterProps) {
   return (
-    <footer className="border-t border-blue-900 bg-blue-950 dark:bg-blue-950 py-4 px-6">
+    <footer className={transparent ? "py-4 px-6 bg-transparent border-transparent" : "border-t border-blue-900 bg-blue-950 dark:bg-blue-950 py-4 px-6"}>
       <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
         <p className="text-blue-200 text-sm">
           MyAudit - The Global Treasury Agent

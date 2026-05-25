@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import type { OrganizationCreate } from "@/client"
 import { OrganizationsService } from "@/client"
-import { Appearance } from "@/components/Common/Appearance"
 import { Footer } from "@/components/Common/Footer"
 
 export const Route = createFileRoute("/onboarding")({
@@ -67,15 +66,11 @@ function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex flex-col p-6 md:p-10">
-      <div className="flex justify-end">
-        <Appearance />
-      </div>
-
+    <div className="dark min-h-screen w-full bg-[url('/assets/images/login.png')] bg-cover bg-center flex flex-col p-6 md:p-10">
       <div className="flex flex-1 items-center justify-center">
-        <div className="max-w-md w-full">
+        <div className="max-w-[480px] w-full">
           <form onSubmit={handleSubmit}>
-            <div className="w-full bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-200/50 dark:border-zinc-800/50 flex flex-col gap-5">
+            <div className="w-full aspect-[3/4] overflow-y-auto bg-black/40 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-zinc-800/50 flex flex-col gap-5">
               <div className="text-center">
                 <img
                   src="/assets/images/favicon.png"
