@@ -9,6 +9,7 @@ from app.api.routes import (
     learning,
     login,
     memberships,
+    orchestrated_reconciliation,
     organizations,
     private,
     reconciliation,
@@ -28,6 +29,7 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(file.router)
 api_router.include_router(fx.router)
 api_router.include_router(reconciliation.router)
+api_router.include_router(orchestrated_reconciliation.router)
 api_router.include_router(review.router)
 api_router.include_router(learning.router)
 api_router.include_router(organizations.router)
