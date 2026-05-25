@@ -257,6 +257,7 @@ class Document(SQLModel, table=True):
     uploaded_at: datetime = Field(default_factory=datetime.utcnow)
     extracted_data: dict | None = Field(default=None, sa_column=Column(JSON))
     reconciliation_result: dict | None = Field(default=None, sa_column=Column(JSON))
+    orchestration_result: dict | None = Field(default=None, sa_column=Column(JSON))  # Results from orchestration agent
 
     # Multi-Currency Architecture
     # 1. Original Currency (what customer actually paid - NEVER overwrite)
@@ -302,6 +303,7 @@ class DocumentPublic(SQLModel):
     uploaded_at: datetime
     extracted_data: dict | None = None
     reconciliation_result: dict | None = None
+    orchestration_result: dict | None = None
 
     # Multi-Currency fields
     original_amount: float | None = None
