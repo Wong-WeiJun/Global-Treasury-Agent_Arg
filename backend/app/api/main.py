@@ -13,6 +13,7 @@ from app.api.routes import (
     organizations,
     private,
     reconciliation,
+    reports,
     review,
     statements,
     users,
@@ -30,6 +31,7 @@ api_router.include_router(file.router)
 api_router.include_router(fx.router)
 api_router.include_router(reconciliation.router)
 api_router.include_router(orchestrated_reconciliation.router)
+api_router.include_router(reports.router)
 api_router.include_router(review.router)
 api_router.include_router(learning.router)
 api_router.include_router(organizations.router)
