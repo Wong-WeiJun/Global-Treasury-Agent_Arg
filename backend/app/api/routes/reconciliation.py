@@ -10,6 +10,16 @@ from app.extraction import extract_from_image, extract_from_pdf
 from app.fx import convert
 from app.models import Document, Organization, ReconcileRequest, ReconcileResponse, User
 from app.reconciliation import reconcile
+from app.proactive_reconciliation import (
+    reconcile_with_memory,
+    get_vendor_history,
+    propose_adjustment_journal_entry,
+)
+from app.ai_learning import (
+    get_learned_vendor_preferences,
+    get_learned_patterns,
+)
+from app.ai_insights import normalize_vendor_name
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
 
@@ -117,10 +127,65 @@ async def reconcile_document(
             on_date=fx_date,
         )
 
-    result = await reconcile(
+    # Get vendor name for history lookup
+    vendor_name = proof.get("payee") or proof.get("payer")
+    normalized_vendor = normalize_vendor_name(vendor_name) if vendor_name else None
+
+    # Retrieve vendor history (last 3 months)
+    vendor_history = await get_vendor_history(
+        session=session,
+        organization_id=org.id,
+        vendor_name=vendor_name,
+        months_back=3,
+    )
+
+    # Retrieve learned patterns
+    learned_patterns_objs = await get_learned_patterns(session, org.id)
+    learned_patterns = [
+        {
+            "pattern_type": p.pattern_type,
+            "pattern_name": p.pattern_name,
+            "pattern_rule": p.pattern_rule,
+            "learned_from_count": p.learned_from_count,
+            "success_rate": p.success_rate,
+        }
+        for p in learned_patterns_objs
+    ]
+
+    # Retrieve vendor preferences
+    vendor_prefs_objs = await get_learned_vendor_preferences(session, org.id)
+    vendor_preferences = [
+        {
+            "canonical_vendor_name": vp.canonical_vendor_name,
+            "vendor_aliases": vp.vendor_aliases,
+            "typical_amount_range": vp.typical_amount_range,
+            "is_recurring": vp.is_recurring,
+            "confidence": vp.confidence,
+        }
+        for vp in vendor_prefs_objs
+        if normalized_vendor and vp.canonical_vendor_name == normalized_vendor
+    ]
+
+    # Compute traditional fuzzy match scores for context
+    from app.reconciliation import _compute_match_score
+    match_scores = [
+        _compute_match_score(
+            proof,
+            e.model_dump(),
+            myr_amount=fx_result["to_amount"] if fx_result else proof.get("amount"),
+        )
+        for e in body.bank_entries
+    ]
+
+    # Use proactive reconciliation with memory and context
+    result = await reconcile_with_memory(
         proof=proof,
         bank_entries=[e.model_dump() for e in body.bank_entries],
         fx_result=fx_result,
+        vendor_history=vendor_history,
+        learned_patterns=learned_patterns,
+        vendor_preferences=vendor_preferences,
+        match_scores=match_scores,
     )
 
     # Save result to document for history
@@ -134,6 +199,9 @@ async def reconcile_document(
     # Map AI's final_status to our AI result enum
     if final_status == "matched":
         doc.ai_result = "MATCHED"
+    elif final_status == "matched_with_adjustment":
+        # New status: AI found a match but needs a small adjustment
+        doc.ai_result = "MATCHED"  # Still count as matched
     elif final_status == "fuzzy":
         doc.ai_result = "FUZZY_MATCH"
     else:
@@ -142,7 +210,12 @@ async def reconcile_document(
     doc.ai_confidence = agent_decision.get("confidence", 0.0)
     doc.ai_explanation = agent_decision.get("explanation", "")
 
-    # Auto-approve if AI result is MATCHED
+    # Add historical insights to explanation if available
+    historical_insights = agent_decision.get("historical_insights")
+    if historical_insights:
+        doc.ai_explanation = f"{doc.ai_explanation}\n\nHistorical Context: {historical_insights}"
+
+    # Auto-approve if AI result is MATCHED or MATCHED_WITH_ADJUSTMENT
     if doc.ai_result == "MATCHED":
         from datetime import datetime, timezone
 
@@ -151,7 +224,7 @@ async def reconcile_document(
 
         # Calculate risk
         match_scores = result.get("match_scores", [])
-        best_idx = result.get("best_candidate_index")
+        best_idx = agent_decision.get("matched_entry_index")
         best_score = (
             match_scores[best_idx] if best_idx is not None and match_scores else None
         )
@@ -164,10 +237,24 @@ async def reconcile_document(
         else:
             risk_level = "LOW"
 
-        # Generate journal entry
-        fx_result = result.get("fx_result")
-        proof = result.get("proof", {})
-        journal_entry = generate_journal_entry(proof, fx_result, "approved", None)
+        # Check if this is a matched_with_adjustment case
+        adjustment_type = agent_decision.get("adjustment_type")
+        journal_entry_proposal = agent_decision.get("journal_entry_proposal")
+
+        if final_status == "matched_with_adjustment" and journal_entry_proposal:
+            # Use the AI-proposed journal entry
+            journal_entry = journal_entry_proposal
+            exception_type = adjustment_type.upper() if adjustment_type else "ADJUSTMENT"
+            action = "exception"  # Mark as exception since it needs an adjustment
+            note = f"Auto-approved with {adjustment_type} adjustment: {agent_decision.get('adjustment_amount', 0)} {base_currency}"
+        else:
+            # Standard approval without adjustment
+            fx_result_dict = result.get("fx_result")
+            proof_dict = result.get("proof", {})
+            journal_entry = generate_journal_entry(proof_dict, fx_result_dict, "approved", None)
+            exception_type = None
+            action = "approved"
+            note = "Auto-approved by AI with high confidence match"
 
         # Create audit record for auto-approval
         record = ReconciliationRecord(
@@ -181,10 +268,12 @@ async def reconcile_document(
             normalized_amount_myr=fx_result["to_amount"]
             if fx_result
             else proof.get("amount"),
-            action="approved",
-            exception_type=None,
-            note="Auto-approved by AI with high confidence match",
-            ai_explanation=f"Auto-approved: {doc.ai_explanation}",
+            base_currency=base_currency,
+            base_amount=fx_result["to_amount"] if fx_result else proof.get("amount"),
+            action=action,
+            exception_type=exception_type,
+            note=note,
+            ai_explanation=doc.ai_explanation,
             case_id=None,
             assigned_to=None,
             priority=None,
@@ -193,10 +282,16 @@ async def reconcile_document(
         )
         session.add(record)
 
-        # Set workflow to approved
-        doc.workflow_status = "APPROVED"
-        doc.review_status = "approved"
-        doc.review_note = "Auto-approved by AI"
+        # Set workflow to approved or exception_approved
+        if action == "exception":
+            doc.workflow_status = "EXCEPTION_APPROVED"
+            doc.review_status = "exception"
+            doc.exception_type = exception_type
+        else:
+            doc.workflow_status = "APPROVED"
+            doc.review_status = "approved"
+
+        doc.review_note = note
         doc.reviewed_at = datetime.now(timezone.utc)
         doc.reviewed_by = current_user.id
         doc.risk_score = risk_score

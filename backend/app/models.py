@@ -499,3 +499,25 @@ class InvitationCreate(SQLModel):
 class InvitationAccept(SQLModel):
     token: str
     password: str = Field(min_length=8, max_length=128)
+
+
+# Import AI Learning Models so Alembic discovers them for migrations
+# These are defined in ai_learning.py
+from app.ai_learning import UserCorrection, VendorPreference, ReconciliationPattern  # noqa
+
+# Re-export for convenience
+__all__ = [
+    "User",
+    "UserCreate",
+    "UserUpdate",
+    "UserPublic",
+    "Item",
+    "Document",
+    "Organization",
+    "Membership",
+    "ReconciliationRecord",
+    "Invitation",
+    "UserCorrection",
+    "VendorPreference",
+    "ReconciliationPattern",
+]

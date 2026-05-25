@@ -16,6 +16,11 @@ from app.extraction import (
     extract_from_image,
     extract_from_pdf,
     _call_bedrock_excel,
+    _ocr_with_textract,
+)
+from app.ai_insights import (
+    analyze_document_with_intelligence,
+    check_for_duplicates,
 )
 from app.file_utils import delete_document, upload_document
 from app.fx import convert
@@ -409,9 +414,100 @@ async def extract_document(
             )
 
         elif doc.file_type == "image":
-            data = extract_from_image(file_bytes)
+            # Get recent documents for duplicate detection
+            recent_docs = session.exec(
+                select(Document)
+                .where(
+                    Document.organization_id == org.id,
+                    Document.extracted_data.isnot(None),
+                )
+                .order_by(desc(cast(ColumnElement, Document.uploaded_at)))
+                .limit(20)
+            ).all()
+
+            recent_context = [
+                {
+                    "id": str(d.id),
+                    "date": d.extracted_data.get("date") if d.extracted_data else None,
+                    "payee": d.extracted_data.get("payee") if d.extracted_data else None,
+                    "amount": d.extracted_data.get("amount") if d.extracted_data else None,
+                    "currency": d.extracted_data.get("currency") if d.extracted_data else None,
+                    "description": d.extracted_data.get("description") if d.extracted_data else None,
+                }
+                for d in recent_docs
+            ]
+
+            # Use enhanced AI insights extraction
+            ocr_result = _ocr_with_textract(file_bytes)
+            raw_text = ocr_result["raw_text"]
+
+            data = await analyze_document_with_intelligence(
+                image_bytes=file_bytes,
+                ocr_hint=raw_text,
+                media_type="image/jpeg",
+                historical_context=recent_context,
+            )
+
+            # Check for duplicates using the AI insights
+            duplicate_check = await check_for_duplicates(
+                extracted_data=data,
+                recent_documents=recent_context,
+                time_window_hours=72,
+            )
+
+            # Add duplicate detection results to the extracted data
+            data["duplicate_detection"] = duplicate_check
+
         elif doc.file_type == "pdf":
-            data = extract_from_pdf(file_bytes)
+            # Get recent documents for duplicate detection
+            recent_docs = session.exec(
+                select(Document)
+                .where(
+                    Document.organization_id == org.id,
+                    Document.extracted_data.isnot(None),
+                )
+                .order_by(desc(cast(ColumnElement, Document.uploaded_at)))
+                .limit(20)
+            ).all()
+
+            recent_context = [
+                {
+                    "id": str(d.id),
+                    "date": d.extracted_data.get("date") if d.extracted_data else None,
+                    "payee": d.extracted_data.get("payee") if d.extracted_data else None,
+                    "amount": d.extracted_data.get("amount") if d.extracted_data else None,
+                    "currency": d.extracted_data.get("currency") if d.extracted_data else None,
+                    "description": d.extracted_data.get("description") if d.extracted_data else None,
+                }
+                for d in recent_docs
+            ]
+
+            # Enhanced PDF extraction with AI insights
+            import pymupdf
+            doc_pdf = pymupdf.open(stream=file_bytes, filetype="pdf")
+            first_page = doc_pdf[0]
+            pix = first_page.get_pixmap(dpi=150)
+            img_bytes = pix.tobytes("jpeg")
+
+            ocr_result = _ocr_with_textract(img_bytes)
+            raw_text = ocr_result["raw_text"]
+
+            data = await analyze_document_with_intelligence(
+                image_bytes=img_bytes,
+                ocr_hint=raw_text,
+                media_type="image/jpeg",
+                historical_context=recent_context,
+            )
+
+            # Check for duplicates
+            duplicate_check = await check_for_duplicates(
+                extracted_data=data,
+                recent_documents=recent_context,
+                time_window_hours=72,
+            )
+
+            data["duplicate_detection"] = duplicate_check
+
         else:
             return ExtractionResponse(
                 document_id=document_id, error="Unsupported file type"

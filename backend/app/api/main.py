@@ -6,6 +6,7 @@ from app.api.routes import (
     fx,
     invitations,
     items,
+    learning,
     login,
     memberships,
     organizations,
@@ -27,6 +28,7 @@ api_router.include_router(file.router)
 api_router.include_router(fx.router)
 api_router.include_router(reconciliation.router)
 api_router.include_router(review.router)
+api_router.include_router(learning.router)
 api_router.include_router(organizations.router)
 api_router.include_router(memberships.router)
 api_router.include_router(invitations.router)
