@@ -74,9 +74,6 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
-    EMAIL_PROVIDER: Literal["smtp", "resend"] = "smtp"
-
-    EMAIL_DEV_MODE: bool = False
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587
@@ -99,7 +96,6 @@ class Settings(BaseSettings):
     def emails_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
-    RESEND_API_KEY: SecretStr | None = None
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr
     FIRST_SUPERUSER_PASSWORD: str
