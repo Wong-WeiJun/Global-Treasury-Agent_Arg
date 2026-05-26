@@ -54,7 +54,7 @@ def _parse_date(date_str: str | None) -> datetime | None:
 
 
 def _amount_match(
-    a: float | None, b: float | None, tolerance_pct: float = 2.0
+    a: float | None, b: float | None, tolerance_pct: float = 15.0
 ) -> tuple[bool, float]:
     # Returns (is_match, difference_pct).
     if a is None or b is None:
@@ -66,7 +66,7 @@ def _amount_match(
 
 
 def _date_match(
-    d1: str | None, d2: str | None, tolerance_days: int = 2
+    d1: str | None, d2: str | None, tolerance_days: int = 14
 ) -> tuple[bool, int]:
     # Returns (is_match, days_apart)
     date1 = _parse_date(d1)
@@ -79,10 +79,11 @@ def _date_match(
 
 def _payer_match(p1: str | None, p2: str | None) -> tuple[bool, float]:
     # Returns (is_match, similarity_score 0-1).
+    # Missing payer in either side → neutral pass (0.5) so it doesn't kill the score.
     if not p1 or not p2:
-        return False, 0.0
+        return True, 0.5
     score = SequenceMatcher(None, p1.lower().strip(), p2.lower().strip()).ratio()
-    return score >= 0.6, round(score, 3)
+    return score >= 0.35, round(score, 3)
 
 
 def _compute_match_score(
@@ -111,9 +112,9 @@ def _compute_match_score(
     if payer_ok:
         score += 0.15
 
-    if score >= 0.85:
+    if score >= 0.60:
         status = "matched"
-    elif score >= 0.5:
+    elif score >= 0.30:
         status = "fuzzy"
     else:
         status = "unmatched"

@@ -1017,7 +1017,7 @@ function ReconcilePage() {
                             {docWithEntries.extractedData.payer && (
                               <div>
                                 <span className="text-muted-foreground block">
-                                  Payer
+                                  Payee
                                 </span>
                                 <span className="text-foreground font-medium truncate block">
                                   {docWithEntries.extractedData.payer}
