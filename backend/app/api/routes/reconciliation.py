@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta
+from difflib import SequenceMatcher
 
 import boto3
 from fastapi import APIRouter, HTTPException
@@ -492,14 +493,14 @@ async def suggest_matches(
         raise HTTPException(status_code=400, detail="Invalid date format")
 
     # Stage 1: Rule-based filtering
-    # Get transactions within date range (±7 days) and amount range (±10%)
-    date_min = doc_date - timedelta(days=7)
-    date_max = doc_date + timedelta(days=7)
+    # Get transactions within date range (±14 days) and amount range (±25%)
+    date_min = doc_date - timedelta(days=14)
+    date_max = doc_date + timedelta(days=14)
 
     # Handle both positive and negative amounts (debits/credits)
     amount_abs = abs(base_amount)
-    amount_min = amount_abs * 0.9
-    amount_max = amount_abs * 1.1
+    amount_min = amount_abs * 0.75
+    amount_max = amount_abs * 1.25
 
     # Query unmatched transactions - compare absolute values
     from sqlalchemy import func as sql_func
@@ -537,7 +538,7 @@ async def suggest_matches(
             transaction=txn,
         )
 
-        if score["confidence"] >= 0.5:  # Only include reasonable matches
+        if score["confidence"] >= 0.25:  # Include any plausible match
             suggestions.append(
                 SuggestedMatch(
                     transaction=BankTransactionPublic.model_validate(txn),
@@ -580,9 +581,15 @@ def _score_transaction_match(
     elif amount_pct_diff < 0.05:  # Within 5%
         scores["amount"] = 0.9
         reasons.append("Amount match within 5%")
-    elif amount_pct_diff < 0.1:  # Within 10%
-        scores["amount"] = 0.7
+    elif amount_pct_diff < 0.10:  # Within 10%
+        scores["amount"] = 0.75
         reasons.append("Amount match within 10%")
+    elif amount_pct_diff < 0.20:  # Within 20%
+        scores["amount"] = 0.55
+        reasons.append("Amount match within 20%")
+    elif amount_pct_diff < 0.25:  # Within 25%
+        scores["amount"] = 0.35
+        reasons.append("Amount match within 25%")
     else:
         scores["amount"] = max(0, 1.0 - amount_pct_diff)
 
@@ -594,14 +601,18 @@ def _score_transaction_match(
         if days_diff == 0:
             scores["date"] = 1.0
             reasons.append("Same date")
-        elif days_diff == 1:
+        elif days_diff <= 1:
             scores["date"] = 0.9
             reasons.append("1 day difference")
         elif days_diff <= 3:
-            scores["date"] = 0.7
+            scores["date"] = 0.75
             reasons.append(f"{days_diff} days difference")
         elif days_diff <= 7:
-            scores["date"] = 0.5
+            scores["date"] = 0.55
+            reasons.append(f"{days_diff} days difference")
+        elif days_diff <= 14:
+            scores["date"] = 0.35
+            reasons.append(f"{days_diff} days difference")
         else:
             scores["date"] = 0
     except ValueError:
@@ -612,7 +623,7 @@ def _score_transaction_match(
     payee = (extracted.get("payee") or "").lower()
     description = transaction.description.lower()
 
-    vendor_score = 0
+    vendor_score = 0.4  # Neutral baseline when vendor info is unavailable
     if payer and payer in description:
         vendor_score = 1.0
         reasons.append(f"Payer '{payer}' found in description")
@@ -620,14 +631,21 @@ def _score_transaction_match(
         vendor_score = 1.0
         reasons.append(f"Payee '{payee}' found in description")
     elif payer or payee:
-        # Fuzzy match (simple word overlap)
+        # Fuzzy match using word overlap and sequence similarity
+        combined_vendor = f"{payer} {payee}".strip()
+        seq_score = SequenceMatcher(None, combined_vendor, description[:len(combined_vendor) + 20]).ratio()
         payer_words = set(payer.split())
         payee_words = set(payee.split())
         desc_words = set(description.split())
         overlap = (payer_words | payee_words) & desc_words
         if overlap:
-            vendor_score = 0.6
+            vendor_score = max(0.65, seq_score)
             reasons.append(f"Partial vendor match: {', '.join(overlap)}")
+        elif seq_score >= 0.4:
+            vendor_score = seq_score
+            reasons.append("Fuzzy vendor name match")
+        else:
+            vendor_score = 0.4  # No match but keep neutral baseline
 
     scores["vendor"] = vendor_score
 
