@@ -1,29 +1,16 @@
 """
 AI Insights Engine: Advanced document analysis with semantic categorization,
 anomaly detection, and contextual awareness.
-
-This module elevates AWS Bedrock AI from simple field extraction to financial intelligence.
 """
 
+import base64
 import json
+import re
 from datetime import timedelta
 
-import boto3
+import httpx
 
 from app.core.config import settings
-
-
-def _get_bedrock_client():
-    return boto3.client(
-        "bedrock-runtime",
-        region_name="us-east-1",
-        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
-        if settings.aws_access_key_id
-        else None,
-        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
-        if settings.aws_secret_access_key
-        else None,
-    )
 
 
 SEMANTIC_CATEGORIZATION_PROMPT = """You are a financial intelligence agent analyzing payment documents.
@@ -118,9 +105,6 @@ async def analyze_document_with_intelligence(
     Returns:
         Dictionary with both standard extraction fields and intelligence metadata
     """
-    client = _get_bedrock_client()
-    import base64
-
     b64_image = base64.standard_b64encode(image_bytes).decode("utf-8")
 
     prompt = SEMANTIC_CATEGORIZATION_PROMPT
@@ -130,38 +114,40 @@ async def analyze_document_with_intelligence(
 
     if historical_context:
         prompt += "\n\nRECENT TRANSACTIONS (for duplicate detection):\n"
-        for ctx in historical_context[:5]:  # Last 5 transactions
+        for ctx in historical_context[:5]:
             prompt += f"- {ctx.get('date')}: {ctx.get('payee')} - {ctx.get('currency')} {ctx.get('amount')}\n"
 
-    response = client.invoke_model(
-        modelId="us.anthropic.claude-sonnet-4-6",
-        body=json.dumps(
+    chutes_payload = {
+        "model": settings.CHUTES_VISION_MODEL,
+        "messages": [
             {
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 1024,
-                "temperature": 0.1,  # Low temperature for consistent categorization
-                "messages": [
+                "role": "user",
+                "content": [
                     {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": media_type,
-                                    "data": b64_image,
-                                },
-                            },
-                            {"type": "text", "text": prompt},
-                        ],
-                    }
+                        "type": "image_url",
+                        "image_url": {"url": f"data:{media_type};base64,{b64_image}"},
+                    },
+                    {"type": "text", "text": prompt},
                 ],
             }
-        ),
-    )
+        ],
+        "max_tokens": 1024,
+        "temperature": 0.1,
+    }
 
-    result = json.loads(response["body"].read())
-    text = result["content"][0]["text"].strip()
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            f"{settings.CHUTES_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.CHUTES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=chutes_payload,
+        )
+        response.raise_for_status()
+
+    chutes_response = response.json()
+    text = chutes_response["choices"][0]["message"]["content"].strip()
 
     # Clean JSON from markdown code blocks
     if text.startswith("```"):

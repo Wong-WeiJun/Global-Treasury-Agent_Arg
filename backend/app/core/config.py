@@ -44,6 +44,8 @@ class Settings(BaseSettings):
 
     CHUTES_API_KEY: str = ""
     CHUTES_BASE_URL: str = "https://llm.chutes.ai/v1"
+    CHUTES_MODEL: str = "deepseek-ai/DeepSeek-V3.2-TEE"
+    CHUTES_VISION_MODEL: str = "google/gemma-4-31B-turbo-TEE"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -75,6 +77,15 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_DB}"
         )
 
+    # ── Email provider ─────────────────────────────────────────────────────────
+    # "smtp"  → any SMTP server, including Gmail with an App Password
+    # "resend" → Resend.com REST API (no SMTP config needed)
+    EMAIL_PROVIDER: Literal["smtp", "resend"] = "smtp"
+
+    # When true, emails are logged to stdout instead of being sent.
+    # Set to true in local dev so no SMTP/API config is required.
+    EMAIL_DEV_MODE: bool = False
+
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
     SMTP_PORT: int = 587
@@ -83,6 +94,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str | None = None
     EMAILS_FROM_EMAIL: EmailStr | None = None
     EMAILS_FROM_NAME: str | None = None
+
+    # Resend API key — only needed when EMAIL_PROVIDER=resend
+    RESEND_API_KEY: SecretStr | None = None
 
     @model_validator(mode="after")
     def _set_default_emails_from(self) -> Self:
@@ -95,6 +109,10 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
+        if self.EMAIL_DEV_MODE:
+            return True
+        if self.EMAIL_PROVIDER == "resend":
+            return bool(self.RESEND_API_KEY and self.EMAILS_FROM_EMAIL)
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"

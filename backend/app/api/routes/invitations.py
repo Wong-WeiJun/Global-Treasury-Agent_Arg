@@ -121,7 +121,7 @@ async def invite_member(
     </html>
     """
 
-    send_email(
+    await send_email(
         email_to=invitation_in.email,
         subject=f"Invitation to join {org.name} on MyAudit",
         html_content=email_html,
