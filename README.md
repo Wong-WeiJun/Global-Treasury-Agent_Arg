@@ -91,7 +91,7 @@ EMAIL_DEV_MODE=true          # skips real email sending in local dev
 ### 3. Start with Docker Compose
 
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
 | Service | URL |
