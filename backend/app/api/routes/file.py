@@ -14,8 +14,7 @@ from app.core.config import settings
 from app.extraction import (
     extract_from_excel,
     _call_chutes_excel,
-    _call_bedrock_excel,
-    _ocr_with_textract,
+    _ocr_with_puter,
 )
 from app.ai_insights import (
     analyze_document_with_intelligence,
@@ -307,13 +306,8 @@ async def extract_document(
                     document_id=document_id, error="File is empty"
                 )
 
-            # 2. Extract structured fields from the raw layout using Claude (Chutes AI primary, Bedrock fallback)
-            try:
-                rows = await _call_chutes_excel(raw_csv_text)
-            except Exception as e:
-                print(f"Chutes AI Excel extraction failed: {type(e).__name__}: {str(e)}")
-                print("Falling back to AWS Bedrock...")
-                rows = _call_bedrock_excel(raw_csv_text)
+            # 2. Extract structured fields from the raw layout using Chutes AI
+            rows = await _call_chutes_excel(raw_csv_text)
 
             if not rows:
                 return ExtractionResponse(
@@ -449,7 +443,7 @@ async def extract_document(
             ]
 
             # Use enhanced AI insights extraction
-            ocr_result = _ocr_with_textract(file_bytes)
+            ocr_result = await _ocr_with_puter(file_bytes)
             raw_text = ocr_result["raw_text"]
 
             data = await analyze_document_with_intelligence(
@@ -509,7 +503,7 @@ async def extract_document(
             pix = first_page.get_pixmap(dpi=150)
             img_bytes = pix.tobytes("jpeg")
 
-            ocr_result = _ocr_with_textract(img_bytes)
+            ocr_result = await _ocr_with_puter(img_bytes)
             raw_text = ocr_result["raw_text"]
 
             data = await analyze_document_with_intelligence(

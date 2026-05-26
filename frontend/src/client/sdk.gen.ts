@@ -126,7 +126,6 @@ export class FilesService {
             }
         });
     }
-    
 }
 
 export class FxService {
@@ -217,7 +216,6 @@ export class FxService {
             }
         });
     }
-    
 }
 
 export class InvitationsService {
@@ -332,7 +330,6 @@ export class InvitationsService {
             }
         });
     }
-    
 }
 
 export class LearningService {
@@ -386,7 +383,6 @@ export class LearningService {
             }
         });
     }
-    
 }
 
 export class LoginService {
@@ -484,7 +480,6 @@ export class LoginService {
             }
         });
     }
-    
 }
 
 export class MembershipsService {
@@ -597,7 +592,6 @@ export class MembershipsService {
             }
         });
     }
-    
 }
 
 export class OrchestrationService {
@@ -657,7 +651,6 @@ export class OrchestrationService {
             }
         });
     }
-    
 }
 
 export class OrganizationsService {
@@ -824,7 +817,6 @@ export class OrganizationsService {
             }
         });
     }
-    
 }
 
 export class PrivateService {
@@ -847,7 +839,6 @@ export class PrivateService {
             }
         });
     }
-    
 }
 
 export class ReconciliationService {
@@ -891,7 +882,6 @@ export class ReconciliationService {
             }
         });
     }
-    
 }
 
 export class ReportsService {
@@ -944,7 +934,6 @@ export class ReportsService {
             }
         });
     }
-    
 }
 
 export class ReviewService {
@@ -1014,7 +1003,6 @@ export class ReviewService {
             }
         });
     }
-    
 }
 
 export class StatementsService {
@@ -1109,7 +1097,6 @@ export class StatementsService {
             }
         });
     }
-    
 }
 
 export class UsersService {
@@ -1306,7 +1293,6 @@ export class UsersService {
             }
         });
     }
-    
 }
 
 export class UtilsService {
@@ -1342,5 +1328,4 @@ export class UtilsService {
             url: '/api/v1/utils/health-check/'
         });
     }
-    
 }
