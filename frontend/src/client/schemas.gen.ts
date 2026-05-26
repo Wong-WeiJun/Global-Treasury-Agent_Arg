@@ -306,39 +306,6 @@ export const Body_statements_upload_bank_statementSchema = {
     title: 'Body_statements-upload_bank_statement'
 } as const;
 
-export const ChatRequestSchema = {
-    properties: {
-        message: {
-            type: 'string',
-            title: 'Message'
-        },
-        history: {
-            items: {
-                additionalProperties: true,
-                type: 'object'
-            },
-            type: 'array',
-            title: 'History',
-            default: []
-        }
-    },
-    type: 'object',
-    required: ['message'],
-    title: 'ChatRequest'
-} as const;
-
-export const ChatResponseSchema = {
-    properties: {
-        reply: {
-            type: 'string',
-            title: 'Reply'
-        }
-    },
-    type: 'object',
-    required: ['reply'],
-    title: 'ChatResponse'
-} as const;
-
 export const CorrectionRequestSchema = {
     properties: {
         document_id: {
@@ -456,6 +423,18 @@ export const DocumentPublicSchema = {
                 }
             ],
             title: 'Reconciliation Result'
+        },
+        orchestration_result: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Orchestration Result'
         },
         original_amount: {
             anyOf: [
@@ -843,6 +822,33 @@ export const ExtractionResponseSchema = {
     title: 'ExtractionResponse'
 } as const;
 
+export const GenerateReportRequestSchema = {
+    properties: {
+        results: {
+            items: {
+                additionalProperties: true,
+                type: 'object'
+            },
+            type: 'array',
+            title: 'Results'
+        },
+        include_summary: {
+            type: 'boolean',
+            title: 'Include Summary',
+            default: true
+        },
+        include_details: {
+            type: 'boolean',
+            title: 'Include Details',
+            default: true
+        }
+    },
+    type: 'object',
+    required: ['results'],
+    title: 'GenerateReportRequest',
+    description: 'Request body for generating a reconciliation report'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -944,131 +950,6 @@ export const InvitationPublicSchema = {
     type: 'object',
     required: ['id', 'email', 'organization_id', 'role', 'invited_by', 'expires_at', 'accepted_at', 'created_at'],
     title: 'InvitationPublic'
-} as const;
-
-export const ItemCreateSchema = {
-    properties: {
-        title: {
-            type: 'string',
-            maxLength: 255,
-            minLength: 1,
-            title: 'Title'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        }
-    },
-    type: 'object',
-    required: ['title'],
-    title: 'ItemCreate'
-} as const;
-
-export const ItemPublicSchema = {
-    properties: {
-        title: {
-            type: 'string',
-            maxLength: 255,
-            minLength: 1,
-            title: 'Title'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        },
-        id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Id'
-        },
-        owner_id: {
-            type: 'string',
-            format: 'uuid',
-            title: 'Owner Id'
-        },
-        created_at: {
-            anyOf: [
-                {
-                    type: 'string',
-                    format: 'date-time'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Created At'
-        }
-    },
-    type: 'object',
-    required: ['title', 'id', 'owner_id'],
-    title: 'ItemPublic'
-} as const;
-
-export const ItemUpdateSchema = {
-    properties: {
-        title: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255,
-                    minLength: 1
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Title'
-        },
-        description: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Description'
-        }
-    },
-    type: 'object',
-    title: 'ItemUpdate'
-} as const;
-
-export const ItemsPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/ItemPublic'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
-        }
-    },
-    type: 'object',
-    required: ['data', 'count'],
-    title: 'ItemsPublic'
 } as const;
 
 export const LearningInsightsResponseSchema = {
@@ -1282,6 +1163,74 @@ export const NewPasswordSchema = {
     type: 'object',
     required: ['token', 'new_password'],
     title: 'NewPassword'
+} as const;
+
+export const OrchestratedReconcileRequestSchema = {
+    properties: {
+        document_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Document Id'
+        },
+        bank_entries: {
+            items: {
+                '$ref': '#/components/schemas/BankEntry'
+            },
+            type: 'array',
+            title: 'Bank Entries'
+        },
+        override_date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Override Date'
+        }
+    },
+    type: 'object',
+    required: ['document_id', 'bank_entries'],
+    title: 'OrchestratedReconcileRequest',
+    description: 'Request to reconcile a document using the orchestration agent.'
+} as const;
+
+export const OrchestratedReconcileResponseSchema = {
+    properties: {
+        document_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Document Id'
+        },
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        final_decision: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Final Decision'
+        },
+        context: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Context'
+        },
+        iterations: {
+            type: 'integer',
+            title: 'Iterations'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['document_id', 'success', 'final_decision', 'context', 'iterations', 'message'],
+    title: 'OrchestratedReconcileResponse',
+    description: 'Response from orchestrated reconciliation.'
 } as const;
 
 export const OrganizationCreateSchema = {

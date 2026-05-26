@@ -1,44 +1,20 @@
 """
 Orchestration Agent: AI-powered agent that dynamically coordinates reconciliation workflow.
 
-This agent uses Claude Sonnet 4.6 via Chutes AI (primary) or AWS Bedrock (fallback)
-with tool calling to intelligently decide:
-- Which extraction method to use (Textract + Bedrock, Morpheus AI, etc.)
+Uses Chutes AI with tool calling to intelligently decide:
+- Which extraction method to use
 - When to fetch vendor history and learned patterns
 - Which reconciliation strategy to apply (basic vs proactive with memory)
 - How to handle edge cases (multi-currency, partial payments, adjustments)
 - Whether to auto-approve or escalate to human review
-
-The agent acts as a financial operations expert that makes contextual decisions rather than
-following a fixed procedural workflow.
-
-Provider Strategy:
-- Primary: Chutes AI (Claude Sonnet 4.6)
-- Fallback: AWS Bedrock (Claude Sonnet 4.6)
-- Automatically falls back on timeout or rate limit
 """
 
 import json
 import uuid
 
-import boto3
 import httpx
 
 from app.core.config import settings
-
-
-def _get_bedrock_client():
-    """Initialize AWS Bedrock Runtime client (fallback provider)."""
-    return boto3.client(
-        "bedrock-runtime",
-        region_name="us-east-1",
-        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
-        if settings.aws_access_key_id
-        else None,
-        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
-        if settings.aws_secret_access_key
-        else None,
-    )
 
 
 async def _call_chutes_ai(request_body: dict) -> dict:
@@ -67,7 +43,7 @@ async def _call_chutes_ai(request_body: dict) -> dict:
     chutes_messages.extend(messages)
 
     chutes_payload = {
-        "model": "anthropic/claude-sonnet-4.6",  # Claude Sonnet 4.6 on Chutes
+        "model": settings.CHUTES_MODEL,
         "messages": chutes_messages,
         "max_tokens": request_body.get("max_tokens", 4096),
         "temperature": request_body.get("temperature", 0.1),
@@ -140,24 +116,6 @@ async def _call_chutes_ai(request_body: dict) -> dict:
         "stop_reason": stop_reason,
         "usage": chutes_response.get("usage", {}),
     }
-
-
-def _call_bedrock_fallback(client, request_body: dict) -> dict:
-    """
-    Call AWS Bedrock as fallback provider.
-
-    Args:
-        client: Bedrock client
-        request_body: Request payload in Anthropic API format
-
-    Returns:
-        Response body in Anthropic API format
-    """
-    response = client.invoke_model(
-        modelId="us.anthropic.claude-sonnet-4-6",
-        body=json.dumps(request_body),
-    )
-    return json.loads(response["body"].read())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -751,9 +709,6 @@ async def orchestrate_reconciliation(
         extracted_data=extracted_data,
     )
 
-    # Initialize fallback client
-    bedrock_client = _get_bedrock_client()
-
     # Build initial prompt
     user_prompt = f"""Reconcile this payment document against the bank statement entries.
 
@@ -790,7 +745,6 @@ Remember to call final_decision as your LAST tool call with your complete analys
 
         # Prepare request body
         request_body = {
-            "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 4096,
             "system": ORCHESTRATION_SYSTEM_PROMPT,
             "messages": messages,
@@ -798,7 +752,7 @@ Remember to call final_decision as your LAST tool call with your complete analys
             "temperature": 0.1,
         }
 
-        # Try Chutes AI first, fallback to Bedrock on error
+        # Call Chutes AI
         response_body = None
         try:
             response_body = await _call_chutes_ai(request_body)
@@ -809,21 +763,15 @@ Remember to call final_decision as your LAST tool call with your complete analys
             KeyError,
             json.JSONDecodeError,
         ) as e:
-            # Fallback to AWS Bedrock
             print(
                 f"Chutes AI failed (iteration {iteration}): {type(e).__name__}: {str(e)}"
             )
-            print("Falling back to AWS Bedrock...")
-            try:
-                response_body = _call_bedrock_fallback(bedrock_client, request_body)
-                provider_used = "bedrock"
-            except Exception as bedrock_error:
-                return {
-                    "success": False,
-                    "error": f"Both providers failed. Chutes: {str(e)}, Bedrock: {str(bedrock_error)}",
-                    "iterations": iteration,
-                    "provider_used": "none",
-                }
+            return {
+                "success": False,
+                "error": f"Chutes AI failed: {str(e)}",
+                "iterations": iteration,
+                "provider_used": "none",
+            }
 
         # Check for errors
         if "error" in response_body:

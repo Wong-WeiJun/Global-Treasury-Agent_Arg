@@ -342,7 +342,7 @@ async def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
     """
     Main entry point for parsing bank statements.
     Auto-detects format based on filename.
-    Uses smart heuristics and AI fallback (Chutes AI + Bedrock) for maximum compatibility.
+    Uses smart heuristics and AI fallback (Chutes AI) for maximum compatibility.
     """
     filename_lower = filename.lower()
 
@@ -370,9 +370,9 @@ async def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
 async def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
     """
     Fallback: Use AI to parse the statement when column detection fails.
-    Uses Chutes AI (primary) with AWS Bedrock fallback.
+    Uses Chutes AI for AI-powered extraction.
     """
-    from app.extraction import _call_chutes_excel, _call_bedrock_excel, extract_from_excel
+    from app.extraction import _call_chutes_excel, extract_from_excel
 
     # Convert to CSV string for AI
     csv_content = extract_from_excel(file_bytes, filename)
@@ -380,13 +380,7 @@ async def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
     if not csv_content:
         raise ValueError("File is empty or unreadable")
 
-    # Use AI to extract transactions (try Chutes first, fallback to Bedrock)
-    try:
-        transactions_data = await _call_chutes_excel(csv_content)
-    except Exception as e:
-        print(f"Chutes AI Excel extraction failed: {type(e).__name__}: {str(e)}")
-        print("Falling back to AWS Bedrock...")
-        transactions_data = _call_bedrock_excel(csv_content)
+    transactions_data = await _call_chutes_excel(csv_content)
 
     # Normalize the AI response
     result = []

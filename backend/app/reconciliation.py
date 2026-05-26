@@ -237,7 +237,14 @@ Please analyze and provide your reconciliation decision."""
 
         agent_decision["reasoning_method"] = "morpheus_ai"
 
-    except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError, IndexError, ValueError, KeyError) as e:
+    except (
+        httpx.TimeoutException,
+        httpx.HTTPStatusError,
+        json.JSONDecodeError,
+        IndexError,
+        ValueError,
+        KeyError,
+    ) as e:
         # Fallback to rule-based matching
         print(f"Morpheus AI reasoning failed: {type(e).__name__}: {str(e)}")
         print("Falling back to rule-based reconciliation")
