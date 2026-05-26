@@ -132,7 +132,7 @@ function DocumentRow({
   const decision = recon?.agent_decision
   const fxResult = recon?.fx_result
   const proof = recon?.proof
-  const { isViewer } = useUserRole()
+  const { canDeleteReports, canEditReports } = useUserRole()
 
   const riskColorMap: Record<string, string> = {
     HIGH: "bg-red-50 border-l-2 border-l-red-500 dark:bg-red-950/20",
@@ -154,7 +154,7 @@ function DocumentRow({
           ${computedRowStyle}
           ${expanded ? "bg-gray-100 dark:bg-gray-800/60" : "hover:bg-gray-50 dark:hover:bg-gray-50/5"}`}
       >
-        {!isViewer && (
+        {canDeleteReports && (
           <td className="px-4 py-3 text-center">
             <input
               type="checkbox"
@@ -192,7 +192,7 @@ function DocumentRow({
       <tr
         className={`border-x border-gray-200 dark:border-gray-800 transition-all duration-300 ease-in-out ${expanded ? "border-t border-gray-200 dark:border-gray-800" : ""}`}
       >
-        <td colSpan={isViewer ? 5 : 6} className="p-0 overflow-hidden">
+        <td colSpan={canDeleteReports ? 6 : 5} className="p-0 overflow-hidden">
           <div
             style={{
               maxHeight: expanded ? "2000px" : "0px",
@@ -463,6 +463,7 @@ function DocumentRow({
                                 currentReviewStatus={doc.review_status}
                                 currentCaseId={doc.case_id}
                                 currentRiskScore={doc.risk_score}
+                                isReadOnly={!canEditReports}
                                 onSaved={() =>
                                   queryClient.invalidateQueries({
                                     queryKey: ["my-documents"],
@@ -486,7 +487,7 @@ function DocumentRow({
 }
 
 function HistoryPage() {
-  const { isViewer } = useUserRole()
+  const { canDeleteReports } = useUserRole()
   const [filter, setFilter] = useState<string>("all")
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
   const [activeModalUrl, setActiveModalUrl] = useState<string | null>(null)
@@ -633,7 +634,7 @@ function HistoryPage() {
           })}
         </div>
 
-        {!isViewer && (
+        {canDeleteReports && (
           <div className="pb-2.5">
             <button
               type="button"
@@ -674,7 +675,7 @@ function HistoryPage() {
           <table className="w-full text-sm text-left border-collapse">
             <thead className="bg-gray-100 dark:bg-gray-800/40 text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
               <tr>
-                {!isViewer && (
+                {canDeleteReports && (
                   <th className="px-4 py-3 text-center w-12">
                     <input
                       type="checkbox"

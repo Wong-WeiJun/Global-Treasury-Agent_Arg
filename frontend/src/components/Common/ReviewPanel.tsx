@@ -9,6 +9,7 @@ interface Props {
   currentReviewStatus?: string | null
   currentCaseId?: string | null
   currentRiskScore?: number | null
+  isReadOnly?: boolean
   onSaved?: (record: any) => void
 }
 
@@ -211,6 +212,7 @@ export function ReviewPanel({
   currentReviewStatus,
   currentCaseId: _currentCaseId,
   currentRiskScore,
+  isReadOnly = false,
   onSaved,
 }: Props) {
   const [action, setAction] = useState<string>("")
@@ -323,13 +325,15 @@ export function ReviewPanel({
           >
             {cfg.icon} {cfg.title}
           </span>
-          <button
-            type="button"
-            onClick={() => setSaved(false)}
-            className="text-muted-foreground text-xs hover:underline"
-          >
-            Edit decision
-          </button>
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={() => setSaved(false)}
+              className="text-muted-foreground text-xs hover:underline"
+            >
+              Edit decision
+            </button>
+          )}
         </div>
 
         {record && (
