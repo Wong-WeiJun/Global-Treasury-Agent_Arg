@@ -127,6 +127,7 @@ function SvgBarChart({ data }: { data: BarDatum[] }) {
       className="w-full h-[200px]"
       aria-label="Bar chart"
     >
+      <title>Bar chart</title>
       <g transform={`translate(${PADDING.left},${PADDING.top})`}>
         {/* Grid lines + Y-axis labels */}
         {yTicks.map((tick) => (

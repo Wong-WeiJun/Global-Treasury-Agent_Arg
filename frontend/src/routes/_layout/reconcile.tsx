@@ -247,7 +247,9 @@ function ReconcilePage() {
       // Auto-populate the best match if confidence >= 80%
       const bestMatch = response.suggested_matches?.[0]
       if (bestMatch && bestMatch.confidence >= 0.8) {
-        const extractedPayer = (response.extracted_data?.payer as string | undefined) || defaultUserIdentity
+        const extractedPayer =
+          (response.extracted_data?.payer as string | undefined) ||
+          defaultUserIdentity
         setDocumentsWithEntries((prev) =>
           prev.map((doc) => {
             if (
@@ -671,23 +673,28 @@ function ReconcilePage() {
         return
       }
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/reports/reconciliation-pdf`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "http://localhost:8000"}/api/v1/reports/reconciliation-pdf`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            results: results,
+            include_summary: true,
+            include_details: true,
+          }),
         },
-        body: JSON.stringify({
-          results: results,
-          include_summary: true,
-          include_details: true,
-        }),
-      })
+      )
 
       if (!response.ok) {
         const errorText = await response.text()
         console.error("PDF generation failed:", errorText)
-        throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`)
+        throw new Error(
+          `Failed to generate PDF report: ${response.status} ${response.statusText}`,
+        )
       }
 
       const blob = await response.blob()
@@ -701,7 +708,9 @@ function ReconcilePage() {
       window.URL.revokeObjectURL(url)
     } catch (err) {
       console.error("Failed to download PDF report:", err)
-      alert(`Failed to generate PDF report: ${err instanceof Error ? err.message : "Unknown error"}`)
+      alert(
+        `Failed to generate PDF report: ${err instanceof Error ? err.message : "Unknown error"}`,
+      )
     }
   }
 
@@ -815,11 +824,11 @@ function ReconcilePage() {
                 Add a document from history...
               </option>
               {docs?.data.map((doc: any) => (
-                  <option key={doc.id} value={doc.id}>
-                    {doc.original_filename} (
-                    {new Date(doc.uploaded_at).toLocaleDateString("en-GB")})
-                  </option>
-                ))}
+                <option key={doc.id} value={doc.id}>
+                  {doc.original_filename} (
+                  {new Date(doc.uploaded_at).toLocaleDateString("en-GB")})
+                </option>
+              ))}
             </select>
             <p className="text-xs text-muted-foreground">
               Selecting a document instantly appends it to your current
@@ -1092,7 +1101,11 @@ function ReconcilePage() {
                                     }`}
                                     onClick={() => {
                                       const txn = match.transaction
-                                      const extractedPayer = (suggestedMatches[docWithEntries.docId]?.extracted_data?.payer as string | undefined) || defaultUserIdentity
+                                      const extractedPayer =
+                                        (suggestedMatches[docWithEntries.docId]
+                                          ?.extracted_data?.payer as
+                                          | string
+                                          | undefined) || defaultUserIdentity
                                       setDocumentsWithEntries((prev) =>
                                         prev.map((doc, i) => {
                                           if (
