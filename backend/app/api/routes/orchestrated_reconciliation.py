@@ -1,5 +1,5 @@
 """
-Orchestrated Reconciliation API: Uses the AWS Bedrock orchestration agent
+Orchestrated Reconciliation API: Uses AI orchestration agent (Chutes AI + AWS Bedrock fallback)
 to dynamically coordinate the reconciliation workflow.
 """
 
@@ -63,7 +63,7 @@ async def orchestrated_reconcile(
     session: SessionDep,
 ):
     """
-    Reconcile a document using the AWS Bedrock orchestration agent.
+    Reconcile a document using the AI orchestration agent (Chutes AI + AWS Bedrock fallback).
 
     The agent will:
     1. Analyze the context and decide what information it needs
@@ -76,6 +76,10 @@ async def orchestrated_reconcile(
 
     This is more intelligent than the standard reconciliation endpoint because
     the agent makes contextual decisions rather than following a fixed workflow.
+
+    Provider Strategy:
+    - Primary: Chutes AI (Claude Sonnet 4.6)
+    - Fallback: AWS Bedrock (on timeout/rate limit)
     """
     from app.utils.org_context import get_user_primary_organization
 

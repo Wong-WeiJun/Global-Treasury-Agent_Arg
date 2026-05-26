@@ -247,6 +247,7 @@ function ReconcilePage() {
       // Auto-populate the best match if confidence >= 80%
       const bestMatch = response.suggested_matches?.[0]
       if (bestMatch && bestMatch.confidence >= 0.8) {
+        const extractedPayer = (response.extracted_data?.payer as string | undefined) || defaultUserIdentity
         setDocumentsWithEntries((prev) =>
           prev.map((doc) => {
             if (
@@ -262,7 +263,7 @@ function ReconcilePage() {
                     amount: Math.abs(bestMatch.transaction.amount).toString(),
                     date: fromInputDate(bestMatch.transaction.date),
                     description: bestMatch.transaction.description,
-                    payer: bestMatch.transaction.description.split(" ")[0], // Extract first word as payer
+                    payer: extractedPayer,
                   },
                 ],
               }
@@ -1115,6 +1116,7 @@ function ReconcilePage() {
                                     }`}
                                     onClick={() => {
                                       const txn = match.transaction
+                                      const extractedPayer = (suggestedMatches[docWithEntries.docId]?.extracted_data?.payer as string | undefined) || defaultUserIdentity
                                       setDocumentsWithEntries((prev) =>
                                         prev.map((doc, i) => {
                                           if (
@@ -1131,10 +1133,7 @@ function ReconcilePage() {
                                                   ).toString(),
                                                   date: fromInputDate(txn.date),
                                                   description: txn.description,
-                                                  payer:
-                                                    txn.description.split(
-                                                      " ",
-                                                    )[0],
+                                                  payer: extractedPayer,
                                                 },
                                               ],
                                             }

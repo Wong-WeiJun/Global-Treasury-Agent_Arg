@@ -100,6 +100,93 @@ CRITICAL: Always explain WHY you made your decision using historical context.
 """
 
 
+def _fallback_basic_reconciliation(
+    proof: dict,
+    bank_entries: list[dict],
+    match_scores: list[dict] | None,
+    myr_amount: float | None,
+) -> dict:
+    """
+    Fallback to deterministic rule-based reconciliation when Morpheus AI fails.
+
+    This is a "dumb but reliable" matcher that uses:
+    - Amount matching (within 2% tolerance)
+    - Date matching (within 2 days)
+    - Payer name fuzzy matching (60% similarity)
+
+    Returns basic agent_decision format without agentic adjustments.
+    """
+    if not match_scores or len(match_scores) == 0:
+        return {
+            "final_status": "unmatched",
+            "confidence": 0.0,
+            "explanation": "No bank entries to match against. Using fallback reconciliation.",
+            "matched_entry_index": None,
+            "adjustment_type": None,
+            "adjustment_amount": None,
+            "journal_entry_proposal": None,
+            "historical_insights": "Fallback mode - no historical analysis available",
+            "suggested_action": "Please review manually. AI reasoning unavailable.",
+            "reasoning_method": "basic_fallback",
+        }
+
+    # Find best match from pre-computed scores
+    best_idx = max(range(len(match_scores)), key=lambda i: match_scores[i]["score"])
+    best_match = match_scores[best_idx]
+
+    # Determine status based on score thresholds
+    score = best_match["score"]
+    if score >= 0.85:
+        status = "matched"
+        confidence = score
+        explanation = (
+            f"Fallback reconciliation found a strong match (score: {score:.2f}). "
+            f"Amount {'matches' if best_match['amount_match'] else 'does not match'} "
+            f"(diff: {best_match['amount_diff_pct']:.1f}%), "
+            f"Date {'matches' if best_match['date_match'] else 'does not match'} "
+            f"({best_match['days_apart']} days apart), "
+            f"Payer {'matches' if best_match['payer_match'] else 'does not match'} "
+            f"(similarity: {best_match['payer_similarity']:.2f})."
+        )
+        suggested_action = "Review and approve match. AI reasoning was unavailable, using rule-based matching."
+    elif score >= 0.5:
+        status = "fuzzy"
+        confidence = score * 0.8  # Reduce confidence for fuzzy matches
+        explanation = (
+            f"Fallback reconciliation found a probable match (score: {score:.2f}). "
+            f"Amount diff: {best_match['amount_diff_pct']:.1f}%, "
+            f"Date diff: {best_match['days_apart']} days, "
+            f"Payer similarity: {best_match['payer_similarity']:.2f}. "
+            "Manual review recommended due to moderate confidence."
+        )
+        suggested_action = "Needs human review. Possible match but AI reasoning unavailable."
+    else:
+        status = "unmatched"
+        confidence = 0.3
+        explanation = (
+            f"Fallback reconciliation could not find a confident match. "
+            f"Best candidate score: {score:.2f} (below threshold). "
+            f"Amount diff: {best_match['amount_diff_pct']:.1f}%, "
+            f"Date diff: {best_match['days_apart']} days. "
+            "Consider checking for bank fees, late payments, or incorrect bank statement entries."
+        )
+        suggested_action = "No match found. Please investigate manually."
+        best_idx = None  # Don't suggest a match for unmatched status
+
+    return {
+        "final_status": status,
+        "confidence": confidence,
+        "explanation": explanation,
+        "matched_entry_index": best_idx,
+        "adjustment_type": None,  # Fallback doesn't propose adjustments
+        "adjustment_amount": None,
+        "journal_entry_proposal": None,
+        "historical_insights": "Fallback mode - historical analysis unavailable",
+        "suggested_action": suggested_action,
+        "reasoning_method": "basic_fallback",
+    }
+
+
 async def reconcile_with_memory(
     proof: dict,
     bank_entries: list[dict],
@@ -112,6 +199,10 @@ async def reconcile_with_memory(
     """
     Enhanced reconciliation with memory, context, and agentic adjustment proposals.
 
+    Reasoning Fallback Strategy:
+    - Primary: Morpheus AI with full context, memory, and agentic adjustments
+    - Fallback: Basic rule-based reconciliation (deterministic, no AI reasoning)
+
     Args:
         proof: Extracted payment proof data
         bank_entries: Bank statement entries to match against
@@ -122,7 +213,7 @@ async def reconcile_with_memory(
         match_scores: Pre-computed fuzzy match scores
 
     Returns:
-        Reconciliation result with agentic adjustment proposals
+        Reconciliation result with agentic adjustment proposals (or fallback decision)
     """
     myr_amount = fx_result["to_amount"] if fx_result else proof.get("amount")
 
@@ -213,34 +304,42 @@ CURRENT TRANSACTION TO RECONCILE:
     user_message = "\n".join(context_sections)
     user_message += "\n\nAnalyze this transaction with your full context and memory. If there's a small discrepancy that can be explained (bank fee, FX spread, rounding), propose a journal entry adjustment."
 
-    agent_response_raw = await _call_morpheus(
-        [
-            {"role": "system", "content": PROACTIVE_RECONCILIATION_PROMPT},
-            {"role": "user", "content": user_message},
-        ]
-    )
-
-    # Parse response
+    # Try Morpheus AI first
     try:
+        agent_response_raw = await _call_morpheus(
+            [
+                {"role": "system", "content": PROACTIVE_RECONCILIATION_PROMPT},
+                {"role": "user", "content": user_message},
+            ]
+        )
+
+        # Parse response
         clean = agent_response_raw.strip()
         if clean.startswith("```"):
             clean = clean.split("```")[1]
             if clean.startswith("json"):
                 clean = clean[4:]
         agent_decision = json.loads(clean.strip())
-    except (json.JSONDecodeError, IndexError):
-        # Fallback to basic reconciliation
-        agent_decision = {
-            "final_status": "unmatched",
-            "confidence": 0.0,
-            "explanation": "Agent reasoning failed to parse",
-            "matched_entry_index": None,
-            "adjustment_type": None,
-            "adjustment_amount": None,
-            "journal_entry_proposal": None,
-            "historical_insights": "Unable to analyze",
-            "suggested_action": "Please review manually",
-        }
+
+        # Validate response has required fields
+        required_fields = ["final_status", "confidence", "explanation"]
+        if not all(field in agent_decision for field in required_fields):
+            raise ValueError("Missing required fields in Morpheus response")
+
+        # Tag with reasoning method
+        agent_decision["reasoning_method"] = "morpheus_ai"
+
+    except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError, IndexError, KeyError, ValueError) as e:
+        # Fallback to basic rule-based reconciliation
+        print(f"Morpheus AI reasoning failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to basic rule-based reconciliation (deterministic)")
+
+        agent_decision = _fallback_basic_reconciliation(
+            proof=proof,
+            bank_entries=bank_entries,
+            match_scores=match_scores,
+            myr_amount=myr_amount,
+        )
 
     return {
         "proof": proof,
