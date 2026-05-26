@@ -6,11 +6,6 @@ const socialLinks = [
     href: "https://github.com/Wong-WeiJun/Global-Treasury-Agent_Arg",
     label: "GitHub",
   },
-  {
-    icon: FaInstagram,
-    href: "https://www.instagram.com/orhgee?igsh=N2ZhM20xcGYxY3ps",
-    label: "Insta",
-  },
 ]
 
 interface FooterProps {
