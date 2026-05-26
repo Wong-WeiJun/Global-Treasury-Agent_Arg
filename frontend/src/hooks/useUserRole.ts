@@ -29,6 +29,8 @@ export function useUserRole() {
   const canReconcile = isOwner || isAdmin || isFinanceManager
   const canViewReports = isOwner || isAdmin || isFinanceManager || isAnalyst
   const canApprove = isOwner || isAdmin || isFinanceManager
+  const canDeleteReports = isOwner || isAdmin || isFinanceManager
+  const canEditReports = isOwner || isAdmin || isFinanceManager || isAnalyst
 
   return {
     role,
@@ -41,5 +43,7 @@ export function useUserRole() {
     canReconcile,
     canViewReports,
     canApprove,
+    canDeleteReports,
+    canEditReports,
   }
 }
