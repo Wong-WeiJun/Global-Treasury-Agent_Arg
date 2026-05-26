@@ -13,6 +13,7 @@ from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
 from app.extraction import (
     extract_from_excel,
+    _call_chutes_excel,
     _call_bedrock_excel,
     _ocr_with_textract,
 )
@@ -306,8 +307,13 @@ async def extract_document(
                     document_id=document_id, error="File is empty"
                 )
 
-            # 2. Extract structured fields from the raw layout using Claude
-            rows = _call_bedrock_excel(raw_csv_text)
+            # 2. Extract structured fields from the raw layout using Claude (Chutes AI primary, Bedrock fallback)
+            try:
+                rows = await _call_chutes_excel(raw_csv_text)
+            except Exception as e:
+                print(f"Chutes AI Excel extraction failed: {type(e).__name__}: {str(e)}")
+                print("Falling back to AWS Bedrock...")
+                rows = _call_bedrock_excel(raw_csv_text)
 
             if not rows:
                 return ExtractionResponse(

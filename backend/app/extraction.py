@@ -4,6 +4,7 @@ import json
 import io
 import re
 import boto3
+import httpx
 import openpyxl
 import dateutil.parser
 from app.core.config import settings
@@ -115,10 +116,67 @@ def _has_low_confidence(kvs: dict, threshold: float = 85.0) -> bool:
     return False
 
 
+async def _call_chutes_vision(
+    image_bytes: bytes, ocr_hint: str = "", media_type: str = "image/jpeg"
+) -> dict:
+    """
+    Vision call to Claude on Chutes AI (primary provider).
+    Passes OCR raw text as a hint if available.
+
+    Raises:
+        httpx.TimeoutException: On timeout
+        httpx.HTTPStatusError: On rate limit or other HTTP errors
+    """
+    b64_image = base64.standard_b64encode(image_bytes).decode("utf-8")
+
+    prompt = EXTRACTION_PROMPT
+    if ocr_hint:
+        prompt += f"\n\nFor reference, OCR pre-processing extracted this raw text (may contain errors):\n{ocr_hint[:2000]}"
+
+    # Chutes uses OpenAI-compatible format with vision support
+    chutes_payload = {
+        "model": "anthropic/claude-sonnet-4.6",
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{media_type};base64,{b64_image}",
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt,
+                    },
+                ],
+            }
+        ],
+        "max_tokens": 512,
+        "temperature": 0.1,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            f"{settings.CHUTES_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.CHUTES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=chutes_payload,
+        )
+        response.raise_for_status()
+
+    chutes_response = response.json()
+    text = chutes_response["choices"][0]["message"]["content"].strip()
+    return json.loads(text)
+
+
 def _call_bedrock_vision(
     image_bytes: bytes, ocr_hint: str = "", media_type: str = "image/jpeg"
 ) -> dict:
-    """Vision call to Claude on Bedrock. Passes OCR raw text as a hint if available."""
+    """Vision call to Claude on Bedrock (fallback provider). Passes OCR raw text as a hint if available."""
     client = _get_bedrock_client()
     b64_image = base64.standard_b64encode(image_bytes).decode("utf-8")
 
@@ -157,8 +215,49 @@ def _call_bedrock_vision(
     return json.loads(text)
 
 
+async def _call_chutes_text(text_content: str, ocr_hint: str = "") -> dict:
+    """
+    Text-only call to Claude on Chutes AI (primary provider).
+    Used for PDFs with a text layer.
+
+    Raises:
+        httpx.TimeoutException: On timeout
+        httpx.HTTPStatusError: On rate limit or other HTTP errors
+    """
+    prompt = EXTRACTION_PROMPT
+    if ocr_hint:
+        prompt += f"\n\nOCR also extracted these key-value pairs for reference:\n{ocr_hint[:1000]}"
+
+    chutes_payload = {
+        "model": "anthropic/claude-sonnet-4.6",
+        "messages": [
+            {
+                "role": "user",
+                "content": f"{prompt}\n\nDocument text:\n{text_content[:4000]}",
+            }
+        ],
+        "max_tokens": 512,
+        "temperature": 0.1,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            f"{settings.CHUTES_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.CHUTES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=chutes_payload,
+        )
+        response.raise_for_status()
+
+    chutes_response = response.json()
+    text = chutes_response["choices"][0]["message"]["content"].strip()
+    return json.loads(text)
+
+
 def _call_bedrock_text(text_content: str, ocr_hint: str = "") -> dict:
-    """Text-only call to Claude on Bedrock. Used for PDFs with a text layer."""
+    """Text-only call to Claude on Bedrock (fallback provider). Used for PDFs with a text layer."""
     client = _get_bedrock_client()
 
     prompt = EXTRACTION_PROMPT
@@ -186,9 +285,74 @@ def _call_bedrock_text(text_content: str, ocr_hint: str = "") -> dict:
     return json.loads(text)
 
 
+async def _call_chutes_excel(csv_content: str) -> list[dict]:
+    """
+    Calls Claude on Chutes AI (primary provider) specifically to extract multi-row spreadsheet data.
+    Expects a dense CSV string and guarantees a list of dictionaries in return.
+
+    Raises:
+        httpx.TimeoutException: On timeout
+        httpx.HTTPStatusError: On rate limit or other HTTP errors
+    """
+    # Append strict array instructions to your base prompt
+    prompt = (
+        f"{EXTRACTION_PROMPT}\n\n"
+        "CRITICAL INSTRUCTIONS FOR SPREADSHEET DATA:\n"
+        "1. The input below is a raw spreadsheet converted to CSV format.\n"
+        "2. It contains multiple rows of transactions. You must extract ALL valid transactions.\n"
+        "3. You MUST output a SINGLE JSON ARRAY of objects: `[ {...}, {...} ]`.\n"
+        '4. Do NOT wrap the array in a parent object (e.g., no `{"transactions": [...]}`).\n'
+        "5. If a row is missing data, infer what you can from context or return null for that field."
+    )
+
+    chutes_payload = {
+        "model": "anthropic/claude-sonnet-4.6",
+        "messages": [
+            {
+                "role": "user",
+                "content": f"{prompt}\n\nSpreadsheet Data:\n{csv_content[:50000]}",
+            }
+        ],
+        "max_tokens": 8192,  # Maximize tokens: Excel files generate massive JSON arrays
+        "temperature": 0.1,
+    }
+
+    async with httpx.AsyncClient(timeout=90.0) as client:  # Longer timeout for large Excel files
+        response = await client.post(
+            f"{settings.CHUTES_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.CHUTES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=chutes_payload,
+        )
+        response.raise_for_status()
+
+    chutes_response = response.json()
+    text = chutes_response["choices"][0]["message"]["content"].strip()
+
+    json_match = re.search(r"\[.*\]", text, re.DOTALL)
+
+    if not json_match:
+        dict_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if dict_match:
+            parsed_dict = json.loads(dict_match.group(0))
+            # Find the first value that is a list and return it
+            for val in parsed_dict.values():
+                if isinstance(val, list):
+                    return val
+            return [parsed_dict]
+
+        raise ValueError("Could not locate a valid JSON array in the AI response.")
+
+    parsed_data = json.loads(json_match.group(0))
+
+    return parsed_data
+
+
 def _call_bedrock_excel(csv_content: str) -> list[dict]:
     """
-    Calls Claude on Bedrock specifically to extract multi-row spreadsheet data.
+    Calls Claude on Bedrock (fallback provider) specifically to extract multi-row spreadsheet data.
     Expects a dense CSV string and guarantees a list of dictionaries in return.
     """
     client = _get_bedrock_client()
@@ -367,22 +531,24 @@ def _fallback_textract_only(ocr_result: dict) -> dict:
     return result
 
 
-def extract_from_image(image_bytes: bytes) -> dict:
+async def extract_from_image(image_bytes: bytes) -> dict:
     """
-    Pipeline with Perception Fallback:
+    Pipeline with Multi-Tier Fallback:
     1. Textract OCR → raw text + confidence scores
-    2. Try: Claude vision with OCR text as hint → interpreted fields
-    3. Fallback: If vision fails, use deterministic Textract-only extraction
-    4. Tag result with confidence metadata
+    2. Try: Chutes AI vision (primary) with OCR text as hint → interpreted fields
+    3. Fallback Tier 1: If Chutes fails/times out, try AWS Bedrock vision
+    4. Fallback Tier 2: If both fail, use deterministic Textract-only extraction
+    5. Tag result with confidence metadata
 
-    This ensures we ALWAYS return structured data, even if the generative vision model fails.
+    This ensures we ALWAYS return structured data, even if all generative vision models fail.
     """
     ocr_result = _ocr_with_textract(image_bytes)
     raw_text = ocr_result["raw_text"]
     kvs = ocr_result["kvs"]
 
+    # Tier 1: Try Chutes AI (primary provider)
     try:
-        llm_result = _call_bedrock_vision(image_bytes, ocr_hint=raw_text)
+        llm_result = await _call_chutes_vision(image_bytes, ocr_hint=raw_text)
 
         # Validate that we got required fields
         if not isinstance(llm_result, dict):
@@ -390,26 +556,45 @@ def extract_from_image(image_bytes: bytes) -> dict:
 
         # Tag with confidence metadata
         llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
-        llm_result["extraction_method"] = "textract+bedrock"
+        llm_result["extraction_method"] = "textract+chutes"
         llm_result["fallback_used"] = False
 
         return llm_result
 
-    except (json.JSONDecodeError, KeyError, ValueError, Exception) as e:
-        # Fallback to Textract-only extraction
-        print(f"Vision extraction failed: {type(e).__name__}: {str(e)}")
-        print("Falling back to Textract-only extraction (deterministic rule-based)")
+    except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError, KeyError, ValueError, Exception) as e:
+        print(f"Chutes AI vision extraction failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to AWS Bedrock...")
 
-        return _fallback_textract_only(ocr_result)
+        # Tier 2: Try AWS Bedrock (fallback provider)
+        try:
+            llm_result = _call_bedrock_vision(image_bytes, ocr_hint=raw_text)
+
+            # Validate that we got required fields
+            if not isinstance(llm_result, dict):
+                raise ValueError("Bedrock vision returned non-dict response")
+
+            # Tag with confidence metadata
+            llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
+            llm_result["extraction_method"] = "textract+bedrock"
+            llm_result["fallback_used"] = True
+
+            return llm_result
+
+        except (json.JSONDecodeError, KeyError, ValueError, Exception) as bedrock_error:
+            # Tier 3: Fallback to Textract-only extraction
+            print(f"Bedrock vision extraction also failed: {type(bedrock_error).__name__}: {str(bedrock_error)}")
+            print("Falling back to Textract-only extraction (deterministic rule-based)")
+
+            return _fallback_textract_only(ocr_result)
 
 
-def extract_from_pdf(pdf_bytes: bytes) -> dict:
+async def extract_from_pdf(pdf_bytes: bytes) -> dict:
     """
-    Pipeline with Perception Fallback:
+    Pipeline with Multi-Tier Fallback:
     1. PyMuPDF extracts text layer
-    2a. If text layer exists → Try Claude text call, fallback to Textract-only
-    2b. If scanned PDF → Try Claude vision, fallback to Textract-only
-    3. Always return structured data, even if generative models fail
+    2a. If text layer exists → Try Chutes AI text (primary), fallback to Bedrock, then Textract-only
+    2b. If scanned PDF → Try Chutes AI vision (primary), fallback to Bedrock, then Textract-only
+    3. Always return structured data, even if all generative models fail
     """
     import pymupdf
 
@@ -426,31 +611,56 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
     raw_text = ocr_result["raw_text"]
     kvs = ocr_result["kvs"]
 
+    # Tier 1: Try Chutes AI (primary provider)
     try:
         if text.strip():
             ocr_summary = ", ".join(
                 f"{k}: {v['value']}" for k, v in list(kvs.items())[:10]
             )
-            llm_result = _call_bedrock_text(text, ocr_hint=ocr_summary)
+            llm_result = await _call_chutes_text(text, ocr_hint=ocr_summary)
         else:
-            llm_result = _call_bedrock_vision(img_bytes, ocr_hint=raw_text)
+            llm_result = await _call_chutes_vision(img_bytes, ocr_hint=raw_text)
 
         # Validate response
         if not isinstance(llm_result, dict):
-            raise ValueError("LLM returned non-dict response")
+            raise ValueError("Chutes LLM returned non-dict response")
 
         llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
-        llm_result["extraction_method"] = "textract+bedrock"
+        llm_result["extraction_method"] = "textract+chutes"
         llm_result["fallback_used"] = False
 
         return llm_result
 
-    except (json.JSONDecodeError, KeyError, ValueError, Exception) as e:
-        # Fallback to Textract-only extraction
-        print(f"PDF extraction failed: {type(e).__name__}: {str(e)}")
-        print("Falling back to Textract-only extraction (deterministic rule-based)")
+    except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError, KeyError, ValueError, Exception) as e:
+        print(f"Chutes AI PDF extraction failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to AWS Bedrock...")
 
-        return _fallback_textract_only(ocr_result)
+        # Tier 2: Try AWS Bedrock (fallback provider)
+        try:
+            if text.strip():
+                ocr_summary = ", ".join(
+                    f"{k}: {v['value']}" for k, v in list(kvs.items())[:10]
+                )
+                llm_result = _call_bedrock_text(text, ocr_hint=ocr_summary)
+            else:
+                llm_result = _call_bedrock_vision(img_bytes, ocr_hint=raw_text)
+
+            # Validate response
+            if not isinstance(llm_result, dict):
+                raise ValueError("Bedrock LLM returned non-dict response")
+
+            llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
+            llm_result["extraction_method"] = "textract+bedrock"
+            llm_result["fallback_used"] = True
+
+            return llm_result
+
+        except (json.JSONDecodeError, KeyError, ValueError, Exception) as bedrock_error:
+            # Tier 3: Fallback to Textract-only extraction
+            print(f"Bedrock PDF extraction also failed: {type(bedrock_error).__name__}: {str(bedrock_error)}")
+            print("Falling back to Textract-only extraction (deterministic rule-based)")
+
+            return _fallback_textract_only(ocr_result)
 
 
 def extract_from_excel(excel_bytes: bytes, filename: str) -> str:

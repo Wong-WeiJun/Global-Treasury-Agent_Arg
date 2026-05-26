@@ -71,7 +71,7 @@ async def upload_bank_statement(
 
     # Parse transactions
     try:
-        transactions = parse_statement(file_bytes, file.filename or "")
+        transactions = await parse_statement(file_bytes, file.filename or "")
 
         # Store transactions
         for txn_data in transactions:
