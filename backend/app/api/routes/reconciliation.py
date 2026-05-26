@@ -227,42 +227,80 @@ async def reconcile_document(
             f"{doc.ai_explanation}\n\nHistorical Context: {historical_insights}"
         )
 
-    # Auto-approve if AI result is MATCHED or MATCHED_WITH_ADJUSTMENT
-    if doc.ai_result == "MATCHED":
-        from datetime import datetime, timezone
+    # ── ML Decision Agent: auto-approval + risk assessment ───────────────────
+    from datetime import datetime, timezone
 
-        from app.models import ReconciliationRecord
-        from app.risk import calculate_risk_score, generate_journal_entry
+    from app.models import ReconciliationRecord
+    from app.risk import generate_journal_entry
+    from app.decision_agent import make_decision, DecisionContext, MatchScores
 
-        # Calculate risk
-        match_scores = result.get("match_scores", [])
-        best_idx = agent_decision.get("matched_entry_index")
-        best_score = (
-            match_scores[best_idx] if best_idx is not None and match_scores else None
-        )
-        risk_score, risk_factors = calculate_risk_score(match_scores, best_score)
+    result_scores = result.get("match_scores", match_scores)
+    best_idx = agent_decision.get("matched_entry_index")
+    best_score_dict = (
+        result_scores[best_idx]
+        if best_idx is not None and best_idx < len(result_scores)
+        else {}
+    )
+    matched_entry = (
+        body.bank_entries[best_idx].model_dump()
+        if best_idx is not None and best_idx < len(body.bank_entries)
+        else None
+    )
+    amount_diff_pct = best_score_dict.get("amount_diff_pct", 100)
 
-        if risk_score >= 70:
-            risk_level = "HIGH"
-        elif risk_score >= 40:
-            risk_level = "MEDIUM"
-        else:
-            risk_level = "LOW"
+    # Get user's membership role for governance logging
+    from app.models import OrganizationMembership
+    from sqlmodel import select as sql_select
+    membership = session.exec(
+        sql_select(OrganizationMembership)
+        .where(OrganizationMembership.user_id == current_user.id)
+        .where(OrganizationMembership.organization_id == org.id)
+    ).first()
+    user_role = (
+        membership.role if membership
+        else ("superuser" if current_user.is_superuser else "VIEWER")
+    )
 
-        # Check if this is a matched_with_adjustment case
+    decision_ctx = DecisionContext(
+        document_id=str(body.document_id),
+        org_id=org.id,
+        triggered_by=str(current_user.id),
+        role=user_role,
+        extracted_data=proof,
+        matched_bank_entry=matched_entry,
+        match_scores=MatchScores(
+            amount_match=max(0.0, min(1.0, 1.0 - amount_diff_pct / 100.0)),
+            date_diff_days=best_score_dict.get("days_apart", 999),
+            payer_similarity=best_score_dict.get("payer_similarity", 0.0),
+            overall_score=best_score_dict.get("score", 0.0),
+        ),
+        base_currency=base_currency,
+        vendor_history=vendor_history,
+        learned_patterns=learned_patterns,
+        reconciliation_status=final_status,
+        adjustment_type=agent_decision.get("adjustment_type"),
+    )
+
+    decision_result = await make_decision(decision_ctx)
+
+    # Persist risk assessment regardless of approval outcome
+    doc.risk_score = decision_result.risk_score
+    doc.risk_level = decision_result.risk_level
+
+    if decision_result.auto_approve:
         adjustment_type = agent_decision.get("adjustment_type")
         journal_entry_proposal = agent_decision.get("journal_entry_proposal")
 
         if final_status == "matched_with_adjustment" and journal_entry_proposal:
-            # Use the AI-proposed journal entry
             journal_entry = journal_entry_proposal
-            exception_type = (
-                adjustment_type.upper() if adjustment_type else "ADJUSTMENT"
+            exception_type = adjustment_type.upper() if adjustment_type else "ADJUSTMENT"
+            action = "exception"
+            note = (
+                f"Auto-approved with {adjustment_type} adjustment "
+                f"({agent_decision.get('adjustment_amount', 0)} {base_currency}) "
+                f"[decision_id={decision_result.decision_id}]"
             )
-            action = "exception"  # Mark as exception since it needs an adjustment
-            note = f"Auto-approved with {adjustment_type} adjustment: {agent_decision.get('adjustment_amount', 0)} {base_currency}"
         else:
-            # Standard approval without adjustment
             fx_result_dict = result.get("fx_result")
             proof_dict = result.get("proof", {})
             journal_entry = generate_journal_entry(
@@ -270,35 +308,46 @@ async def reconcile_document(
             )
             exception_type = None
             action = "approved"
-            note = "Auto-approved by AI with high confidence match"
+            note = (
+                f"Auto-approved by decision agent "
+                f"(confidence={decision_result.confidence:.2f} "
+                f"risk={decision_result.risk_score} method={decision_result.method}) "
+                f"[decision_id={decision_result.decision_id}]"
+            )
 
-        # Create audit record for auto-approval
         record = ReconciliationRecord(
             document_id=doc.id,
             organization_id=doc.organization_id,
             reviewed_by=current_user.id,
-            confidence=doc.ai_confidence,
-            risk_score=risk_score,
-            risk_level=risk_level,
+            confidence=decision_result.confidence,
+            risk_score=decision_result.risk_score,
+            risk_level=decision_result.risk_level,
             fx_rate=fx_result["rate"] if fx_result else None,
-            normalized_amount_myr=fx_result["to_amount"]
-            if fx_result
-            else proof.get("amount"),
+            normalized_amount_myr=fx_result["to_amount"] if fx_result else proof.get("amount"),
             base_currency=base_currency,
             base_amount=fx_result["to_amount"] if fx_result else proof.get("amount"),
             action=action,
             exception_type=exception_type,
             note=note,
-            ai_explanation=doc.ai_explanation,
+            ai_explanation=(
+                f"{doc.ai_explanation}\n\n"
+                f"Decision Agent: {decision_result.reasoning}"
+            ),
             case_id=None,
             assigned_to=None,
             priority=None,
-            risk_factors=risk_factors,
+            risk_factors={
+                "factors": [
+                    {"name": f.name, "score": f.score, "explanation": f.explanation}
+                    for f in decision_result.risk_factors
+                ],
+                "method": decision_result.method,
+                "decision_id": decision_result.decision_id,
+            },
             journal_entry=journal_entry,
         )
         session.add(record)
 
-        # Set workflow to approved or exception_approved
         if action == "exception":
             doc.workflow_status = "EXCEPTION_APPROVED"
             doc.review_status = "exception"
@@ -310,11 +359,10 @@ async def reconcile_document(
         doc.review_note = note
         doc.reviewed_at = datetime.now(timezone.utc)
         doc.reviewed_by = current_user.id
-        doc.risk_score = risk_score
-        doc.risk_level = risk_level
     else:
-        # Fuzzy or unmatched - needs human review
+        # Escalated or rejected — human review required
         doc.workflow_status = "PENDING_ACTION"
+        doc.review_note = decision_result.recommended_action
 
     flag_modified(doc, "reconciliation_result")
     session.add(doc)

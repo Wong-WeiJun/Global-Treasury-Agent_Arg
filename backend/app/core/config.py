@@ -44,6 +44,8 @@ class Settings(BaseSettings):
 
     CHUTES_API_KEY: str = ""
     CHUTES_BASE_URL: str = "https://llm.chutes.ai/v1"
+    CHUTES_MODEL: str = "deepseek-ai/DeepSeek-V3.2-TEE"
+    CHUTES_VISION_MODEL: str = "google/gemma-4-31B-turbo-TEE"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
