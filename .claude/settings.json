@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Javascript\\\\Global-Treasury-Agent_Arg\\\\_changed\\\\app\\\\core\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Javascript\\\\Global-Treasury-Agent_Arg\\\\_changed\\\\app\\\\api\\\\routes\")"
+    ]
+  }
+}
