@@ -3,28 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ChatChatData, ChatChatResponse, FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, InvitationsInviteMemberData, InvitationsInviteMemberResponse, InvitationsListInvitationsData, InvitationsListInvitationsResponse, InvitationsCancelInvitationData, InvitationsCancelInvitationResponse, InvitationsAcceptInvitationData, InvitationsAcceptInvitationResponse, InvitationsVerifyInvitationData, InvitationsVerifyInvitationResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LearningRecordCorrectionData, LearningRecordCorrectionResponse, LearningGetLearningInsightsResponse, LearningGetCorrectionsData, LearningGetCorrectionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MembershipsListMyOrganizationsResponse, MembershipsListOrganizationMembersData, MembershipsListOrganizationMembersResponse, MembershipsAddOrganizationMemberData, MembershipsAddOrganizationMemberResponse, MembershipsUpdateMembershipData, MembershipsUpdateMembershipResponse, MembershipsRemoveMembershipData, MembershipsRemoveMembershipResponse, OrganizationsListOrganizationsData, OrganizationsListOrganizationsResponse, OrganizationsCreateOrganizationData, OrganizationsCreateOrganizationResponse, OrganizationsGetOrganizationData, OrganizationsGetOrganizationResponse, OrganizationsUpdateOrganizationData, OrganizationsUpdateOrganizationResponse, OrganizationsDeleteOrganizationData, OrganizationsDeleteOrganizationResponse, OrganizationsGetOrganizationSettingsData, OrganizationsGetOrganizationSettingsResponse, OrganizationsUpdateOrganizationSettingsData, OrganizationsUpdateOrganizationSettingsResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReconciliationSuggestMatchesData, ReconciliationSuggestMatchesResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, StatementsUploadBankStatementData, StatementsUploadBankStatementResponse, StatementsListStatementsData, StatementsListStatementsResponse, StatementsGetStatementTransactionsData, StatementsGetStatementTransactionsResponse, StatementsGetUnmatchedTransactionsData, StatementsGetUnmatchedTransactionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
-
-export class ChatService {
-    /**
-     * Chat
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns ChatResponse Successful Response
-     * @throws ApiError
-     */
-    public static chat(data: ChatChatData): CancelablePromise<ChatChatResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/chat/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-}
+import type { FilesGeneratePresignedUrlData, FilesGeneratePresignedUrlResponse, FilesUploadFileData, FilesUploadFileResponse, FilesListMyDocumentsData, FilesListMyDocumentsResponse, FilesDeleteFileData, FilesDeleteFileResponse, FilesGetDownloadUrlData, FilesGetDownloadUrlResponse, FilesExtractDocumentData, FilesExtractDocumentResponse, FxCurrenciesResponse, FxCurrencyRateData, FxCurrencyRateResponse, FxConvertCurrencyData, FxConvertCurrencyResponse, FxConvertToMyrEndpointData, FxConvertToMyrEndpointResponse, InvitationsInviteMemberData, InvitationsInviteMemberResponse, InvitationsListInvitationsData, InvitationsListInvitationsResponse, InvitationsCancelInvitationData, InvitationsCancelInvitationResponse, InvitationsAcceptInvitationData, InvitationsAcceptInvitationResponse, InvitationsVerifyInvitationData, InvitationsVerifyInvitationResponse, LearningRecordCorrectionData, LearningRecordCorrectionResponse, LearningGetLearningInsightsResponse, LearningGetCorrectionsData, LearningGetCorrectionsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, MembershipsListMyOrganizationsResponse, MembershipsListOrganizationMembersData, MembershipsListOrganizationMembersResponse, MembershipsAddOrganizationMemberData, MembershipsAddOrganizationMemberResponse, MembershipsUpdateMembershipData, MembershipsUpdateMembershipResponse, MembershipsRemoveMembershipData, MembershipsRemoveMembershipResponse, OrchestrationOrchestratedReconcileData, OrchestrationOrchestratedReconcileResponse, OrchestrationGetOrchestrationStatusData, OrchestrationGetOrchestrationStatusResponse, OrganizationsListOrganizationsData, OrganizationsListOrganizationsResponse, OrganizationsCreateOrganizationData, OrganizationsCreateOrganizationResponse, OrganizationsGetOrganizationData, OrganizationsGetOrganizationResponse, OrganizationsUpdateOrganizationData, OrganizationsUpdateOrganizationResponse, OrganizationsDeleteOrganizationData, OrganizationsDeleteOrganizationResponse, OrganizationsGetOrganizationSettingsData, OrganizationsGetOrganizationSettingsResponse, OrganizationsUpdateOrganizationSettingsData, OrganizationsUpdateOrganizationSettingsResponse, PrivateCreateUserData, PrivateCreateUserResponse, ReconciliationReconcileDocumentData, ReconciliationReconcileDocumentResponse, ReconciliationSuggestMatchesData, ReconciliationSuggestMatchesResponse, ReportsGenerateReconciliationPdfReportData, ReportsGenerateReconciliationPdfReportResponse, ReportsPreviewReconciliationPdfReportData, ReportsPreviewReconciliationPdfReportResponse, ReviewReviewDocumentData, ReviewReviewDocumentResponse, ReviewGetAuditTrailData, ReviewGetAuditTrailResponse, ReviewAskAiQuestionData, ReviewAskAiQuestionResponse, StatementsUploadBankStatementData, StatementsUploadBankStatementResponse, StatementsListStatementsData, StatementsListStatementsResponse, StatementsGetStatementTransactionsData, StatementsGetStatementTransactionsResponse, StatementsGetUnmatchedTransactionsData, StatementsGetUnmatchedTransactionsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class FilesService {
     /**
@@ -147,12 +126,12 @@ export class FilesService {
             }
         });
     }
+    
 }
 
 export class FxService {
     /**
      * Currencies
-     * List all supported currencies.
      * @returns unknown Successful Response
      * @throws ApiError
      */
@@ -165,7 +144,6 @@ export class FxService {
     
     /**
      * Currency Rate
-     * Get rate between two currencies. Supports historical dates back to 1948.
      * @param data The data for the request.
      * @param data.fromCurrency
      * @param data.toCurrency
@@ -192,7 +170,6 @@ export class FxService {
     
     /**
      * Convert Currency
-     * Convert amount between currencies on a specific date.
      * @param data The data for the request.
      * @param data.amount
      * @param data.fromCurrency
@@ -219,7 +196,6 @@ export class FxService {
     
     /**
      * Convert To Myr Endpoint
-     * Convert any currency to MYR using the rate on the transaction date.
      * @param data The data for the request.
      * @param data.amount
      * @param data.fromCurrency
@@ -241,6 +217,7 @@ export class FxService {
             }
         });
     }
+    
 }
 
 export class InvitationsService {
@@ -355,126 +332,12 @@ export class InvitationsService {
             }
         });
     }
-}
-
-export class ItemsService {
-    /**
-     * Read Items
-     * Retrieve items.
-     * @param data The data for the request.
-     * @param data.skip
-     * @param data.limit
-     * @returns ItemsPublic Successful Response
-     * @throws ApiError
-     */
-    public static readItems(data: ItemsReadItemsData = {}): CancelablePromise<ItemsReadItemsResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/items/',
-            query: {
-                skip: data.skip,
-                limit: data.limit
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
     
-    /**
-     * Create Item
-     * Create new item.
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
-     * @throws ApiError
-     */
-    public static createItem(data: ItemsCreateItemData): CancelablePromise<ItemsCreateItemResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/items/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Item
-     * Get item by ID.
-     * @param data The data for the request.
-     * @param data.id
-     * @returns ItemPublic Successful Response
-     * @throws ApiError
-     */
-    public static readItem(data: ItemsReadItemData): CancelablePromise<ItemsReadItemResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Update Item
-     * Update an item.
-     * @param data The data for the request.
-     * @param data.id
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
-     * @throws ApiError
-     */
-    public static updateItem(data: ItemsUpdateItemData): CancelablePromise<ItemsUpdateItemResponse> {
-        return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
-            },
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Delete Item
-     * Delete an item.
-     * @param data The data for the request.
-     * @param data.id
-     * @returns Message Successful Response
-     * @throws ApiError
-     */
-    public static deleteItem(data: ItemsDeleteItemData): CancelablePromise<ItemsDeleteItemResponse> {
-        return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/items/{id}',
-            path: {
-                id: data.id
-            },
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
 }
 
 export class LearningService {
     /**
      * Record Correction
-     * Record a user correction to AI decision for continuous learning.
-     *
-     * When a user manually overrides an AI reconciliation decision, this endpoint
-     * should be called to teach the AI from the correction.
      * @param data The data for the request.
      * @param data.requestBody
      * @returns CorrectionResponse Successful Response
@@ -494,10 +357,6 @@ export class LearningService {
     
     /**
      * Get Learning Insights
-     * Get AI learning insights for the user's organization.
-     *
-     * Shows what the AI has learned from user corrections, including vendor
-     * preferences and reconciliation patterns.
      * @returns LearningInsightsResponse Successful Response
      * @throws ApiError
      */
@@ -510,7 +369,6 @@ export class LearningService {
     
     /**
      * Get Corrections
-     * Get recent user corrections for the organization.
      * @param data The data for the request.
      * @param data.limit
      * @returns unknown Successful Response
@@ -528,6 +386,7 @@ export class LearningService {
             }
         });
     }
+    
 }
 
 export class LoginService {
@@ -625,6 +484,7 @@ export class LoginService {
             }
         });
     }
+    
 }
 
 export class MembershipsService {
@@ -737,6 +597,67 @@ export class MembershipsService {
             }
         });
     }
+    
+}
+
+export class OrchestrationService {
+    /**
+     * Orchestrated Reconcile
+     * Reconcile a document using the AI orchestration agent (Chutes AI + AWS Bedrock fallback).
+     *
+     * The agent will:
+     * 1. Analyze the context and decide what information it needs
+     * 2. Extract document data if necessary
+     * 3. Convert currencies if needed
+     * 4. Fetch vendor history and learned patterns strategically
+     * 5. Choose the appropriate reconciliation strategy
+     * 6. Calculate risk and make auto-approval decisions
+     * 7. Return a comprehensive reconciliation result
+     *
+     * This is more intelligent than the standard reconciliation endpoint because
+     * the agent makes contextual decisions rather than following a fixed workflow.
+     *
+     * Provider Strategy:
+     * - Primary: Chutes AI (Claude Sonnet 4.6)
+     * - Fallback: AWS Bedrock (on timeout/rate limit)
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns OrchestratedReconcileResponse Successful Response
+     * @throws ApiError
+     */
+    public static orchestratedReconcile(data: OrchestrationOrchestratedReconcileData): CancelablePromise<OrchestrationOrchestratedReconcileResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/orchestrated-reconciliation/reconcile',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Orchestration Status
+     * Get the orchestration status and results for a document.
+     * @param data The data for the request.
+     * @param data.documentId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getOrchestrationStatus(data: OrchestrationGetOrchestrationStatusData): CancelablePromise<OrchestrationGetOrchestrationStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/orchestrated-reconciliation/status/{document_id}',
+            path: {
+                document_id: data.documentId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
 }
 
 export class OrganizationsService {
@@ -903,6 +824,7 @@ export class OrganizationsService {
             }
         });
     }
+    
 }
 
 export class PrivateService {
@@ -925,6 +847,7 @@ export class PrivateService {
             }
         });
     }
+    
 }
 
 export class ReconciliationService {
@@ -968,6 +891,60 @@ export class ReconciliationService {
             }
         });
     }
+    
+}
+
+export class ReportsService {
+    /**
+     * Generate Reconciliation Pdf Report
+     * Generate a comprehensive PDF report for reconciliation results.
+     *
+     * The report includes:
+     * - Executive summary with statistics
+     * - Visual breakdown of matched/fuzzy/unmatched documents
+     * - Detailed results for each document with AI reasoning
+     * - Proposed journal entries for adjustments
+     * - Key insights and recommendations
+     *
+     * Returns a PDF file as a downloadable attachment.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static generateReconciliationPdfReport(data: ReportsGenerateReconciliationPdfReportData): CancelablePromise<ReportsGenerateReconciliationPdfReportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/reports/reconciliation-pdf',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Preview Reconciliation Pdf Report
+     * Generate a PDF report preview (inline display instead of download).
+     * Same as generate_reconciliation_pdf_report but opens in browser.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static previewReconciliationPdfReport(data: ReportsPreviewReconciliationPdfReportData): CancelablePromise<ReportsPreviewReconciliationPdfReportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/reports/reconciliation-pdf-preview',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
 }
 
 export class ReviewService {
@@ -1037,6 +1014,7 @@ export class ReviewService {
             }
         });
     }
+    
 }
 
 export class StatementsService {
@@ -1131,6 +1109,7 @@ export class StatementsService {
             }
         });
     }
+    
 }
 
 export class UsersService {
@@ -1327,6 +1306,7 @@ export class UsersService {
             }
         });
     }
+    
 }
 
 export class UtilsService {
@@ -1362,4 +1342,5 @@ export class UtilsService {
             url: '/api/v1/utils/health-check/'
         });
     }
+    
 }

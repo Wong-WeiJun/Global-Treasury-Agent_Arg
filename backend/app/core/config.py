@@ -59,17 +59,20 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+    DATABASE_URL: str | None = None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return (
+            f"postgresql+psycopg://"
+            f"{self.POSTGRES_USER}:"
+            f"{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_SERVER}:"
+            f"{self.POSTGRES_PORT}/"
+            f"{self.POSTGRES_DB}"
         )
 
     SMTP_TLS: bool = True

@@ -59,17 +59,6 @@ export type Body_statements_upload_bank_statement = {
     file: (Blob | File);
 };
 
-export type ChatRequest = {
-    message: string;
-    history?: Array<{
-        [key: string]: unknown;
-    }>;
-};
-
-export type ChatResponse = {
-    reply: string;
-};
-
 /**
  * Request to record a user correction for AI learning.
  */
@@ -100,6 +89,9 @@ export type DocumentPublic = {
     [key: string]: unknown;
 } | null);
     reconciliation_result?: ({
+    [key: string]: unknown;
+} | null);
+    orchestration_result?: ({
     [key: string]: unknown;
 } | null);
     original_amount?: (number | null);
@@ -147,6 +139,17 @@ export type ExtractionResponse = {
     error?: (string | null);
 };
 
+/**
+ * Request body for generating a reconciliation report
+ */
+export type GenerateReportRequest = {
+    results: Array<{
+        [key: string]: unknown;
+    }>;
+    include_summary?: boolean;
+    include_details?: boolean;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -170,29 +173,6 @@ export type InvitationPublic = {
     expires_at: string;
     accepted_at: (string | null);
     created_at: string;
-};
-
-export type ItemCreate = {
-    title: string;
-    description?: (string | null);
-};
-
-export type ItemPublic = {
-    title: string;
-    description?: (string | null);
-    id: string;
-    owner_id: string;
-    created_at?: (string | null);
-};
-
-export type ItemsPublic = {
-    data: Array<ItemPublic>;
-    count: number;
-};
-
-export type ItemUpdate = {
-    title?: (string | null);
-    description?: (string | null);
 };
 
 /**
@@ -250,6 +230,31 @@ export type Message = {
 export type NewPassword = {
     token: string;
     new_password: string;
+};
+
+/**
+ * Request to reconcile a document using the orchestration agent.
+ */
+export type OrchestratedReconcileRequest = {
+    document_id: string;
+    bank_entries: Array<BankEntry>;
+    override_date?: (string | null);
+};
+
+/**
+ * Response from orchestrated reconciliation.
+ */
+export type OrchestratedReconcileResponse = {
+    document_id: string;
+    success: boolean;
+    final_decision: {
+        [key: string]: unknown;
+    };
+    context: {
+        [key: string]: unknown;
+    };
+    iterations: number;
+    message: string;
 };
 
 export type OrganizationCreate = {
@@ -447,12 +452,6 @@ export type VendorPreferencePublic = {
     confidence: number;
 };
 
-export type ChatChatData = {
-    requestBody: ChatRequest;
-};
-
-export type ChatChatResponse = (ChatResponse);
-
 export type FilesGeneratePresignedUrlData = {
     filename: string;
 };
@@ -559,38 +558,6 @@ export type InvitationsVerifyInvitationData = {
 
 export type InvitationsVerifyInvitationResponse = (unknown);
 
-export type ItemsReadItemsData = {
-    limit?: number;
-    skip?: number;
-};
-
-export type ItemsReadItemsResponse = (ItemsPublic);
-
-export type ItemsCreateItemData = {
-    requestBody: ItemCreate;
-};
-
-export type ItemsCreateItemResponse = (ItemPublic);
-
-export type ItemsReadItemData = {
-    id: string;
-};
-
-export type ItemsReadItemResponse = (ItemPublic);
-
-export type ItemsUpdateItemData = {
-    id: string;
-    requestBody: ItemUpdate;
-};
-
-export type ItemsUpdateItemResponse = (ItemPublic);
-
-export type ItemsDeleteItemData = {
-    id: string;
-};
-
-export type ItemsDeleteItemResponse = (Message);
-
 export type LearningRecordCorrectionData = {
     requestBody: CorrectionRequest;
 };
@@ -659,6 +626,18 @@ export type MembershipsRemoveMembershipData = {
 
 export type MembershipsRemoveMembershipResponse = (unknown);
 
+export type OrchestrationOrchestratedReconcileData = {
+    requestBody: OrchestratedReconcileRequest;
+};
+
+export type OrchestrationOrchestratedReconcileResponse = (OrchestratedReconcileResponse);
+
+export type OrchestrationGetOrchestrationStatusData = {
+    documentId: string;
+};
+
+export type OrchestrationGetOrchestrationStatusResponse = (unknown);
+
 export type OrganizationsListOrganizationsData = {
     limit?: number;
     skip?: number;
@@ -721,6 +700,18 @@ export type ReconciliationSuggestMatchesData = {
 };
 
 export type ReconciliationSuggestMatchesResponse = (SuggestMatchesResponse);
+
+export type ReportsGenerateReconciliationPdfReportData = {
+    requestBody: GenerateReportRequest;
+};
+
+export type ReportsGenerateReconciliationPdfReportResponse = (unknown);
+
+export type ReportsPreviewReconciliationPdfReportData = {
+    requestBody: GenerateReportRequest;
+};
+
+export type ReportsPreviewReconciliationPdfReportResponse = (unknown);
 
 export type ReviewReviewDocumentData = {
     documentId: string;
