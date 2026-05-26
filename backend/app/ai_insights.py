@@ -6,8 +6,7 @@ This module elevates AWS Bedrock AI from simple field extraction to financial in
 """
 
 import json
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import timedelta
 
 import boto3
 
@@ -18,11 +17,11 @@ def _get_bedrock_client():
     return boto3.client(
         "bedrock-runtime",
         region_name="us-east-1",
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
 
@@ -351,6 +350,7 @@ def normalize_vendor_name(vendor: str | None) -> str | None:
 
     # Default: remove special characters and spaces
     import re
+
     normalized = re.sub(r"[^a-z0-9]", "_", vendor_lower)
     normalized = re.sub(r"_+", "_", normalized).strip("_")
 
