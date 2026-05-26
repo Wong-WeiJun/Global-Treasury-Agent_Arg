@@ -88,9 +88,9 @@ async def reconcile_document(
 
         try:
             if doc.file_type == "image":
-                data = extract_from_image(file_bytes)
+                data = await extract_from_image(file_bytes)
             elif doc.file_type == "pdf":
-                data = extract_from_pdf(file_bytes)
+                data = await extract_from_pdf(file_bytes)
             else:
                 raise HTTPException(
                     status_code=422,
@@ -379,9 +379,9 @@ async def suggest_matches(
         file_bytes = obj["Body"].read()
 
         if doc.file_type == "image":
-            data = extract_from_image(file_bytes)
+            data = await extract_from_image(file_bytes)
         elif doc.file_type == "pdf":
-            data = extract_from_pdf(file_bytes)
+            data = await extract_from_pdf(file_bytes)
         else:
             raise HTTPException(
                 status_code=422,

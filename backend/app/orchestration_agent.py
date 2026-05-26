@@ -560,9 +560,9 @@ class OrchestrationContext:
 
         file_type = params.get("file_type", doc.file_type)
         if file_type == "image":
-            data = extract_from_image(file_bytes)
+            data = await extract_from_image(file_bytes)
         elif file_type == "pdf":
-            data = extract_from_pdf(file_bytes)
+            data = await extract_from_pdf(file_bytes)
         else:
             return {"error": f"Unsupported file type: {file_type}"}
 

@@ -188,7 +188,7 @@ def parse_csv(csv_bytes: bytes) -> list[dict]:
     columns = _detect_columns(headers)
 
     # If column detection failed, try smart heuristics
-    if not columns.get("date") or not columns.get("description"):
+    if columns.get("date") is None or columns.get("description") is None:
         heuristic_result = _parse_with_heuristics(rows)
         if heuristic_result:
             return heuristic_result
@@ -229,7 +229,7 @@ def parse_xlsx(xlsx_bytes: bytes) -> list[dict]:
     columns = _detect_columns(headers)
 
     # If column detection failed, try smart heuristics
-    if not columns.get("date") or not columns.get("description"):
+    if columns.get("date") is None or columns.get("description") is None:
         # Convert rows to list of lists for heuristics
         simple_rows = [[str(cell) if cell is not None else "" for cell in row] for row in rows]
         heuristic_result = _parse_with_heuristics(simple_rows)
@@ -338,11 +338,11 @@ def _parse_with_heuristics(rows: list[list]) -> list[dict]:
     return transactions
 
 
-def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
+async def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
     """
     Main entry point for parsing bank statements.
     Auto-detects format based on filename.
-    Uses smart heuristics and AI fallback for maximum compatibility.
+    Uses smart heuristics and AI fallback (Chutes AI + Bedrock) for maximum compatibility.
     """
     filename_lower = filename.lower()
 
@@ -357,7 +357,7 @@ def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
         # If column detection failed, try AI-powered parsing
         if "Could not detect" in str(e):
             try:
-                return _parse_with_ai(file_bytes, filename)
+                return await _parse_with_ai(file_bytes, filename)
             except Exception as ai_error:
                 # If AI also fails, raise original error with helpful message
                 raise ValueError(
@@ -367,11 +367,12 @@ def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
         raise
 
 
-def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
+async def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
     """
     Fallback: Use AI to parse the statement when column detection fails.
+    Uses Chutes AI (primary) with AWS Bedrock fallback.
     """
-    from app.extraction import _call_bedrock_excel, extract_from_excel
+    from app.extraction import _call_chutes_excel, _call_bedrock_excel, extract_from_excel
 
     # Convert to CSV string for AI
     csv_content = extract_from_excel(file_bytes, filename)
@@ -379,8 +380,13 @@ def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
     if not csv_content:
         raise ValueError("File is empty or unreadable")
 
-    # Use AI to extract transactions
-    transactions_data = _call_bedrock_excel(csv_content)
+    # Use AI to extract transactions (try Chutes first, fallback to Bedrock)
+    try:
+        transactions_data = await _call_chutes_excel(csv_content)
+    except Exception as e:
+        print(f"Chutes AI Excel extraction failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to AWS Bedrock...")
+        transactions_data = _call_bedrock_excel(csv_content)
 
     # Normalize the AI response
     result = []
