@@ -13,8 +13,6 @@ from app.api.deps import CurrentUser, SessionDep
 from app.core.config import settings
 from app.extraction import (
     extract_from_excel,
-    extract_from_image,
-    extract_from_pdf,
     _call_bedrock_excel,
     _ocr_with_textract,
 )
@@ -245,11 +243,11 @@ def get_download_url(
     s3 = boto3.client(
         "s3",
         region_name=settings.s3_region,
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
     url = s3.generate_presigned_url(
@@ -287,11 +285,11 @@ async def extract_document(
     s3 = boto3.client(
         "s3",
         region_name=settings.s3_region,
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
     obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
@@ -429,10 +427,18 @@ async def extract_document(
                 {
                     "id": str(d.id),
                     "date": d.extracted_data.get("date") if d.extracted_data else None,
-                    "payee": d.extracted_data.get("payee") if d.extracted_data else None,
-                    "amount": d.extracted_data.get("amount") if d.extracted_data else None,
-                    "currency": d.extracted_data.get("currency") if d.extracted_data else None,
-                    "description": d.extracted_data.get("description") if d.extracted_data else None,
+                    "payee": d.extracted_data.get("payee")
+                    if d.extracted_data
+                    else None,
+                    "amount": d.extracted_data.get("amount")
+                    if d.extracted_data
+                    else None,
+                    "currency": d.extracted_data.get("currency")
+                    if d.extracted_data
+                    else None,
+                    "description": d.extracted_data.get("description")
+                    if d.extracted_data
+                    else None,
                 }
                 for d in recent_docs
             ]
@@ -474,16 +480,25 @@ async def extract_document(
                 {
                     "id": str(d.id),
                     "date": d.extracted_data.get("date") if d.extracted_data else None,
-                    "payee": d.extracted_data.get("payee") if d.extracted_data else None,
-                    "amount": d.extracted_data.get("amount") if d.extracted_data else None,
-                    "currency": d.extracted_data.get("currency") if d.extracted_data else None,
-                    "description": d.extracted_data.get("description") if d.extracted_data else None,
+                    "payee": d.extracted_data.get("payee")
+                    if d.extracted_data
+                    else None,
+                    "amount": d.extracted_data.get("amount")
+                    if d.extracted_data
+                    else None,
+                    "currency": d.extracted_data.get("currency")
+                    if d.extracted_data
+                    else None,
+                    "description": d.extracted_data.get("description")
+                    if d.extracted_data
+                    else None,
                 }
                 for d in recent_docs
             ]
 
             # Enhanced PDF extraction with AI insights
             import pymupdf
+
             doc_pdf = pymupdf.open(stream=file_bytes, filetype="pdf")
             first_page = doc_pdf[0]
             pix = first_page.get_pixmap(dpi=150)

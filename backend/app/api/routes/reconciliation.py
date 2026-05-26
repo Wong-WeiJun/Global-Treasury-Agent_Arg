@@ -19,11 +19,9 @@ from app.models import (
     ReconcileResponse,
     User,
 )
-from app.reconciliation import reconcile
 from app.proactive_reconciliation import (
     reconcile_with_memory,
     get_vendor_history,
-    propose_adjustment_journal_entry,
 )
 from app.ai_learning import (
     get_learned_vendor_preferences,
@@ -78,11 +76,11 @@ async def reconcile_document(
         s3 = boto3.client(
             "s3",
             region_name=settings.s3_region,
-            aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-            if settings.s3_access_key_id
+            aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+            if settings.aws_access_key_id
             else None,
-            aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-            if settings.s3_secret_access_key
+            aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+            if settings.aws_secret_access_key
             else None,
         )
         obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
@@ -179,6 +177,7 @@ async def reconcile_document(
 
     # Compute traditional fuzzy match scores for context
     from app.reconciliation import _compute_match_score
+
     match_scores = [
         _compute_match_score(
             proof,
@@ -224,7 +223,9 @@ async def reconcile_document(
     # Add historical insights to explanation if available
     historical_insights = agent_decision.get("historical_insights")
     if historical_insights:
-        doc.ai_explanation = f"{doc.ai_explanation}\n\nHistorical Context: {historical_insights}"
+        doc.ai_explanation = (
+            f"{doc.ai_explanation}\n\nHistorical Context: {historical_insights}"
+        )
 
     # Auto-approve if AI result is MATCHED or MATCHED_WITH_ADJUSTMENT
     if doc.ai_result == "MATCHED":
@@ -255,14 +256,18 @@ async def reconcile_document(
         if final_status == "matched_with_adjustment" and journal_entry_proposal:
             # Use the AI-proposed journal entry
             journal_entry = journal_entry_proposal
-            exception_type = adjustment_type.upper() if adjustment_type else "ADJUSTMENT"
+            exception_type = (
+                adjustment_type.upper() if adjustment_type else "ADJUSTMENT"
+            )
             action = "exception"  # Mark as exception since it needs an adjustment
             note = f"Auto-approved with {adjustment_type} adjustment: {agent_decision.get('adjustment_amount', 0)} {base_currency}"
         else:
             # Standard approval without adjustment
             fx_result_dict = result.get("fx_result")
             proof_dict = result.get("proof", {})
-            journal_entry = generate_journal_entry(proof_dict, fx_result_dict, "approved", None)
+            journal_entry = generate_journal_entry(
+                proof_dict, fx_result_dict, "approved", None
+            )
             exception_type = None
             action = "approved"
             note = "Auto-approved by AI with high confidence match"
@@ -347,7 +352,9 @@ async def suggest_matches(
 
     org = get_user_primary_organization(session, current_user.id)
     if not org:
-        raise HTTPException(status_code=400, detail="You must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="You must belong to an organization"
+        )
 
     doc = session.get(Document, document_id)
     if not doc:
@@ -361,11 +368,11 @@ async def suggest_matches(
         s3 = boto3.client(
             "s3",
             region_name=settings.s3_region,
-            aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-            if settings.s3_access_key_id
+            aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+            if settings.aws_access_key_id
             else None,
-            aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-            if settings.s3_secret_access_key
+            aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+            if settings.aws_secret_access_key
             else None,
         )
         obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
@@ -443,6 +450,7 @@ async def suggest_matches(
 
     # Query unmatched transactions - compare absolute values
     from sqlalchemy import func as sql_func
+
     stmt = (
         select(BankTransaction)
         .where(
@@ -459,8 +467,12 @@ async def suggest_matches(
     candidates = session.exec(stmt).all()
 
     # Debug logging
-    print(f"[DEBUG] Found {len(candidates)} candidate transactions for doc {document_id}")
-    print(f"[DEBUG] Search params: date={doc_date}, amount={base_amount}, range={amount_min}-{amount_max}")
+    print(
+        f"[DEBUG] Found {len(candidates)} candidate transactions for doc {document_id}"
+    )
+    print(
+        f"[DEBUG] Search params: date={doc_date}, amount={base_amount}, range={amount_min}-{amount_max}"
+    )
 
     # Stage 2: Score each candidate
     suggestions = []
@@ -567,9 +579,7 @@ def _score_transaction_match(
     scores["vendor"] = vendor_score
 
     # Calculate weighted confidence
-    confidence = (
-        scores["amount"] * 0.4 + scores["date"] * 0.3 + scores["vendor"] * 0.3
-    )
+    confidence = scores["amount"] * 0.4 + scores["date"] * 0.3 + scores["vendor"] * 0.3
 
     explanation = " | ".join(reasons) if reasons else "Low confidence match"
 

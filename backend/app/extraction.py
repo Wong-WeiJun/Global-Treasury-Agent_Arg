@@ -13,11 +13,11 @@ def _get_bedrock_client():
     return boto3.client(
         "bedrock-runtime",
         region_name="us-east-1",
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
 
@@ -26,11 +26,11 @@ def _get_textract_client():
     return boto3.client(
         "textract",
         region_name="us-east-1",
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
 
@@ -270,7 +270,13 @@ def _fallback_textract_only(ocr_result: dict) -> dict:
         if any(k in key for k in amount_keys):
             try:
                 # Clean and parse amount
-                val = data["value"].replace(",", "").replace("$", "").replace("RM", "").strip()
+                val = (
+                    data["value"]
+                    .replace(",", "")
+                    .replace("$", "")
+                    .replace("RM", "")
+                    .strip()
+                )
                 result["amount"] = float(val)
                 break
             except (ValueError, AttributeError):
@@ -288,17 +294,18 @@ def _fallback_textract_only(ocr_result: dict) -> dict:
     # If no currency found in KVs, try to detect from raw text
     if not result["currency"]:
         import re
+
         # Common currency patterns
         currency_patterns = [
-            (r'\bUSD\b', 'USD'),
-            (r'\bMYR\b', 'MYR'),
-            (r'\bRM\b', 'MYR'),
-            (r'\bEUR\b', 'EUR'),
-            (r'\bGBP\b', 'GBP'),
-            (r'\bSGD\b', 'SGD'),
-            (r'\$', 'USD'),  # Assume $ is USD if not specified
-            (r'€', 'EUR'),
-            (r'£', 'GBP'),
+            (r"\bUSD\b", "USD"),
+            (r"\bMYR\b", "MYR"),
+            (r"\bRM\b", "MYR"),
+            (r"\bEUR\b", "EUR"),
+            (r"\bGBP\b", "GBP"),
+            (r"\bSGD\b", "SGD"),
+            (r"\$", "USD"),  # Assume $ is USD if not specified
+            (r"€", "EUR"),
+            (r"£", "GBP"),
         ]
         for pattern, curr in currency_patterns:
             if re.search(pattern, raw_text):
@@ -316,6 +323,7 @@ def _fallback_textract_only(ocr_result: dict) -> dict:
             try:
                 # Try to parse date (Textract usually returns dates in readable format)
                 import dateutil.parser
+
                 parsed_date = dateutil.parser.parse(data["value"])
                 result["date"] = parsed_date.strftime("%Y-%m-%d")
                 break
@@ -333,7 +341,15 @@ def _fallback_textract_only(ocr_result: dict) -> dict:
             result["payee"] = data["value"].strip()
 
     # Extract description
-    desc_keys = ["description", "memo", "reference", "remarks", "notes", "details", "purpose"]
+    desc_keys = [
+        "description",
+        "memo",
+        "reference",
+        "remarks",
+        "notes",
+        "details",
+        "purpose",
+    ]
     for key, data in kvs.items():
         if any(k in key for k in desc_keys):
             result["description"] = data["value"].strip()
@@ -412,7 +428,9 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
 
     try:
         if text.strip():
-            ocr_summary = ", ".join(f"{k}: {v['value']}" for k, v in list(kvs.items())[:10])
+            ocr_summary = ", ".join(
+                f"{k}: {v['value']}" for k, v in list(kvs.items())[:10]
+            )
             llm_result = _call_bedrock_text(text, ocr_hint=ocr_summary)
         else:
             llm_result = _call_bedrock_vision(img_bytes, ocr_hint=raw_text)

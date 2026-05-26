@@ -20,8 +20,6 @@ Provider Strategy:
 
 import json
 import uuid
-from datetime import datetime
-from typing import Any
 
 import boto3
 import httpx
@@ -34,11 +32,11 @@ def _get_bedrock_client():
     return boto3.client(
         "bedrock-runtime",
         region_name="us-east-1",
-        aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-        if settings.s3_access_key_id
+        aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+        if settings.aws_access_key_id
         else None,
-        aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-        if settings.s3_secret_access_key
+        aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+        if settings.aws_secret_access_key
         else None,
     )
 
@@ -80,14 +78,16 @@ async def _call_chutes_ai(request_body: dict) -> dict:
         # Convert Anthropic tool format to OpenAI tool format
         chutes_tools = []
         for tool in tools:
-            chutes_tools.append({
-                "type": "function",
-                "function": {
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "parameters": tool["input_schema"],
+            chutes_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool["name"],
+                        "description": tool["description"],
+                        "parameters": tool["input_schema"],
+                    },
                 }
-            })
+            )
         chutes_payload["tools"] = chutes_tools
         chutes_payload["tool_choice"] = "auto"
 
@@ -112,20 +112,19 @@ async def _call_chutes_ai(request_body: dict) -> dict:
     content = []
 
     if message.get("content"):
-        content.append({
-            "type": "text",
-            "text": message["content"]
-        })
+        content.append({"type": "text", "text": message["content"]})
 
     # Convert tool calls from OpenAI format to Anthropic format
     if message.get("tool_calls"):
         for tool_call in message["tool_calls"]:
-            content.append({
-                "type": "tool_use",
-                "id": tool_call["id"],
-                "name": tool_call["function"]["name"],
-                "input": json.loads(tool_call["function"]["arguments"]),
-            })
+            content.append(
+                {
+                    "type": "tool_use",
+                    "id": tool_call["id"],
+                    "name": tool_call["function"]["name"],
+                    "input": json.loads(tool_call["function"]["arguments"]),
+                }
+            )
 
     # Determine stop reason
     finish_reason = choice.get("finish_reason", "end_turn")
@@ -549,11 +548,11 @@ class OrchestrationContext:
         s3 = boto3.client(
             "s3",
             region_name=settings.s3_region,
-            aws_access_key_id=settings.s3_access_key_id.get_secret_value()
-            if settings.s3_access_key_id
+            aws_access_key_id=settings.aws_access_key_id.get_secret_value()
+            if settings.aws_access_key_id
             else None,
-            aws_secret_access_key=settings.s3_secret_access_key.get_secret_value()
-            if settings.s3_secret_access_key
+            aws_secret_access_key=settings.aws_secret_access_key.get_secret_value()
+            if settings.aws_secret_access_key
             else None,
         )
         obj = s3.get_object(Bucket=settings.s3_bucket_name, Key=doc.s3_key)
@@ -695,7 +694,12 @@ class OrchestrationContext:
             "risk_level": risk_level,
             "risk_factors": risk_factors,
         }
-        return {"success": True, "risk_score": risk_score, "risk_level": risk_level, "risk_factors": risk_factors}
+        return {
+            "success": True,
+            "risk_score": risk_score,
+            "risk_level": risk_level,
+            "risk_factors": risk_factors,
+        }
 
     async def _final_decision(self, params: dict) -> dict:
         """Record final decision - this ends the orchestration loop."""
@@ -760,7 +764,9 @@ CONTEXT:
 """
 
     if extracted_data:
-        user_prompt += f"\nPRE-EXTRACTED DATA:\n{json.dumps(extracted_data, indent=2)}\n"
+        user_prompt += (
+            f"\nPRE-EXTRACTED DATA:\n{json.dumps(extracted_data, indent=2)}\n"
+        )
     else:
         user_prompt += "\nDocument data has NOT been extracted yet. You'll need to extract it first.\n"
 
@@ -797,9 +803,16 @@ Remember to call final_decision as your LAST tool call with your complete analys
         try:
             response_body = await _call_chutes_ai(request_body)
             provider_used = "chutes"
-        except (httpx.TimeoutException, httpx.HTTPStatusError, KeyError, json.JSONDecodeError) as e:
+        except (
+            httpx.TimeoutException,
+            httpx.HTTPStatusError,
+            KeyError,
+            json.JSONDecodeError,
+        ) as e:
             # Fallback to AWS Bedrock
-            print(f"Chutes AI failed (iteration {iteration}): {type(e).__name__}: {str(e)}")
+            print(
+                f"Chutes AI failed (iteration {iteration}): {type(e).__name__}: {str(e)}"
+            )
             print("Falling back to AWS Bedrock...")
             try:
                 response_body = _call_bedrock_fallback(bedrock_client, request_body)
