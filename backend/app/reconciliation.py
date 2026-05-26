@@ -166,12 +166,21 @@ async def reconcile(
     fx_result: dict | None = None,
 ) -> dict:
     """
-    proof: extracted data from payment proof
-           {amount, currency, date, payer, payee, description}
-    bank_entries: list of bank statement rows
-                  [{amount, date, description, payer?}]
-    fx_result: FX conversion result if currency != MYR
-               {from_amount, from_currency, to_amount, to_currency, rate, date}
+    Basic reconciliation with Reasoning Fallback.
+
+    Primary: Morpheus AI with contextual reasoning
+    Fallback: Rule-based matching using pre-computed scores
+
+    Args:
+        proof: extracted data from payment proof
+               {amount, currency, date, payer, payee, description}
+        bank_entries: list of bank statement rows
+                      [{amount, date, description, payer?}]
+        fx_result: FX conversion result if currency != MYR
+                   {from_amount, from_currency, to_amount, to_currency, rate, date}
+
+    Returns:
+        Reconciliation result with agent decision
     """
     myr_amount = fx_result["to_amount"] if fx_result else proof.get("amount")
 
@@ -206,31 +215,44 @@ BEST CANDIDATE: Entry index {best_idx} with score {best_score["score"] if best_s
 
 Please analyze and provide your reconciliation decision."""
 
-    agent_response_raw = await _call_morpheus(
-        [
-            {"role": "system", "content": RECONCILIATION_SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
-        ]
-    )
-
+    # Try Morpheus AI first
     try:
+        agent_response_raw = await _call_morpheus(
+            [
+                {"role": "system", "content": RECONCILIATION_SYSTEM_PROMPT},
+                {"role": "user", "content": user_message},
+            ]
+        )
+
         clean = agent_response_raw.strip()
         if clean.startswith("```"):
             clean = clean.split("```")[1]
             if clean.startswith("json"):
                 clean = clean[4:]
         agent_decision = json.loads(clean.strip())
-    except (json.JSONDecodeError, IndexError):
+
+        # Validate response
+        if not isinstance(agent_decision, dict) or "final_status" not in agent_decision:
+            raise ValueError("Invalid response format from Morpheus AI")
+
+        agent_decision["reasoning_method"] = "morpheus_ai"
+
+    except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError, IndexError, ValueError, KeyError) as e:
+        # Fallback to rule-based matching
+        print(f"Morpheus AI reasoning failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to rule-based reconciliation")
+
         agent_decision = {
             "final_status": best_score["status"] if best_score else "unmatched",
             "confidence": best_score["score"] if best_score else 0.0,
-            "explanation": "Agent reasoning unavailable, using rule-based match.",
+            "explanation": f"AI reasoning unavailable (fallback mode). Using rule-based match with score {best_score['score'] if best_score else 0.0:.2f}.",
             "matched_entry_index": best_idx
             if best_score and best_score["status"] != "unmatched"
             else None,
             "discrepancy_reason": None,
-            "suggested_action": "Please review manually.",
+            "suggested_action": "Please review manually. AI reasoning was unavailable.",
             "bank_fee_estimate": None,
+            "reasoning_method": "rule_based_fallback",
         }
 
     return {

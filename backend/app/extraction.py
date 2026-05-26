@@ -2,9 +2,10 @@ import base64
 import csv
 import json
 import io
+import re
 import boto3
 import openpyxl
-import re
+import dateutil.parser
 from app.core.config import settings
 
 
@@ -242,32 +243,157 @@ def _call_bedrock_excel(csv_content: str) -> list[dict]:
     return parsed_data
 
 
+def _fallback_textract_only(ocr_result: dict) -> dict:
+    """
+    Fallback extraction using only Textract OCR key-value pairs.
+    Used when vision LLM fails or returns invalid JSON.
+
+    This is a deterministic rule-based fallback that extracts from Textract's
+    key-value pairs without any generative AI.
+    """
+    kvs = ocr_result["kvs"]
+    raw_text = ocr_result["raw_text"]
+
+    # Initialize result with nulls
+    result = {
+        "amount": None,
+        "currency": None,
+        "date": None,
+        "payer": None,
+        "payee": None,
+        "description": None,
+    }
+
+    # Extract amount - look for common field names
+    amount_keys = ["amount", "total", "sum", "payment", "price", "value"]
+    for key, data in kvs.items():
+        if any(k in key for k in amount_keys):
+            try:
+                # Clean and parse amount
+                val = data["value"].replace(",", "").replace("$", "").replace("RM", "").strip()
+                result["amount"] = float(val)
+                break
+            except (ValueError, AttributeError):
+                continue
+
+    # Extract currency - look for currency codes or symbols
+    currency_keys = ["currency", "curr"]
+    for key, data in kvs.items():
+        if any(k in key for k in currency_keys):
+            val = data["value"].strip().upper()
+            if len(val) == 3:  # ISO currency codes are 3 letters
+                result["currency"] = val
+                break
+
+    # If no currency found in KVs, try to detect from raw text
+    if not result["currency"]:
+        import re
+        # Common currency patterns
+        currency_patterns = [
+            (r'\bUSD\b', 'USD'),
+            (r'\bMYR\b', 'MYR'),
+            (r'\bRM\b', 'MYR'),
+            (r'\bEUR\b', 'EUR'),
+            (r'\bGBP\b', 'GBP'),
+            (r'\bSGD\b', 'SGD'),
+            (r'\$', 'USD'),  # Assume $ is USD if not specified
+            (r'€', 'EUR'),
+            (r'£', 'GBP'),
+        ]
+        for pattern, curr in currency_patterns:
+            if re.search(pattern, raw_text):
+                result["currency"] = curr
+                break
+
+    # Default to MYR if still no currency
+    if not result["currency"]:
+        result["currency"] = "MYR"
+
+    # Extract date
+    date_keys = ["date", "transaction date", "payment date", "invoice date", "issued"]
+    for key, data in kvs.items():
+        if any(k in key for k in date_keys):
+            try:
+                # Try to parse date (Textract usually returns dates in readable format)
+                import dateutil.parser
+                parsed_date = dateutil.parser.parse(data["value"])
+                result["date"] = parsed_date.strftime("%Y-%m-%d")
+                break
+            except (ValueError, AttributeError):
+                continue
+
+    # Extract payer/payee - look for company names, from/to fields
+    payer_keys = ["from", "payer", "sender", "remitter", "customer"]
+    payee_keys = ["to", "payee", "recipient", "beneficiary", "vendor", "supplier"]
+
+    for key, data in kvs.items():
+        if any(k in key for k in payer_keys) and not result["payer"]:
+            result["payer"] = data["value"].strip()
+        if any(k in key for k in payee_keys) and not result["payee"]:
+            result["payee"] = data["value"].strip()
+
+    # Extract description
+    desc_keys = ["description", "memo", "reference", "remarks", "notes", "details", "purpose"]
+    for key, data in kvs.items():
+        if any(k in key for k in desc_keys):
+            result["description"] = data["value"].strip()
+            break
+
+    # If no description found, use first 100 chars of raw text
+    if not result["description"] and raw_text:
+        result["description"] = raw_text[:100].strip()
+
+    # Tag with metadata
+    result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
+    result["extraction_method"] = "textract_only_fallback"
+    result["fallback_used"] = True
+
+    return result
+
+
 def extract_from_image(image_bytes: bytes) -> dict:
     """
-    Pipeline:
+    Pipeline with Perception Fallback:
     1. Textract OCR → raw text + confidence scores
-    2. Claude vision with OCR text as hint → interpreted fields
-    3. Tag result with confidence metadata
+    2. Try: Claude vision with OCR text as hint → interpreted fields
+    3. Fallback: If vision fails, use deterministic Textract-only extraction
+    4. Tag result with confidence metadata
+
+    This ensures we ALWAYS return structured data, even if the generative vision model fails.
     """
     ocr_result = _ocr_with_textract(image_bytes)
     raw_text = ocr_result["raw_text"]
     kvs = ocr_result["kvs"]
 
-    llm_result = _call_bedrock_vision(image_bytes, ocr_hint=raw_text)
+    try:
+        llm_result = _call_bedrock_vision(image_bytes, ocr_hint=raw_text)
 
-    # Tag with confidence metadata for the reconciliation agent to use later
-    llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
-    llm_result["extraction_method"] = "textract+bedrock"
+        # Validate that we got required fields
+        if not isinstance(llm_result, dict):
+            raise ValueError("Vision LLM returned non-dict response")
 
-    return llm_result
+        # Tag with confidence metadata
+        llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
+        llm_result["extraction_method"] = "textract+bedrock"
+        llm_result["fallback_used"] = False
+
+        return llm_result
+
+    except (json.JSONDecodeError, KeyError, ValueError, Exception) as e:
+        # Fallback to Textract-only extraction
+        print(f"Vision extraction failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to Textract-only extraction (deterministic rule-based)")
+
+        return _fallback_textract_only(ocr_result)
 
 
 def extract_from_pdf(pdf_bytes: bytes) -> dict:
     """
-    Pipeline:
+    Pipeline with Perception Fallback:
     1. PyMuPDF extracts text layer
-    2a. If text layer exists → Textract on first page + Claude text call with both hints
-    2b. If scanned PDF → render to image → same as extract_from_image
+    2a. If text layer exists → Try Claude text call, fallback to Textract-only
+    2b. If scanned PDF → Try Claude vision, fallback to Textract-only
+    3. Always return structured data, even if generative models fail
     """
     import pymupdf
 
@@ -284,16 +410,29 @@ def extract_from_pdf(pdf_bytes: bytes) -> dict:
     raw_text = ocr_result["raw_text"]
     kvs = ocr_result["kvs"]
 
-    if text.strip():
-        ocr_summary = ", ".join(f"{k}: {v['value']}" for k, v in list(kvs.items())[:10])
-        llm_result = _call_bedrock_text(text, ocr_hint=ocr_summary)
-    else:
-        llm_result = _call_bedrock_vision(img_bytes, ocr_hint=raw_text)
+    try:
+        if text.strip():
+            ocr_summary = ", ".join(f"{k}: {v['value']}" for k, v in list(kvs.items())[:10])
+            llm_result = _call_bedrock_text(text, ocr_hint=ocr_summary)
+        else:
+            llm_result = _call_bedrock_vision(img_bytes, ocr_hint=raw_text)
 
-    llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
-    llm_result["extraction_method"] = "textract+bedrock"
+        # Validate response
+        if not isinstance(llm_result, dict):
+            raise ValueError("LLM returned non-dict response")
 
-    return llm_result
+        llm_result["ocr_confidence"] = "low" if _has_low_confidence(kvs) else "high"
+        llm_result["extraction_method"] = "textract+bedrock"
+        llm_result["fallback_used"] = False
+
+        return llm_result
+
+    except (json.JSONDecodeError, KeyError, ValueError, Exception) as e:
+        # Fallback to Textract-only extraction
+        print(f"PDF extraction failed: {type(e).__name__}: {str(e)}")
+        print("Falling back to Textract-only extraction (deterministic rule-based)")
+
+        return _fallback_textract_only(ocr_result)
 
 
 def extract_from_excel(excel_bytes: bytes, filename: str) -> str:
