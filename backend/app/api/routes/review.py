@@ -138,14 +138,27 @@ async def review_document(
     fx_result = recon.get("fx_result")
     match_scores = recon.get("match_scores", [])
     best_idx = recon.get("best_candidate_index")
-    best_score = (
-        match_scores[best_idx] if best_idx is not None and match_scores else None
-    )
     agent_decision = recon.get("agent_decision", {})
+
+    # Get best score - prioritize from agent_decision if available
+    best_score = None
+    if best_idx is not None and match_scores:
+        best_score = match_scores[best_idx]
+    elif agent_decision and agent_decision.get("matched_entry_index") is not None:
+        matched_idx = agent_decision.get("matched_entry_index")
+        if match_scores and 0 <= matched_idx < len(match_scores):
+            best_score = match_scores[matched_idx]
+
     confidence = agent_decision.get("confidence", 0.0)
 
-    # Calculate risk score
-    risk_score, risk_factors = calculate_risk_score(match_scores, best_score)
+    # Calculate risk score - if document already has a risk score and status is approved, preserve it
+    if doc.workflow_status == "APPROVED" and doc.risk_score is not None and body.action == "approved":
+        # Preserve existing risk score for already-approved documents being re-approved
+        risk_score = doc.risk_score
+        risk_factors = doc.reconciliation_result.get("risk_factors", {})
+    else:
+        # Calculate new risk score
+        risk_score, risk_factors = calculate_risk_score(match_scores, best_score)
 
     # Determine risk level
     if risk_score >= 70:
