@@ -1,15 +1,10 @@
-import { FaGithub, FaInstagram } from "react-icons/fa"
+import { FaGithub } from "react-icons/fa"
 
 const socialLinks = [
   {
     icon: FaGithub,
     href: "https://github.com/Wong-WeiJun/Global-Treasury-Agent_Arg",
     label: "GitHub",
-  },
-  {
-    icon: FaInstagram,
-    href: "https://www.instagram.com/orhgee?igsh=N2ZhM20xcGYxY3ps",
-    label: "Insta",
   },
 ]
 
