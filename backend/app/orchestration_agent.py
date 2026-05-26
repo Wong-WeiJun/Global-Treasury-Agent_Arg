@@ -1,7 +1,8 @@
 """
-Orchestration Agent: AWS Bedrock-powered agent that dynamically coordinates reconciliation workflow.
+Orchestration Agent: AI-powered agent that dynamically coordinates reconciliation workflow.
 
-This agent uses Claude Sonnet 4.6 on AWS Bedrock with tool calling to intelligently decide:
+This agent uses Claude Sonnet 4.6 via Chutes AI (primary) or AWS Bedrock (fallback)
+with tool calling to intelligently decide:
 - Which extraction method to use (Textract + Bedrock, Morpheus AI, etc.)
 - When to fetch vendor history and learned patterns
 - Which reconciliation strategy to apply (basic vs proactive with memory)
@@ -10,6 +11,11 @@ This agent uses Claude Sonnet 4.6 on AWS Bedrock with tool calling to intelligen
 
 The agent acts as a financial operations expert that makes contextual decisions rather than
 following a fixed procedural workflow.
+
+Provider Strategy:
+- Primary: Chutes AI (Claude Sonnet 4.6)
+- Fallback: AWS Bedrock (Claude Sonnet 4.6)
+- Automatically falls back on timeout or rate limit
 """
 
 import json
@@ -18,12 +24,13 @@ from datetime import datetime
 from typing import Any
 
 import boto3
+import httpx
 
 from app.core.config import settings
 
 
 def _get_bedrock_client():
-    """Initialize AWS Bedrock Runtime client."""
+    """Initialize AWS Bedrock Runtime client (fallback provider)."""
     return boto3.client(
         "bedrock-runtime",
         region_name="us-east-1",
@@ -34,6 +41,124 @@ def _get_bedrock_client():
         if settings.s3_secret_access_key
         else None,
     )
+
+
+async def _call_chutes_ai(request_body: dict) -> dict:
+    """
+    Call Chutes AI with Claude Sonnet 4.6 (primary provider).
+
+    Args:
+        request_body: Request payload in Anthropic API format
+
+    Returns:
+        Response body in Anthropic API format
+
+    Raises:
+        httpx.TimeoutException: On timeout
+        httpx.HTTPStatusError: On rate limit or other HTTP errors
+    """
+    # Convert Anthropic API format to Chutes format
+    messages = request_body["messages"]
+    system_prompt = request_body.get("system", "")
+    tools = request_body.get("tools", [])
+
+    # Chutes uses OpenAI-compatible format
+    chutes_messages = []
+    if system_prompt:
+        chutes_messages.append({"role": "system", "content": system_prompt})
+    chutes_messages.extend(messages)
+
+    chutes_payload = {
+        "model": "anthropic/claude-sonnet-4.6",  # Claude Sonnet 4.6 on Chutes
+        "messages": chutes_messages,
+        "max_tokens": request_body.get("max_tokens", 4096),
+        "temperature": request_body.get("temperature", 0.1),
+    }
+
+    # Add tools if present
+    if tools:
+        # Convert Anthropic tool format to OpenAI tool format
+        chutes_tools = []
+        for tool in tools:
+            chutes_tools.append({
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["input_schema"],
+                }
+            })
+        chutes_payload["tools"] = chutes_tools
+        chutes_payload["tool_choice"] = "auto"
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            f"{settings.CHUTES_BASE_URL}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.CHUTES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json=chutes_payload,
+        )
+        response.raise_for_status()
+
+    chutes_response = response.json()
+
+    # Convert Chutes response back to Anthropic format
+    choice = chutes_response["choices"][0]
+    message = choice["message"]
+
+    # Handle content - could be text or tool calls
+    content = []
+
+    if message.get("content"):
+        content.append({
+            "type": "text",
+            "text": message["content"]
+        })
+
+    # Convert tool calls from OpenAI format to Anthropic format
+    if message.get("tool_calls"):
+        for tool_call in message["tool_calls"]:
+            content.append({
+                "type": "tool_use",
+                "id": tool_call["id"],
+                "name": tool_call["function"]["name"],
+                "input": json.loads(tool_call["function"]["arguments"]),
+            })
+
+    # Determine stop reason
+    finish_reason = choice.get("finish_reason", "end_turn")
+    if finish_reason == "tool_calls":
+        stop_reason = "tool_use"
+    elif finish_reason == "stop":
+        stop_reason = "end_turn"
+    else:
+        stop_reason = finish_reason
+
+    return {
+        "content": content,
+        "stop_reason": stop_reason,
+        "usage": chutes_response.get("usage", {}),
+    }
+
+
+def _call_bedrock_fallback(client, request_body: dict) -> dict:
+    """
+    Call AWS Bedrock as fallback provider.
+
+    Args:
+        client: Bedrock client
+        request_body: Request payload in Anthropic API format
+
+    Returns:
+        Response body in Anthropic API format
+    """
+    response = client.invoke_model(
+        modelId="us.anthropic.claude-sonnet-4-6",
+        body=json.dumps(request_body),
+    )
+    return json.loads(response["body"].read())
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -622,7 +747,8 @@ async def orchestrate_reconciliation(
         extracted_data=extracted_data,
     )
 
-    client = _get_bedrock_client()
+    # Initialize fallback client
+    bedrock_client = _get_bedrock_client()
 
     # Build initial prompt
     user_prompt = f"""Reconcile this payment document against the bank statement entries.
@@ -651,11 +777,12 @@ Remember to call final_decision as your LAST tool call with your complete analys
 
     iteration = 0
     final_result = None
+    provider_used = "chutes"  # Track which provider was used
 
     while iteration < max_iterations:
         iteration += 1
 
-        # Call Bedrock with tools
+        # Prepare request body
         request_body = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 4096,
@@ -665,12 +792,25 @@ Remember to call final_decision as your LAST tool call with your complete analys
             "temperature": 0.1,
         }
 
-        response = client.invoke_model(
-            modelId="us.anthropic.claude-sonnet-4-6",
-            body=json.dumps(request_body),
-        )
-
-        response_body = json.loads(response["body"].read())
+        # Try Chutes AI first, fallback to Bedrock on error
+        response_body = None
+        try:
+            response_body = await _call_chutes_ai(request_body)
+            provider_used = "chutes"
+        except (httpx.TimeoutException, httpx.HTTPStatusError, KeyError, json.JSONDecodeError) as e:
+            # Fallback to AWS Bedrock
+            print(f"Chutes AI failed (iteration {iteration}): {type(e).__name__}: {str(e)}")
+            print("Falling back to AWS Bedrock...")
+            try:
+                response_body = _call_bedrock_fallback(bedrock_client, request_body)
+                provider_used = "bedrock"
+            except Exception as bedrock_error:
+                return {
+                    "success": False,
+                    "error": f"Both providers failed. Chutes: {str(e)}, Bedrock: {str(bedrock_error)}",
+                    "iterations": iteration,
+                    "provider_used": "none",
+                }
 
         # Check for errors
         if "error" in response_body:
@@ -762,4 +902,5 @@ Remember to call final_decision as your LAST tool call with your complete analys
         },
         "iterations": iteration,
         "bank_entries": bank_entries,
+        "provider_used": provider_used,  # Track which provider was used
     }
