@@ -759,30 +759,6 @@ function ReconcilePage() {
               </p>
             )}
           </div>
-
-          {statements && statements.length > 0 && (
-            <div className="flex flex-col gap-2 flex-1">
-              <p className="text-xs font-medium text-blue-700 dark:text-blue-400">
-                Uploaded Statements ({statements.length})
-              </p>
-              <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
-                {statements.slice(0, 5).map((stmt: any) => (
-                  <div
-                    key={stmt.id}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 rounded text-xs"
-                  >
-                    <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <span className="truncate flex-1 text-foreground">
-                      {stmt.original_filename}
-                    </span>
-                    {stmt.parsed_at && (
-                      <CheckCircle className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         {statements && statements.length > 0 && (
