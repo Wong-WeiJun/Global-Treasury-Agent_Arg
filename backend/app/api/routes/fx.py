@@ -7,7 +7,6 @@ router = APIRouter(prefix="/fx", tags=["fx"])
 
 @router.get("/currencies")
 async def currencies():
-    """List all supported currencies."""
     try:
         return await list_currencies()
     except Exception as e:
@@ -20,7 +19,6 @@ async def currency_rate(
     to_currency: str,
     on_date: str = Query(default="latest", description="YYYY-MM-DD or 'latest'"),
 ):
-    """Get rate between two currencies. Supports historical dates back to 1948."""
     try:
         rate = await get_rate(from_currency, to_currency, on_date)
         return {
@@ -40,7 +38,6 @@ async def convert_currency(
     to_currency: str,
     on_date: str = Query(default="latest", description="YYYY-MM-DD or 'latest'"),
 ):
-    """Convert amount between currencies on a specific date."""
     try:
         return await convert(amount, from_currency, to_currency, on_date)
     except Exception as e:
@@ -53,7 +50,6 @@ async def convert_to_myr_endpoint(
     from_currency: str,
     on_date: str = Query(default="latest", description="YYYY-MM-DD or 'latest'"),
 ):
-    """Convert any currency to MYR using the rate on the transaction date."""
     try:
         return await convert_to_myr(amount, from_currency, on_date)
     except Exception as e:

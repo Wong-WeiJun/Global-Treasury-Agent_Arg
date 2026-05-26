@@ -1,18 +1,9 @@
-"""
-API routes for AI learning and user corrections.
-
-This enables the continuous learning feedback loop.
-"""
-
 import uuid
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.ai_learning import (
-    UserCorrection,
-    VendorPreference,
-    ReconciliationPattern,
     record_user_correction,
     get_learned_vendor_preferences,
     get_learned_patterns,
@@ -78,12 +69,6 @@ async def record_correction(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """
-    Record a user correction to AI decision for continuous learning.
-
-    When a user manually overrides an AI reconciliation decision, this endpoint
-    should be called to teach the AI from the correction.
-    """
     from app.utils.org_context import get_user_primary_organization
 
     # Get user's organization for multi-tenant isolation
@@ -160,12 +145,6 @@ async def get_learning_insights(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """
-    Get AI learning insights for the user's organization.
-
-    Shows what the AI has learned from user corrections, including vendor
-    preferences and reconciliation patterns.
-    """
     from app.utils.org_context import get_user_primary_organization
 
     # Get user's organization for multi-tenant isolation
@@ -220,9 +199,6 @@ async def get_corrections(
     session: SessionDep,
     limit: int = 20,
 ):
-    """
-    Get recent user corrections for the organization.
-    """
     from app.utils.org_context import get_user_primary_organization
 
     # Get user's organization for multi-tenant isolation
