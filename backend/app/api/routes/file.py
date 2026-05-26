@@ -155,7 +155,7 @@ def list_my_documents(
     if not org:
         return DocumentsPublic(data=[], count=0)
 
-    # CRITICAL: Filter by organization_id for multi-tenant isolation
+    # Filter by organization_id for multi-tenant isolation
     count = session.exec(
         select(func.count()).where(Document.organization_id == org.id)
     ).one()
@@ -206,7 +206,7 @@ async def delete_file(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # CRITICAL: Check organization_id for multi-tenant isolation
+    # Check organization_id for multi-tenant isolation
     if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
@@ -281,7 +281,6 @@ async def extract_document(
     if doc.organization_id != org.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    # Tip: You could import _get_s3_client from app.file_utils to avoid repeating this!
     s3 = boto3.client(
         "s3",
         region_name=settings.s3_region,
