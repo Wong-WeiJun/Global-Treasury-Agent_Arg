@@ -401,6 +401,12 @@ async def suggest_matches(
     """
     Find and rank candidate bank transactions for a document.
     Uses rule-based filtering + scoring to suggest matches.
+
+    Foreign currency handling:
+    - Document amount is converted to org base currency before comparison.
+    - Each candidate transaction is also converted to base currency before scoring,
+      so cross-currency matching works correctly regardless of the transaction's
+      stored currency.
     """
     from app.utils.org_context import get_user_primary_organization
 
@@ -464,8 +470,6 @@ async def suggest_matches(
     amount = extracted.get("amount")
     currency = extracted.get("currency", "MYR")
     date_str = extracted.get("date")
-    payer = extracted.get("payer", "")
-    payee = extracted.get("payee", "")
 
     if not amount or not date_str:
         raise HTTPException(
@@ -473,9 +477,9 @@ async def suggest_matches(
             detail="Document must have amount and date extracted",
         )
 
-    # Convert amount to base currency for matching
+    # Convert document amount to base currency for matching
     base_currency = get_user_base_currency(session, current_user.id)
-    if currency != base_currency:
+    if currency.upper() != base_currency:
         fx = await convert(
             amount=amount,
             from_currency=currency,
@@ -492,18 +496,15 @@ async def suggest_matches(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format")
 
-    # Stage 1: Rule-based filtering
-    # Get transactions within date range (±14 days) and amount range (±25%)
+    # Stage 1: Date-only filtering in SQL.
+    #
+    # We no longer filter by amount in SQL because BankTransaction.amount is
+    # stored in the transaction's original currency, which may differ from the
+    # document's base currency. Filtering by raw amount against a converted
+    # base-currency range would silently drop all foreign-currency transactions.
+    # Amount filtering is handled in Python after per-transaction FX conversion.
     date_min = doc_date - timedelta(days=14)
     date_max = doc_date + timedelta(days=14)
-
-    # Handle both positive and negative amounts (debits/credits)
-    amount_abs = abs(base_amount)
-    amount_min = amount_abs * 0.75
-    amount_max = amount_abs * 1.25
-
-    # Query unmatched transactions - compare absolute values
-    from sqlalchemy import func as sql_func
 
     stmt = (
         select(BankTransaction)
@@ -512,33 +513,70 @@ async def suggest_matches(
             BankTransaction.status == "unmatched",
             BankTransaction.date >= str(date_min),
             BankTransaction.date <= str(date_max),
-            sql_func.abs(BankTransaction.amount) >= amount_min,
-            sql_func.abs(BankTransaction.amount) <= amount_max,
         )
-        .limit(10)
+        .limit(50)  # wider net — amount filter applied after FX conversion below
     )
 
     candidates = session.exec(stmt).all()
 
-    # Debug logging
     print(
-        f"[DEBUG] Found {len(candidates)} candidate transactions for doc {document_id}"
+        f"[DEBUG] Found {len(candidates)} date-range candidates for doc {document_id}"
     )
     print(
-        f"[DEBUG] Search params: date={doc_date}, amount={base_amount}, range={amount_min}-{amount_max}"
+        f"[DEBUG] Search params: date={doc_date}, base_amount={base_amount} {base_currency}"
     )
 
-    # Stage 2: Score each candidate
-    suggestions = []
+    # Stage 2: Convert each transaction to base currency, then filter by amount.
+    #
+    # BankTransaction.currency may be absent on older records; fall back to
+    # base_currency so those rows still participate in matching.
+    amount_abs = abs(base_amount)
+    amount_min = amount_abs * 0.75
+    amount_max = amount_abs * 1.25
+
+    resolved_candidates: list[tuple[BankTransaction, float]] = []
     for txn in candidates:
+        txn_currency = (getattr(txn, "currency", None) or base_currency).upper()
+        if txn_currency != base_currency:
+            try:
+                txn_fx = await convert(
+                    amount=abs(txn.amount),
+                    from_currency=txn_currency,
+                    to_currency=base_currency,
+                    on_date=txn.date,
+                )
+                txn_base_amount = txn_fx["to_amount"]
+            except Exception as e:
+                # If FX lookup fails for this transaction, skip it rather than
+                # comparing incompatible currencies and producing a bogus score.
+                print(
+                    f"[DEBUG] FX conversion failed for txn {txn.id} "
+                    f"({txn_currency}→{base_currency}): {e}"
+                )
+                continue
+        else:
+            txn_base_amount = abs(txn.amount)
+
+        if amount_min <= txn_base_amount <= amount_max:
+            resolved_candidates.append((txn, txn_base_amount))
+
+    print(
+        f"[DEBUG] {len(resolved_candidates)} candidates passed amount filter "
+        f"({amount_min:.2f}–{amount_max:.2f} {base_currency})"
+    )
+
+    # Stage 3: Score each candidate using currency-normalised amounts.
+    suggestions = []
+    for txn, txn_base_amount in resolved_candidates:
         score = _score_transaction_match(
             extracted=extracted,
             base_amount=base_amount,
             doc_date=doc_date,
             transaction=txn,
+            txn_base_amount=txn_base_amount,
         )
 
-        if score["confidence"] >= 0.25:  # Include any plausible match
+        if score["confidence"] >= 0.25:
             suggestions.append(
                 SuggestedMatch(
                     transaction=BankTransactionPublic.model_validate(txn),
@@ -562,36 +600,40 @@ def _score_transaction_match(
     base_amount: float,
     doc_date: datetime.date,
     transaction: BankTransaction,
+    txn_base_amount: float,  # pre-converted to org base currency — never use transaction.amount directly
 ) -> dict:
     """
     Score how well a transaction matches the extracted document data.
+
+    All amount comparisons use base-currency values so foreign-currency
+    transactions are scored on an equal footing with local ones.
+
     Returns {"confidence": 0.0-1.0, "explanation": str}
     """
     scores = {}
     reasons = []
 
-    # Amount similarity (40%)
-    txn_amount = abs(transaction.amount)
-    amount_diff = abs(txn_amount - base_amount)
-    amount_pct_diff = amount_diff / base_amount if base_amount > 0 else 1.0
+    # Amount similarity (40%) — both values already in base currency
+    amount_diff = abs(txn_base_amount - abs(base_amount))
+    amount_pct_diff = amount_diff / abs(base_amount) if base_amount != 0 else 1.0
 
-    if amount_pct_diff < 0.01:  # Within 1%
+    if amount_pct_diff < 0.01:
         scores["amount"] = 1.0
         reasons.append("Exact amount match")
-    elif amount_pct_diff < 0.05:  # Within 5%
+    elif amount_pct_diff < 0.05:
         scores["amount"] = 0.9
         reasons.append("Amount match within 5%")
-    elif amount_pct_diff < 0.10:  # Within 10%
+    elif amount_pct_diff < 0.10:
         scores["amount"] = 0.75
         reasons.append("Amount match within 10%")
-    elif amount_pct_diff < 0.20:  # Within 20%
+    elif amount_pct_diff < 0.20:
         scores["amount"] = 0.55
         reasons.append("Amount match within 20%")
-    elif amount_pct_diff < 0.25:  # Within 25%
+    elif amount_pct_diff < 0.25:
         scores["amount"] = 0.35
         reasons.append("Amount match within 25%")
     else:
-        scores["amount"] = max(0, 1.0 - amount_pct_diff)
+        scores["amount"] = max(0.0, 1.0 - amount_pct_diff)
 
     # Date proximity (30%)
     try:
@@ -614,9 +656,9 @@ def _score_transaction_match(
             scores["date"] = 0.35
             reasons.append(f"{days_diff} days difference")
         else:
-            scores["date"] = 0
+            scores["date"] = 0.0
     except ValueError:
-        scores["date"] = 0
+        scores["date"] = 0.0
 
     # Vendor/payer similarity (30%)
     payer = (extracted.get("payer") or "").lower()
@@ -631,9 +673,10 @@ def _score_transaction_match(
         vendor_score = 1.0
         reasons.append(f"Payee '{payee}' found in description")
     elif payer or payee:
-        # Fuzzy match using word overlap and sequence similarity
         combined_vendor = f"{payer} {payee}".strip()
-        seq_score = SequenceMatcher(None, combined_vendor, description[:len(combined_vendor) + 20]).ratio()
+        seq_score = SequenceMatcher(
+            None, combined_vendor, description[: len(combined_vendor) + 20]
+        ).ratio()
         payer_words = set(payer.split())
         payee_words = set(payee.split())
         desc_words = set(description.split())
@@ -649,7 +692,7 @@ def _score_transaction_match(
 
     scores["vendor"] = vendor_score
 
-    # Calculate weighted confidence
+    # Weighted confidence
     confidence = scores["amount"] * 0.4 + scores["date"] * 0.3 + scores["vendor"] * 0.3
 
     explanation = " | ".join(reasons) if reasons else "Low confidence match"
