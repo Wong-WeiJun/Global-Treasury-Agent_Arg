@@ -1,8 +1,10 @@
-# MyAudit — Global Treasury Agent
+# MyAudit — Global Treasury Agent By Argonauts
 
 An AI-powered financial document reconciliation and treasury management platform. Upload payment proofs (images, PDFs, Excel/CSV bank statements), auto-extract structured data, and reconcile against bank entries using a multi-agent AI pipeline.
 
 ---
+
+[Live Demo (May need to let it warm up before using)](https://global-treasury-agent-arg-frontend.vercel.app/login)
 
 ## Features
 
@@ -26,9 +28,9 @@ An AI-powered financial document reconciliation and treasury management platform
 | Frontend | React, TypeScript, Vite |
 | AI (text) | Chutes AI — `deepseek-ai/DeepSeek-V3.2-TEE` |
 | AI (vision) | Chutes AI — `google/gemma-4-31B-turbo-TEE` |
+| AI (reconciliation) | Morpheus AI — `minimax-m2.5` |
 | OCR | OCR.space API |
 | File storage | Local filesystem (`uploads/`) |
-| Email | Gmail SMTP via `aiosmtplib` / Resend REST API |
 | Auth | JWT (PyJWT), bcrypt / argon2 |
 | Infra | Docker Compose |
 
@@ -67,28 +69,78 @@ docker-compose.yml
 ### 1. Clone and configure
 
 ```bash
-git clone <repo>
+git clone https://github.com/Wong-WeiJun/Global-Treasury-Agent_Arg.git
 cd Global-Treasury-Agent_Arg
 cp .env.example .env   # then edit .env
 ```
 
-### 2. Minimum required variables (local dev)
+### 2. environment variables (local dev)
 
 ```env
-PROJECT_NAME=MyAudit
-SECRET_KEY=<random 32-char string>
-FIRST_SUPERUSER=admin@example.com
-FIRST_SUPERUSER_PASSWORD=<password>
-POSTGRES_SERVER=localhost
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=<password>
-POSTGRES_DB=app
-s3_bucket_name=unused        # required by config but unused locally
-CHUTES_API_KEY=<your key>
-EMAIL_DEV_MODE=true          # skips real email sending in local dev
-```
+DOMAIN=localhost
 
-### 3. Start with Docker Compose
+FRONTEND_HOST=http://localhost:5173
+
+# Environment: local, staging, production
+ENVIRONMENT=local
+
+PROJECT_NAME="MyAudit"
+STACK_NAME=myaudit-project
+
+# Backend
+BACKEND_CORS_ORIGINS="http://localhost,http://localhost:5173,https://localhost,https://localhost:5173,http://localhost.tiangolo.com"
+SECRET_KEY=changethis
+FIRST_SUPERUSER=changethis
+FIRST_SUPERUSER_PASSWORD=changethis
+
+# Emails
+SMTP_HOST=mailcatcher
+SMTP_USER=
+SMTP_PASSWORD=
+EMAILS_FROM_EMAIL=noreply@myaudit.dev
+SMTP_TLS=False
+SMTP_SSL=False
+SMTP_PORT=1025
+
+
+# Postgres
+POSTGRES_SERVER=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=app
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=changethis
+
+SENTRY_DSN=
+
+# Configure these with your own Docker registry images
+DOCKER_IMAGE_BACKEND=backend
+DOCKER_IMAGE_FRONTEND=frontend
+
+#Chutes API key
+CHUTES_API_KEY=changethis
+
+S3_BUCKET_NAME=changethis
+S3_REGION=ap-southeast-2
+AWS_ACCESS_KEY_ID=changethis
+AWS_SECRET_ACCESS_KEY=changethis
+MORPHEUS_API_KEY=changethis
+OCRSPACE_API_KEY=changethis
+```
+---
+
+## 3. Compose Files
+ 
+> ⚠️ The compose files in the repo are configured for deployment. Replace them with the local dev versions before running with Docker.
+ 
+```bash
+cp example.compose.yml compose.yml
+cp example.compose.override.yml compose.override.yml
+cp example.compose.traefik.yml compose.traefik.yml
+```
+ 
+---
+
+### 4. Start with Docker Compose
 
 ```bash
 docker compose up --build
@@ -122,7 +174,6 @@ docker compose up --build
 | `POSTGRES_USER` | ✅ | — | Username |
 | `POSTGRES_PASSWORD` | ✅ | — | Password |
 | `POSTGRES_DB` | | — | Database name |
-| `DATABASE_URL` | | — | Full DSN (overrides individual fields) |
 
 ### AI (Chutes)
 
@@ -133,100 +184,26 @@ docker compose up --build
 | `CHUTES_MODEL` | | `deepseek-ai/DeepSeek-V3.2-TEE` | Text/tools model |
 | `CHUTES_VISION_MODEL` | | `google/gemma-4-31B-turbo-TEE` | Vision/image model |
 
+### Morpheus
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MORPHEUS_API_KEY` | ✅ |  | - | API key to user Morpheus for Reconciliation |
+
 ### OCR
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `OCRSPACE_API_KEY` | | `helloworld` | OCR.space API key (`helloworld` is the free test key) |
 
-### Email
+### S3
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `EMAIL_DEV_MODE` | | `false` | `true` = log to console, skip sending (local dev) |
-| `EMAIL_PROVIDER` | | `smtp` | `smtp` or `resend` |
-| `EMAILS_FROM_EMAIL` | ✅* | — | Sender address |
-| `EMAILS_FROM_NAME` | | project name | Sender display name |
-| `SMTP_HOST` | ✅* | — | e.g. `smtp.gmail.com` |
-| `SMTP_PORT` | | `587` | 587 = STARTTLS, 465 = implicit SSL |
-| `SMTP_TLS` | | `true` | Enable STARTTLS (Gmail port 587) |
-| `SMTP_SSL` | | `false` | Implicit SSL (port 465) |
-| `SMTP_USER` | | — | SMTP username |
-| `SMTP_PASSWORD` | | — | SMTP password / Gmail App Password |
-| `RESEND_API_KEY` | ✅* | — | Resend API key (when `EMAIL_PROVIDER=resend`) |
-
-\* Required when `EMAIL_DEV_MODE=false`
-
-#### Gmail setup
-
-1. Enable 2-Step Verification on your Google account
-2. Go to **Google Account → Security → App Passwords**
-3. Generate a 16-character App Password
-4. Use that as `SMTP_PASSWORD` (not your regular Gmail password)
-
-```env
-EMAIL_PROVIDER=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_TLS=true
-SMTP_USER=you@gmail.com
-SMTP_PASSWORD=xxxx xxxx xxxx xxxx
-EMAILS_FROM_EMAIL=you@gmail.com
-```
-
----
-
-## AI Pipeline
-
-### Document Extraction
-
-```
-Upload
-  → OCR.space (optional text hint)
-  → Chutes vision LLM
-  → structured JSON {amount, currency, date, payer, payee, description}
-```
-
-OCR is best-effort — if it fails the vision model handles it directly.
-
-### Reconciliation
-
-```
-Proof document + bank entries
-  → FX conversion (if needed)
-  → vendor history + learned patterns lookup
-  → proactive reconciliation (Chutes LLM with memory)
-  → ML Decision Agent (auto-approve or escalate)
-  → ReconciliationRecord (audit trail)
-```
-
-### ML Decision Agent
-
-The decision agent (`decision_agent.py`) replaces all script-based approval logic:
-
-- **Retry logic** — 3 attempts with exponential backoff (1 s → 2 s → 4 s)
-- **Confidence degradation** — max confidence ceiling drops 10 % per retry (1.00 → 0.90 → 0.80)
-- **Hard gates** (server-enforced, LLM cannot override):
-  - `confidence ≥ 0.80` AND `risk_score < 40` required for auto-approval
-- **Deterministic fallback** — if all LLM attempts fail, rule-based scoring takes over (conservative: only auto-approves if `risk < 15 AND score ≥ 0.95`)
-- **Audit log** — every decision written to `logs/decisions.jsonl` with full reasoning, risk factors, method, latency, and attempt count
-
-### Risk Score Reference
-
-| Factor | Condition | Points |
-|---|---|---|
-| Amount deviation | > 20 % | +40 |
-| Amount deviation | > 10 % | +25 |
-| Amount deviation | > 5 % | +15 |
-| Amount deviation | > 2 % | +8 |
-| Date gap | > 30 days | +30 |
-| Date gap | > 7 days | +20 |
-| Date gap | > 2 days | +10 |
-| Payer similarity | < 0.50 | +20 |
-| Payer similarity | < 0.75 | +10 |
-| No vendor history | — | +10 |
-
-`LOW` < 40 · `MEDIUM` 40–69 · `HIGH` ≥ 70
+| `S3_BUCKET_NAME` | ✅ | | Name of the S3 bucket |
+| `S3_REGION` | ✅ | | AWS region where the bucket is hosted (`ap-southeast-12`) |
+| `AWS_ACCESS_KEY_ID` | ✅ | | AWS IAM access key ID |
+| `AWS_SECRET_ACCESS_KEY` | ✅ | | AWS IAM secret access key |
 
 ---
 
@@ -250,62 +227,6 @@ The decision agent (`decision_agent.py`) replaces all script-based approval logi
 
 Full interactive docs at `/docs` (Swagger UI) or `/redoc`.
 
----
 
-## Development
 
-### Running locally without Docker
 
-```bash
-# Backend
-cd backend
-pip install -e ".[dev]"
-uvicorn app.main:app --reload --port 8000
-```
-
-```bash
-# Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-### Email in local dev
-
-Set `EMAIL_DEV_MODE=true` in `.env` — emails are logged to the backend console instead of being sent. No SMTP configuration needed.
-
-### Viewing the decision audit log
-
-```bash
-# Stream live decisions
-tail -f backend/logs/decisions.jsonl | python -m json.tool
-
-# Via API (superuser token required)
-curl -H "Authorization: Bearer <token>" \
-  http://localhost:8000/api/v1/decisions/audit-log?limit=20
-```
-
-### Linting and type-checking
-
-```bash
-cd backend
-ruff check .
-mypy .
-```
-
----
-
-## Roles
-
-| Role | Permissions |
-|---|---|
-| `VIEWER` | Read-only access to documents and reconciliations |
-| `APPROVER` | Can manually approve / reject reconciliations |
-| `ADMIN` | Full access including user and statement management |
-| Superuser | Governance endpoints (decision audit log, stats) |
-
----
-
-## License
-
-MIT
