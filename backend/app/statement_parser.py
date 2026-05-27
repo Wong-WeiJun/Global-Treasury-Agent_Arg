@@ -1,8 +1,3 @@
-"""
-Bank statement parser for CSV/XLSX files.
-Uses smart column detection with common aliases to handle different bank formats.
-"""
-
 import csv
 import io
 import re
@@ -46,15 +41,11 @@ COLUMN_MAPPINGS = {
 
 
 def _normalize_header(header: str) -> str:
-    """Normalize header string for matching"""
     return header.lower().strip().replace("_", " ")
 
 
 def _detect_columns(headers: list[str]) -> dict[str, int]:
-    """
-    Detect which column corresponds to which field.
-    Returns mapping like {"date": 0, "description": 2, "amount": 3}
-    """
+
     normalized = [_normalize_header(h) for h in headers]
     detected = {}
 
@@ -68,7 +59,6 @@ def _detect_columns(headers: list[str]) -> dict[str, int]:
 
 
 def _parse_amount(value: str | float | int | None) -> float | None:
-    """Parse amount from various formats"""
     if value is None:
         return None
 
@@ -90,7 +80,6 @@ def _parse_amount(value: str | float | int | None) -> float | None:
 
 
 def _parse_date(value: str | datetime | None) -> str | None:
-    """Parse date to YYYY-MM-DD format"""
     if value is None:
         return None
 
@@ -125,10 +114,6 @@ def _parse_date(value: str | datetime | None) -> str | None:
 def _extract_transaction_from_row(
     row: list[str | None], columns: dict[str, int]
 ) -> dict | None:
-    """
-    Extract transaction data from a single row using detected column mappings.
-    Returns None if row doesn't contain a valid transaction.
-    """
 
     def get_cell(field: str) -> str | None:
         idx = columns.get(field)
@@ -213,7 +198,6 @@ def parse_csv(csv_bytes: bytes) -> list[dict]:
 
 
 def parse_xlsx(xlsx_bytes: bytes) -> list[dict]:
-    """Parse XLSX bank statement"""
     wb = openpyxl.load_workbook(io.BytesIO(xlsx_bytes), read_only=True, data_only=True)
     ws = wb.active
 
@@ -231,7 +215,9 @@ def parse_xlsx(xlsx_bytes: bytes) -> list[dict]:
     # If column detection failed, try smart heuristics
     if columns.get("date") is None or columns.get("description") is None:
         # Convert rows to list of lists for heuristics
-        simple_rows = [[str(cell) if cell is not None else "" for cell in row] for row in rows]
+        simple_rows = [
+            [str(cell) if cell is not None else "" for cell in row] for row in rows
+        ]
         heuristic_result = _parse_with_heuristics(simple_rows)
         if heuristic_result:
             return heuristic_result
@@ -258,10 +244,7 @@ def parse_xlsx(xlsx_bytes: bytes) -> list[dict]:
 
 
 def _parse_with_heuristics(rows: list[list]) -> list[dict]:
-    """
-    Smart heuristic-based parsing when column detection fails.
-    Analyzes data patterns to identify date, amount, and description columns.
-    """
+
     if len(rows) < 2:
         return []
 
@@ -286,21 +269,24 @@ def _parse_with_heuristics(rows: list[list]) -> list[dict]:
                 continue
 
             # Check if looks like date
-            if re.match(r'\d{1,2}[/-]\d{1,2}[/-]\d{2,4}', cell) or \
-               re.match(r'\d{4}[/-]\d{1,2}[/-]\d{1,2}', cell):
+            if re.match(r"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}", cell) or re.match(
+                r"\d{4}[/-]\d{1,2}[/-]\d{1,2}", cell
+            ):
                 date_scores[col_idx] += 1
 
             # Check if looks like amount
-            if re.match(r'^-?\$?\d+\.?\d*$', cell.replace(',', '').replace(' ', '')):
+            if re.match(r"^-?\$?\d+\.?\d*$", cell.replace(",", "").replace(" ", "")):
                 amount_scores[col_idx] += 1
 
             # Check if looks like text description (longer text)
-            if len(cell) > 5 and not cell.replace('.', '').replace('-', '').isdigit():
+            if len(cell) > 5 and not cell.replace(".", "").replace("-", "").isdigit():
                 text_scores[col_idx] += 0.5
 
     # Find best candidates
     date_col = date_scores.index(max(date_scores)) if max(date_scores) > 0 else None
-    amount_col = amount_scores.index(max(amount_scores)) if max(amount_scores) > 0 else None
+    amount_col = (
+        amount_scores.index(max(amount_scores)) if max(amount_scores) > 0 else None
+    )
     text_col = text_scores.index(max(text_scores)) if max(text_scores) > 0 else None
 
     if date_col is None or amount_col is None:
@@ -327,23 +313,21 @@ def _parse_with_heuristics(rows: list[list]) -> list[dict]:
         description = str(row[text_col]).strip() if row[text_col] else "Transaction"
 
         if date_str and amount is not None and amount != 0:
-            transactions.append({
-                "date": date_str,
-                "amount": amount,
-                "currency": "MYR",
-                "description": description,
-                "reference": None,
-            })
+            transactions.append(
+                {
+                    "date": date_str,
+                    "amount": amount,
+                    "currency": "MYR",
+                    "description": description,
+                    "reference": None,
+                }
+            )
 
     return transactions
 
 
 async def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
-    """
-    Main entry point for parsing bank statements.
-    Auto-detects format based on filename.
-    Uses smart heuristics and AI fallback (Chutes AI) for maximum compatibility.
-    """
+
     filename_lower = filename.lower()
 
     try:
@@ -368,10 +352,7 @@ async def parse_statement(file_bytes: bytes, filename: str) -> list[dict]:
 
 
 async def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
-    """
-    Fallback: Use AI to parse the statement when column detection fails.
-    Uses Chutes AI for AI-powered extraction.
-    """
+
     from app.extraction import _call_chutes_excel, extract_from_excel
 
     # Convert to CSV string for AI
@@ -386,18 +367,27 @@ async def _parse_with_ai(file_bytes: bytes, filename: str) -> list[dict]:
     result = []
     for item in transactions_data:
         # Try to extract required fields with various field names
-        date = item.get('date') or item.get('transaction_date') or item.get('value_date')
-        amount = item.get('amount') or item.get('value') or item.get('total')
-        description = item.get('description') or item.get('details') or item.get('particulars') or item.get('payee')
+        date = (
+            item.get("date") or item.get("transaction_date") or item.get("value_date")
+        )
+        amount = item.get("amount") or item.get("value") or item.get("total")
+        description = (
+            item.get("description")
+            or item.get("details")
+            or item.get("particulars")
+            or item.get("payee")
+        )
 
         if date and amount:
-            result.append({
-                "date": date if isinstance(date, str) else str(date),
-                "amount": float(amount) if amount else 0.0,
-                "currency": item.get('currency', 'MYR'),
-                "description": str(description) if description else "Transaction",
-                "reference": item.get('reference'),
-            })
+            result.append(
+                {
+                    "date": date if isinstance(date, str) else str(date),
+                    "amount": float(amount) if amount else 0.0,
+                    "currency": item.get("currency", "MYR"),
+                    "description": str(description) if description else "Transaction",
+                    "reference": item.get("reference"),
+                }
+            )
 
     if not result:
         raise ValueError("AI could not extract any valid transactions from the file")

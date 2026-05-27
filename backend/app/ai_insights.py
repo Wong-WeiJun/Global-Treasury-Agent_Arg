@@ -1,8 +1,3 @@
-"""
-AI Insights Engine: Advanced document analysis with semantic categorization,
-anomaly detection, and contextual awareness.
-"""
-
 import base64
 import json
 import re
@@ -93,18 +88,7 @@ async def analyze_document_with_intelligence(
     media_type: str = "image/jpeg",
     historical_context: list[dict] | None = None,
 ) -> dict:
-    """
-    Enhanced extraction with semantic categorization and anomaly detection.
 
-    Args:
-        image_bytes: Document image bytes
-        ocr_hint: Optional OCR text hint
-        media_type: Image media type
-        historical_context: Recent transactions for duplicate detection
-
-    Returns:
-        Dictionary with both standard extraction fields and intelligence metadata
-    """
     b64_image = base64.standard_b64encode(image_bytes).decode("utf-8")
 
     prompt = SEMANTIC_CATEGORIZATION_PROMPT
@@ -196,21 +180,7 @@ async def check_for_duplicates(
     recent_documents: list[dict],
     time_window_hours: int = 72,
 ) -> dict:
-    """
-    Standalone duplicate detection based on extracted data and recent history.
 
-    Args:
-        extracted_data: Newly extracted document data
-        recent_documents: List of recent document extractions
-        time_window_hours: How far back to check for duplicates
-
-    Returns:
-        Dictionary with duplicate analysis:
-        - is_duplicate: bool
-        - duplicate_matches: list of matching document IDs
-        - similarity_scores: list of similarity scores (0-1)
-        - explanation: string
-    """
     if not recent_documents:
         return {
             "is_duplicate": False,
@@ -304,13 +274,7 @@ async def check_for_duplicates(
 
 
 def normalize_vendor_name(vendor: str | None) -> str | None:
-    """
-    Normalize vendor names for consistent matching.
-    Examples:
-    - "AMZN" -> "amazon"
-    - "Amazon.com" -> "amazon"
-    - "AWS Singapore Pte Ltd" -> "amazon_web_services"
-    """
+
     if not vendor:
         return None
 
@@ -333,9 +297,6 @@ def normalize_vendor_name(vendor: str | None) -> str | None:
     for key, value in mappings.items():
         if key in vendor_lower:
             return value
-
-    # Default: remove special characters and spaces
-    import re
 
     normalized = re.sub(r"[^a-z0-9]", "_", vendor_lower)
     normalized = re.sub(r"_+", "_", normalized).strip("_")

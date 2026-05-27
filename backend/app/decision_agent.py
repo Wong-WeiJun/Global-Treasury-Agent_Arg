@@ -1,24 +1,3 @@
-"""
-ML Decision Agent — LLM-powered auto-approval and risk assessment.
-
-Replaces deterministic scripts with an AI agent that:
-  - Analyzes the full reconciliation context and reasons about it
-  - Retries up to MAX_RETRIES times with exponential backoff
-  - Degrades the confidence ceiling by 10% on each retry so a flaky
-    model never sneaks through with inflated confidence
-  - Falls back to enhanced deterministic rules when all LLM attempts
-    fail (conservative: only auto-approves extremely clean matches)
-  - Emits a structured JSONL audit entry + structured stdout log for
-    every decision for governance and explainability
-
-Pipeline:
-    make_decision(ctx)
-        ├── attempt 0  confidence_ceiling=1.00, timeout=20 s
-        ├── attempt 1  confidence_ceiling=0.90, timeout=30 s  (+1 s backoff)
-        ├── attempt 2  confidence_ceiling=0.80, timeout=40 s  (+2 s backoff)
-        └── deterministic_fallback  confidence_ceiling=0.65   (AI unavailable)
-"""
-
 import asyncio
 import json
 import logging
@@ -33,7 +12,6 @@ import httpx
 
 from app.core.config import settings
 
-# ─── Audit logging ────────────────────────────────────────────────────────────
 
 _LOG_DIR = Path("logs")
 _LOG_DIR.mkdir(exist_ok=True)
@@ -49,7 +27,6 @@ audit_logger.propagate = False
 
 logger = logging.getLogger(__name__)
 
-# ─── Tunable constants ────────────────────────────────────────────────────────
 
 MAX_RETRIES = 3
 RETRY_DELAYS_S = [1.0, 2.0, 4.0]  # exponential backoff between attempts
@@ -58,9 +35,6 @@ FALLBACK_CONFIDENCE_CAP = 0.65  # max confidence for deterministic path
 
 AUTO_APPROVE_MIN_CONFIDENCE = 0.80  # both thresholds must be met
 AUTO_APPROVE_MAX_RISK = 40  # risk score must be strictly below this
-
-
-# ─── Data types ───────────────────────────────────────────────────────────────
 
 
 @dataclass
@@ -97,19 +71,16 @@ class RiskFactor:
 
 @dataclass
 class DecisionResult:
-    # ── Core decision ──────────────────────────────────────────────────────────
     auto_approve: bool
     decision: str  # "approved" | "exception" | "escalated" | "rejected"
     confidence: float  # 0.0–1.0  (capped by confidence_ceiling)
     risk_score: int  # 0–100
     risk_level: str  # "LOW" | "MEDIUM" | "HIGH"
 
-    # ── Explainability ─────────────────────────────────────────────────────────
     reasoning: str
     risk_factors: list[RiskFactor]
     recommended_action: str
 
-    # ── Governance / audit ─────────────────────────────────────────────────────
     decision_id: str
     timestamp: str
     document_id: str
@@ -117,15 +88,12 @@ class DecisionResult:
     triggered_by: str
     role: str
 
-    # ── Observability ──────────────────────────────────────────────────────────
     method: str  # "ai_agent" | "deterministic_fallback"
     model_used: str | None
     attempt_count: int
     latency_ms: int
     fallback_reason: str | None
 
-
-# ─── LLM prompt ───────────────────────────────────────────────────────────────
 
 _DECISION_PROMPT = """\
 You are a financial compliance decision agent. Analyze the reconciliation \
@@ -162,9 +130,6 @@ Return ONLY a valid JSON object — no markdown, no code fences, no explanation:
   "recommended_action": <string — clear next step for a human reviewer>
 }
 """
-
-
-# ─── Public entry point ───────────────────────────────────────────────────────
 
 
 async def make_decision(ctx: DecisionContext) -> DecisionResult:
@@ -218,7 +183,6 @@ async def make_decision(ctx: DecisionContext) -> DecisionResult:
             )
             break
 
-    # ── Deterministic fallback ─────────────────────────────────────────────────
     logger.warning(
         "[DECISION_AGENT] deterministic fallback doc=%s reason=%s",
         ctx.document_id,
@@ -237,18 +201,12 @@ async def make_decision(ctx: DecisionContext) -> DecisionResult:
     return result
 
 
-# ─── Error sentinels ──────────────────────────────────────────────────────────
-
-
 class _RetryableError(Exception):
     """Transient failure — worth retrying (rate limit, timeout, bad JSON)."""
 
 
 class _NonRetryableError(Exception):
     """Permanent failure — do not retry (auth error, unsupported endpoint)."""
-
-
-# ─── AI call ──────────────────────────────────────────────────────────────────
 
 
 async def _call_ai(
@@ -369,9 +327,6 @@ def _parse_response(
     )
 
 
-# ─── Deterministic fallback ───────────────────────────────────────────────────
-
-
 def _deterministic_fallback(ctx: DecisionContext) -> DecisionResult:
     """
     Enhanced rule-based fallback used when the AI agent is unavailable.
@@ -481,9 +436,6 @@ def _deterministic_fallback(ctx: DecisionContext) -> DecisionResult:
     )
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
-
-
 def _level(score: int) -> str:
     if score < 40:
         return "LOW"
@@ -532,7 +484,6 @@ def _fill_governance(
 
 
 def _emit_audit(result: DecisionResult) -> None:
-    """Write one JSON line to decisions.jsonl and a structured INFO to stdout."""
     entry = {
         "ts": result.timestamp,
         "decision_id": result.decision_id,

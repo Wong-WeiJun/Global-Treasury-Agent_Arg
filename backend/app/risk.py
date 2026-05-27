@@ -77,7 +77,6 @@ def generate_journal_entry(
     action: str,
     exception_type: str | None = None,
 ) -> dict:
-    """Generate a mock double-entry accounting journal entry."""
     amount = fx_result["to_amount"] if fx_result else proof.get("amount", 0)
     currency = proof.get("currency", "MYR")
     myr_amount = fx_result["to_amount"] if fx_result else amount

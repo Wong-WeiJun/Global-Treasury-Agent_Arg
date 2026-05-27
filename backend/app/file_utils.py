@@ -30,10 +30,7 @@ def _get_s3_client():
 def process_and_prepare_file(
     content: bytes, original_filename: str
 ) -> tuple[bytes, str, str]:
-    """
-    Processes the file based on its type. Optimizes images, passes docs through.
-    Returns: (processed_bytes, new_uuid_filename, content_type)
-    """
+
     extension = original_filename.split(".")[-1].lower()
 
     # Dynamically guess the mimetype for S3
@@ -57,9 +54,7 @@ def process_and_prepare_file(
 
             return output.read(), new_filename, "image/jpeg"
 
-    # Handle PDFs, Excel (xls, xlsx), and CSV
     elif extension in ["pdf", "xls", "xlsx", "csv"]:
-        # We do not alter the bytes of PDFs, Excel files, or CSVs
         new_filename = f"{uuid.uuid4().hex}.{extension}"
         return content, new_filename, content_type
 
@@ -85,9 +80,7 @@ def _delete_from_s3(key: str) -> None:
 async def upload_document(
     file_bytes: bytes, original_filename: str, org_id: int | str | uuid.UUID
 ) -> str:
-    """
-    Uploads the file and returns the generated S3 key using the enterprise structure.
-    """
+
     processed_bytes, new_filename, content_type = process_and_prepare_file(
         file_bytes, original_filename
     )
@@ -99,9 +92,7 @@ async def upload_document(
 
 
 async def delete_document(key: str | None) -> None:
-    """
-    Deletes the document using its exact S3 key.
-    """
+
     if key is None:
         return
     await run_in_threadpool(_delete_from_s3, key)
