@@ -152,7 +152,11 @@ async def review_document(
     confidence = agent_decision.get("confidence", 0.0)
 
     # Calculate risk score - if document already has a risk score and status is approved, preserve it
-    if doc.workflow_status == "APPROVED" and doc.risk_score is not None and body.action == "approved":
+    if (
+        doc.workflow_status == "APPROVED"
+        and doc.risk_score is not None
+        and body.action == "approved"
+    ):
         # Preserve existing risk score for already-approved documents being re-approved
         risk_score = doc.risk_score
         risk_factors = doc.reconciliation_result.get("risk_factors", {})
@@ -238,7 +242,7 @@ def get_audit_trail(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """Return all review records for a document — full audit trail."""
+
     from sqlmodel import select
 
     from app.utils.org_context import get_user_primary_organization

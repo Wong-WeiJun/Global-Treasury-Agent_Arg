@@ -28,10 +28,7 @@ def list_my_organizations(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    List all organizations the current user belongs to.
-    Returns memberships with organization details.
-    """
+
     memberships = session.exec(
         select(Membership).where(Membership.user_id == current_user.id)
     ).all()
@@ -50,10 +47,7 @@ def list_organization_members(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    List all members of an organization with user details.
-    User must be a member of the organization to view this.
-    """
+
     # Check if user is member of this organization
     user_membership = session.exec(
         select(Membership)
@@ -104,10 +98,7 @@ def add_organization_member(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Add a new member to an organization.
-    Only OWNER or ADMIN can add members.
-    """
+
     # Check if current user has permission
     user_membership = session.exec(
         select(Membership)
@@ -151,10 +142,7 @@ def update_membership(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Update a membership (change role).
-    Only OWNER can change roles.
-    """
+
     membership = session.get(Membership, membership_id)
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
@@ -188,12 +176,7 @@ def remove_membership(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Remove a member from an organization.
-    Only OWNER or ADMIN can remove members.
-    Cannot remove the last OWNER.
-    When a user is removed, their account is also deleted.
-    """
+
     membership = session.get(Membership, membership_id)
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found")
@@ -242,18 +225,14 @@ def remove_membership(
         with session.no_autoflush:
             # Clear created_by references in organizations (set to NULL)
             organizations_created = session.exec(
-                select(Organization).where(
-                    Organization.created_by == user_to_delete.id
-                )
+                select(Organization).where(Organization.created_by == user_to_delete.id)
             ).all()
             for org in organizations_created:
                 org.created_by = None
                 session.add(org)
 
             # Delete user's owned documents
-            session.exec(
-                delete(Document).where(Document.owner_id == user_to_delete.id)
-            )
+            session.exec(delete(Document).where(Document.owner_id == user_to_delete.id))
 
             # Clear reviewed_by references in documents (set to NULL)
             documents_reviewed = session.exec(

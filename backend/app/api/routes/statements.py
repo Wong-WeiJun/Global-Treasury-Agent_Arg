@@ -3,7 +3,7 @@
 import hashlib
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated
+
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
@@ -14,7 +14,6 @@ from app.models import (
     BankStatement,
     BankStatementPublic,
     BankTransaction,
-    BankTransactionPublic,
     BankTransactionsPublic,
 )
 from app.statement_parser import parse_statement
@@ -33,7 +32,9 @@ async def upload_bank_statement(
     Automatically extracts transactions and stores them.
     """
     if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="User must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="User must belong to an organization"
+        )
 
     # Read file
     file_bytes = await file.read()
@@ -54,7 +55,9 @@ async def upload_bank_statement(
         )
 
     # Upload to S3
-    s3_key = await upload_document(file_bytes, file.filename or "statement", current_user.organization_id)
+    s3_key = await upload_document(
+        file_bytes, file.filename or "statement", current_user.organization_id
+    )
 
     # Create statement record
     statement = BankStatement(
@@ -110,7 +113,9 @@ def list_statements(
 ) -> list[BankStatement]:
     """List all bank statements for current organization"""
     if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="User must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="User must belong to an organization"
+        )
 
     statements = session.exec(
         select(BankStatement)
@@ -133,7 +138,9 @@ def get_statement_transactions(
 ) -> BankTransactionsPublic:
     """Get all transactions from a specific statement"""
     if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="User must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="User must belong to an organization"
+        )
 
     # Verify statement belongs to user's org
     statement = session.get(BankStatement, statement_id)
@@ -159,7 +166,9 @@ def get_unmatched_transactions(
 ) -> BankTransactionsPublic:
     """Get all unmatched transactions for the organization"""
     if not current_user.organization_id:
-        raise HTTPException(status_code=400, detail="User must belong to an organization")
+        raise HTTPException(
+            status_code=400, detail="User must belong to an organization"
+        )
 
     transactions = session.exec(
         select(BankTransaction)

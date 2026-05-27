@@ -129,9 +129,7 @@ def generate_reconciliation_report(
         matched = sum(
             1
             for r in results
-            if r.get("result", {})
-            .get("agent_decision", {})
-            .get("final_status")
+            if r.get("result", {}).get("agent_decision", {}).get("final_status")
             in ["matched", "matched_with_adjustment"]
         )
         fuzzy = sum(
@@ -193,7 +191,9 @@ def generate_reconciliation_report(
             ],
         ]
 
-        summary_table = Table(summary_data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch])
+        summary_table = Table(
+            summary_data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch]
+        )
         summary_table.setStyle(
             TableStyle(
                 [
@@ -206,7 +206,12 @@ def generate_reconciliation_report(
                     ("BACKGROUND", (0, 1), (-1, -1), colors.beige),
                     ("GRID", (0, 0), (-1, -1), 1, colors.black),
                     ("FONTSIZE", (0, 1), (-1, -1), 10),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.lightgrey],
+                    ),
                 ]
             )
         )
@@ -244,9 +249,7 @@ def generate_reconciliation_report(
         adjustments = sum(
             1
             for r in results
-            if r.get("result", {})
-            .get("agent_decision", {})
-            .get("adjustment_type")
+            if r.get("result", {}).get("agent_decision", {}).get("adjustment_type")
             is not None
         )
         if adjustments > 0:
@@ -316,7 +319,7 @@ def generate_reconciliation_report(
             elements.append(
                 Paragraph(
                     f'<font color="{status_color.hexval()}"><b>{status_label}</b></font> | '
-                    f'Confidence: <b>{confidence * 100:.1f}%</b>',
+                    f"Confidence: <b>{confidence * 100:.1f}%</b>",
                     normal_style,
                 )
             )
@@ -325,7 +328,10 @@ def generate_reconciliation_report(
             # Transaction details
             details_data = [
                 ["Field", "Value"],
-                ["Amount", f"{proof.get('currency', 'N/A')} {proof.get('amount', 'N/A')}"],
+                [
+                    "Amount",
+                    f"{proof.get('currency', 'N/A')} {proof.get('amount', 'N/A')}",
+                ],
                 ["Date", proof.get("date", "N/A")],
                 ["Payer", proof.get("payer", "N/A")],
                 ["Payee", proof.get("payee", "N/A")],
@@ -394,7 +400,9 @@ def generate_reconciliation_report(
             journal_entry = agent_decision.get("journal_entry_proposal")
             if journal_entry:
                 elements.append(Spacer(1, 0.1 * inch))
-                elements.append(Paragraph("<b>Proposed Journal Entry:</b>", normal_style))
+                elements.append(
+                    Paragraph("<b>Proposed Journal Entry:</b>", normal_style)
+                )
                 elements.append(Spacer(1, 0.05 * inch))
 
                 journal_data = [
@@ -411,7 +419,9 @@ def generate_reconciliation_report(
                     ],
                 ]
 
-                journal_table = Table(journal_data, colWidths=[3 * inch, 1.5 * inch, 1.5 * inch])
+                journal_table = Table(
+                    journal_data, colWidths=[3 * inch, 1.5 * inch, 1.5 * inch]
+                )
                 journal_table.setStyle(
                     TableStyle(
                         [

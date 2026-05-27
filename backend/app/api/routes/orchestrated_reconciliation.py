@@ -1,8 +1,3 @@
-"""
-Orchestrated Reconciliation API: Uses AI orchestration agent (Chutes AI + AWS Bedrock fallback)
-to dynamically coordinate the reconciliation workflow.
-"""
-
 import uuid
 from datetime import datetime, timezone
 
@@ -17,24 +12,23 @@ from app.models import (
     Organization,
     ReconciliationRecord,
     User,
+    Membership,
 )
 from app.orchestration_agent import orchestrate_reconciliation
 from app.risk import generate_journal_entry
+from app.decision_agent import make_decision, DecisionContext, MatchScores
+from sqlmodel import select as sql_select
 
 router = APIRouter(prefix="/orchestrated-reconciliation", tags=["orchestration"])
 
 
 class OrchestratedReconcileRequest(BaseModel):
-    """Request to reconcile a document using the orchestration agent."""
-
     document_id: uuid.UUID
     bank_entries: list[BankEntry]
     override_date: str | None = None  # Override FX date if needed
 
 
 class OrchestratedReconcileResponse(BaseModel):
-    """Response from orchestrated reconciliation."""
-
     document_id: uuid.UUID
     success: bool
     final_decision: dict
@@ -44,7 +38,6 @@ class OrchestratedReconcileResponse(BaseModel):
 
 
 def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
-    """Get the base currency for a user's organization. Defaults to MYR."""
     user = session.get(User, user_id)
     if not user or not user.organization_id:
         return "MYR"
@@ -74,12 +67,6 @@ async def orchestrated_reconcile(
     6. Calculate risk and make auto-approval decisions
     7. Return a comprehensive reconciliation result
 
-    This is more intelligent than the standard reconciliation endpoint because
-    the agent makes contextual decisions rather than following a fixed workflow.
-
-    Provider Strategy:
-    - Primary: Chutes AI (Claude Sonnet 4.6)
-    - Fallback: AWS Bedrock (on timeout/rate limit)
     """
     from app.utils.org_context import get_user_primary_organization
 
@@ -152,10 +139,7 @@ async def orchestrated_reconcile(
     doc.ai_confidence = confidence
     doc.ai_explanation = explanation
 
-    # ── ML Decision Agent: auto-approval + risk assessment ───────────────────
-    from app.decision_agent import make_decision, DecisionContext, MatchScores
-    from app.models import Membership
-    from sqlmodel import select as sql_select
+    # Decision Agent
 
     risk_assessment = context.get("risk_assessment", {})
 
@@ -328,9 +312,7 @@ async def get_orchestration_status(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """
-    Get the orchestration status and results for a document.
-    """
+
     from app.utils.org_context import get_user_primary_organization
 
     org = get_user_primary_organization(session, current_user.id)

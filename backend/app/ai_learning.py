@@ -1,11 +1,3 @@
-"""
-AI Learning System: Continuous improvement through user feedback.
-
-This module implements a lightweight learning database that allows the AI reconciliation
-system to learn from user corrections and preferences over time.
-"""
-
-import json
 import uuid
 from datetime import datetime, timezone
 
@@ -16,13 +8,6 @@ from sqlmodel import Field, SQLModel
 
 
 class UserCorrection(SQLModel, table=True):
-    """
-    Records user corrections to AI decisions for continuous learning.
-
-    When a user manually corrects an "Unmatched" or "Fuzzy Match" item,
-    we store their decision so Morpheus AI can learn from it.
-    """
-
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
     user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
@@ -44,7 +29,9 @@ class UserCorrection(SQLModel, table=True):
     match_scores: list | None = Field(default=None, sa_column=Column(JSON))
 
     # Learning metadata
-    correction_type: str | None = None  # "vendor_name_variant" | "bank_fee_pattern" | "timing_mismatch" | "currency_spread"
+    correction_type: str | None = (
+        None  # "vendor_name_variant" | "bank_fee_pattern" | "timing_mismatch" | "currency_spread"
+    )
     learned_pattern: dict | None = Field(
         default=None, sa_column=Column(JSON)
     )  # Extracted learning pattern
@@ -56,12 +43,6 @@ class UserCorrection(SQLModel, table=True):
 
 
 class VendorPreference(SQLModel, table=True):
-    """
-    Learned vendor name variations and payment patterns.
-
-    Example: User consistently matches "AMZN" to "Amazon Web Services"
-    """
-
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
 
@@ -90,17 +71,12 @@ class VendorPreference(SQLModel, table=True):
 
 
 class ReconciliationPattern(SQLModel, table=True):
-    """
-    Learned reconciliation patterns for specific scenarios.
-
-    Example: Bank fees are always 0.5% for this bank, late payments are common
-    for Vendor X, etc.
-    """
-
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     organization_id: uuid.UUID = Field(foreign_key="organization.id", nullable=False)
 
-    pattern_type: str  # "bank_fee" | "late_payment" | "currency_spread" | "partial_payment"
+    pattern_type: (
+        str  # "bank_fee" | "late_payment" | "currency_spread" | "partial_payment"
+    )
     pattern_name: str  # Human-readable name
     pattern_rule: dict | None = Field(
         default=None, sa_column=Column(JSON)
@@ -138,11 +114,7 @@ async def record_user_correction(
     bank_entries: list,
     match_scores: list,
 ) -> UserCorrection:
-    """
-    Record a user correction for AI learning.
 
-    This should be called whenever a user manually overrides an AI decision.
-    """
     correction = UserCorrection(
         organization_id=organization_id,
         user_id=user_id,
@@ -193,9 +165,7 @@ async def _analyze_correction(
     bank_entries: list,
     match_scores: list,
 ) -> dict:
-    """
-    Analyze a user correction to identify the type of learning opportunity.
-    """
+
     # If AI said "unmatched" but user found a match
     if ai_prediction == "unmatched" and user_decision == "matched":
         if user_matched_index is not None and user_matched_index < len(bank_entries):
@@ -205,7 +175,10 @@ async def _analyze_correction(
 
             # Check if this is a vendor name variation
             if proof_vendor and bank_vendor:
-                if proof_vendor.lower() not in bank_vendor.lower() and bank_vendor.lower() not in proof_vendor.lower():
+                if (
+                    proof_vendor.lower() not in bank_vendor.lower()
+                    and bank_vendor.lower() not in proof_vendor.lower()
+                ):
                     return {
                         "type": "vendor_name_variant",
                         "pattern": {
@@ -261,9 +234,7 @@ async def _update_learned_patterns(
     proof_data: dict,
     bank_entries: list,
 ):
-    """
-    Update VendorPreference and ReconciliationPattern tables based on correction.
-    """
+
     from sqlmodel import select
 
     if correction.correction_type == "vendor_name_variant":
@@ -362,9 +333,7 @@ async def _update_learned_patterns(
 async def get_learned_vendor_preferences(
     session, organization_id: uuid.UUID
 ) -> list[VendorPreference]:
-    """
-    Retrieve all learned vendor preferences for an organization.
-    """
+
     from sqlmodel import select
 
     statement = (
@@ -379,9 +348,7 @@ async def get_learned_vendor_preferences(
 async def get_learned_patterns(
     session, organization_id: uuid.UUID, pattern_type: str | None = None
 ) -> list[ReconciliationPattern]:
-    """
-    Retrieve learned reconciliation patterns for an organization.
-    """
+
     from sqlmodel import select
 
     statement = select(ReconciliationPattern).where(
@@ -389,9 +356,7 @@ async def get_learned_patterns(
     )
 
     if pattern_type:
-        statement = statement.where(
-            ReconciliationPattern.pattern_type == pattern_type
-        )
+        statement = statement.where(ReconciliationPattern.pattern_type == pattern_type)
 
     statement = statement.order_by(ReconciliationPattern.success_rate.desc())
 
@@ -401,9 +366,7 @@ async def get_learned_patterns(
 async def get_correction_history(
     session, organization_id: uuid.UUID, limit: int = 10
 ) -> list[UserCorrection]:
-    """
-    Get recent user corrections for analysis.
-    """
+
     from sqlmodel import select
 
     statement = (

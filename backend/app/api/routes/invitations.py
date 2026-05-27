@@ -23,7 +23,7 @@ router = APIRouter(prefix="/invitations", tags=["invitations"])
 
 
 def generate_invitation_token() -> str:
-    """Generate a secure random token for invitation."""
+    # Generate a secure random token for invitation.
     return secrets.token_urlsafe(32)
 
 
@@ -34,10 +34,6 @@ async def invite_member(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """
-    Invite a new member to the organization.
-    Only OWNER or ADMIN can invite members.
-    """
     from app.utils.org_context import check_organization_access
 
     # Check if user has permission to invite
@@ -173,10 +169,6 @@ def cancel_invitation(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    """
-    Cancel a pending invitation.
-    Only OWNER or ADMIN can cancel invitations.
-    """
     invitation = session.get(Invitation, invitation_id)
     if not invitation:
         raise HTTPException(status_code=404, detail="Invitation not found")
@@ -288,10 +280,6 @@ def verify_invitation(
     token: str,
     session: SessionDep,
 ):
-    """
-    Verify if an invitation token is valid.
-    Public endpoint - returns invitation details without accepting.
-    """
     invitation = session.exec(
         select(Invitation).where(Invitation.token == token)
     ).first()

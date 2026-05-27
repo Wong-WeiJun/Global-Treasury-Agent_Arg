@@ -23,6 +23,7 @@ from app.ai_insights import (
 from app.file_utils import delete_document, upload_document
 from app.fx import convert
 from app.models import (
+    User,
     Document,
     DocumentPublic,
     DocumentsPublic,
@@ -36,8 +37,7 @@ router = APIRouter(prefix="/files", tags=["files"])
 
 
 def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
-    """Get the base currency for a user's organization. Defaults to MYR."""
-    from app.models import User
+    # Get the base currency for a user's organization. Defaults to MYR.
 
     user = session.get(User, user_id)
     if not user or not user.organization_id:

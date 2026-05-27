@@ -9,7 +9,7 @@ from app.core.db import engine
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-max_tries = 60 * 5  # 5 minutes
+max_tries = 60 * 5
 wait_seconds = 1
 
 
@@ -22,7 +22,7 @@ wait_seconds = 1
 def init(db_engine: Engine) -> None:
     try:
         with Session(db_engine) as session:
-            # Try to create session to check if DB is awake
+            # create session check if DB is awake
             session.exec(select(1))
     except Exception as e:
         logger.error(e)

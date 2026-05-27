@@ -26,7 +26,7 @@ If a field cannot be found, set it to null."""
 
 async def _ocr_with_puter(image_bytes: bytes) -> dict:
     """
-    Actually using OCR Space, due date for the hackathon is too close to rename rn
+    Actually using OCR Space, due date for the hackathon is too close to rename rn : D
     """
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -61,10 +61,7 @@ async def _ocr_with_puter(image_bytes: bytes) -> dict:
 async def _call_chutes_vision(
     image_bytes: bytes, ocr_hint: str = "", media_type: str = "image/jpeg"
 ) -> dict:
-    """
-    Vision call to Chutes AI (primary provider).
-    Passes OCR raw text as a hint if available.
-    """
+
     b64_image = base64.standard_b64encode(image_bytes).decode("utf-8")
 
     prompt = EXTRACTION_PROMPT
@@ -115,10 +112,7 @@ async def _call_chutes_vision(
 
 
 async def _call_chutes_text(text_content: str, ocr_hint: str = "") -> dict:
-    """
-    Text-only call to Chutes AI (primary provider).
-    Used for PDFs with a text layer.
-    """
+
     prompt = EXTRACTION_PROMPT
     if ocr_hint:
         prompt += f"\n\nOCR also extracted these key-value pairs for reference:\n{ocr_hint[:1000]}"
@@ -155,10 +149,7 @@ async def _call_chutes_text(text_content: str, ocr_hint: str = "") -> dict:
 
 
 async def _call_chutes_excel(csv_content: str) -> list[dict]:
-    """
-    Calls Chutes AI specifically to extract multi-row spreadsheet data.
-    Expects a dense CSV string and guarantees a list of dictionaries in return.
-    """
+
     prompt = (
         f"{EXTRACTION_PROMPT}\n\n"
         "CRITICAL INSTRUCTIONS FOR SPREADSHEET DATA:\n"
@@ -212,11 +203,7 @@ async def _call_chutes_excel(csv_content: str) -> list[dict]:
 
 
 async def extract_from_image(image_bytes: bytes) -> dict:
-    """
-    Extract financial data from an image document.
-    1. Puter.com OCR (best-effort, silent fallback)
-    2. Chutes AI vision with OCR hint
-    """
+
     ocr_result = await _ocr_with_puter(image_bytes)
     raw_text = ocr_result["raw_text"]
 
@@ -230,12 +217,7 @@ async def extract_from_image(image_bytes: bytes) -> dict:
 
 
 async def extract_from_pdf(pdf_bytes: bytes) -> dict:
-    """
-    Extract financial data from a PDF document.
-    1. PyMuPDF extracts text layer
-    2. Puter.com OCR on first page (best-effort)
-    3. Chutes AI text or vision call
-    """
+
     import pymupdf
 
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
@@ -263,10 +245,7 @@ async def extract_from_pdf(pdf_bytes: bytes) -> dict:
 
 
 def extract_from_excel(excel_bytes: bytes, filename: str) -> str:
-    """
-    Parses unstructured Excel/CSV files into a clean, token-efficient CSV string.
-    Strips completely empty rows/columns so the AI doesn't waste tokens on whitespace.
-    """
+
     raw_rows = []
 
     if filename.lower().endswith(".csv"):
