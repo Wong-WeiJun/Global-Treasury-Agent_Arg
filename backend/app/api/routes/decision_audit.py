@@ -1,10 +1,4 @@
-"""
-Decision Audit API — governance and explainability endpoints.
-
-All decisions made by the ML decision agent are written to logs/decisions.jsonl.
-These endpoints expose that log for compliance review, incident investigation,
-and monitoring. Access is restricted to superusers.
-"""
+# Decision Audit API — governance and explainability endpoints.
 
 import json
 from pathlib import Path
@@ -89,6 +83,7 @@ def _read_log(
     return entries
 
 
+# superuser only
 @router.get("/audit-log", response_model=AuditLogResponse)
 async def list_decision_audit_log(
     current_user: CurrentUser,
@@ -108,14 +103,6 @@ async def list_decision_audit_log(
     ),
     offset: int = Query(default=0, ge=0, description="Skip this many entries"),
 ):
-    """
-    List recent decision audit entries.
-
-    Returns decisions most-recent-first. Use filters to narrow down by document,
-    org, outcome, or whether the AI or fallback logic made the call.
-
-    Restricted to superusers.
-    """
     _require_superuser(current_user)
 
     all_entries = _read_log(document_id, org_id, decision, method)
@@ -133,14 +120,6 @@ async def get_document_decisions(
     current_user: CurrentUser,
     limit: int = Query(default=20, ge=1, le=100),
 ):
-    """
-    Get all decisions ever made for a specific document.
-
-    Useful for investigating why a document was auto-approved or escalated.
-    Shows every attempt including retries and fallbacks.
-
-    Restricted to superusers.
-    """
     _require_superuser(current_user)
 
     entries = _read_log(document_id=document_id)
@@ -153,14 +132,6 @@ async def get_document_decisions(
 
 @router.get("/audit-log/stats/summary")
 async def decision_stats_summary(current_user: CurrentUser):
-    """
-    Aggregate statistics over all logged decisions.
-
-    Returns counts by decision type, method, and risk level — useful for
-    dashboards and compliance monitoring.
-
-    Restricted to superusers.
-    """
     _require_superuser(current_user)
 
     entries = _read_log()

@@ -22,11 +22,7 @@ def list_organizations(
     skip: int = 0,
     limit: int = 100,
 ):
-    """
-    List all organizations.
-    Regular users can only see their own organization.
-    Superusers can see all organizations.
-    """
+
     if current_user.is_superuser:
         count = session.exec(select(func.count()).select_from(Organization)).one()
         orgs = session.exec(select(Organization).offset(skip).limit(limit)).all()
@@ -55,11 +51,7 @@ def get_organization(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Get organization by ID.
-    Regular users can only access their own organization.
-    Superusers can access any organization.
-    """
+
     org = session.get(Organization, organization_id)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -81,11 +73,7 @@ def create_organization(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Create a new organization.
-    Regular users can create their first organization (onboarding flow).
-    Users with existing organizations need superuser permission to create additional ones.
-    """
+
     # Allow users without an organization to create their first one (onboarding)
     if current_user.organization_id and not current_user.is_superuser:
         raise HTTPException(
@@ -126,10 +114,7 @@ def update_organization(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Update organization settings.
-    Only superusers can update organizations.
-    """
+
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403,
@@ -158,10 +143,7 @@ def delete_organization(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Delete an organization.
-    Only superusers can delete organizations.
-    """
+
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=403,
@@ -184,10 +166,7 @@ def get_organization_settings(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Get organization settings (alias for get_organization).
-    Useful for frontend to distinguish settings endpoint.
-    """
+
     return get_organization(organization_id, session, current_user)
 
 
@@ -198,8 +177,5 @@ def update_organization_settings(
     session: SessionDep,
     current_user: CurrentUser,
 ):
-    """
-    Update organization settings.
-    Only superusers can update organization settings.
-    """
+
     return update_organization(organization_id, org_in, session, current_user)

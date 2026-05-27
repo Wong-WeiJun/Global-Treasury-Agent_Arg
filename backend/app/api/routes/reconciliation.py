@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from difflib import SequenceMatcher
+from app.utils.org_context import get_user_primary_organization
 
 import boto3
 from fastapi import APIRouter, HTTPException
@@ -19,6 +20,7 @@ from app.models import (
     ReconcileRequest,
     ReconcileResponse,
     User,
+    ReconciliationRecord,
 )
 from app.proactive_reconciliation import (
     reconcile_with_memory,
@@ -30,12 +32,14 @@ from app.ai_learning import (
 )
 from app.ai_insights import normalize_vendor_name
 from pydantic import BaseModel
+from app.risk import generate_journal_entry
+from app.decision_agent import make_decision, DecisionContext, MatchScores
+
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
 
 
 def get_user_base_currency(session: SessionDep, user_id: uuid.UUID) -> str:
-    """Get the base currency for a user's organization. Defaults to MYR."""
     user = session.get(User, user_id)
     if not user or not user.organization_id:
         return "MYR"
@@ -228,13 +232,7 @@ async def reconcile_document(
             f"{doc.ai_explanation}\n\nHistorical Context: {historical_insights}"
         )
 
-    # ── ML Decision Agent: auto-approval + risk assessment ───────────────────
-    from datetime import datetime, timezone
-
-    from app.models import ReconciliationRecord
-    from app.risk import generate_journal_entry
-    from app.decision_agent import make_decision, DecisionContext, MatchScores
-
+    # auto approval
     result_scores = result.get("match_scores", match_scores)
     best_idx = agent_decision.get("matched_entry_index")
     best_score_dict = (
@@ -398,17 +396,6 @@ async def suggest_matches(
     current_user: CurrentUser,
     session: SessionDep,
 ) -> SuggestMatchesResponse:
-    """
-    Find and rank candidate bank transactions for a document.
-    Uses rule-based filtering + scoring to suggest matches.
-
-    Foreign currency handling:
-    - Document amount is converted to org base currency before comparison.
-    - Each candidate transaction is also converted to base currency before scoring,
-      so cross-currency matching works correctly regardless of the transaction's
-      stored currency.
-    """
-    from app.utils.org_context import get_user_primary_organization
 
     org = get_user_primary_organization(session, current_user.id)
     if not org:
@@ -497,12 +484,7 @@ async def suggest_matches(
         raise HTTPException(status_code=400, detail="Invalid date format")
 
     # Stage 1: Date-only filtering in SQL.
-    #
-    # We no longer filter by amount in SQL because BankTransaction.amount is
-    # stored in the transaction's original currency, which may differ from the
-    # document's base currency. Filtering by raw amount against a converted
-    # base-currency range would silently drop all foreign-currency transactions.
-    # Amount filtering is handled in Python after per-transaction FX conversion.
+
     date_min = doc_date - timedelta(days=14)
     date_max = doc_date + timedelta(days=14)
 
@@ -527,9 +509,7 @@ async def suggest_matches(
     )
 
     # Stage 2: Convert each transaction to base currency, then filter by amount.
-    #
-    # BankTransaction.currency may be absent on older records; fall back to
-    # base_currency so those rows still participate in matching.
+
     amount_abs = abs(base_amount)
     amount_min = amount_abs * 0.75
     amount_max = amount_abs * 1.25
@@ -602,14 +582,7 @@ def _score_transaction_match(
     transaction: BankTransaction,
     txn_base_amount: float,  # pre-converted to org base currency — never use transaction.amount directly
 ) -> dict:
-    """
-    Score how well a transaction matches the extracted document data.
 
-    All amount comparisons use base-currency values so foreign-currency
-    transactions are scored on an equal footing with local ones.
-
-    Returns {"confidence": 0.0-1.0, "explanation": str}
-    """
     scores = {}
     reasons = []
 
@@ -698,4 +671,3 @@ def _score_transaction_match(
     explanation = " | ".join(reasons) if reasons else "Low confidence match"
 
     return {"confidence": round(confidence, 2), "explanation": explanation}
-

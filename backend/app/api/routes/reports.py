@@ -1,7 +1,3 @@
-"""
-Reports API: Generate PDF reports for reconciliation results
-"""
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -14,8 +10,6 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 
 class GenerateReportRequest(BaseModel):
-    """Request body for generating a reconciliation report"""
-
     results: list[dict]
     include_summary: bool = True
     include_details: bool = True
@@ -27,18 +21,7 @@ async def generate_reconciliation_pdf_report(
     current_user: CurrentUser,
     session: SessionDep,
 ) -> Response:
-    """
-    Generate a comprehensive PDF report for reconciliation results.
 
-    The report includes:
-    - Executive summary with statistics
-    - Visual breakdown of matched/fuzzy/unmatched documents
-    - Detailed results for each document with AI reasoning
-    - Proposed journal entries for adjustments
-    - Key insights and recommendations
-
-    Returns a PDF file as a downloadable attachment.
-    """
     # Get user's organization name
     user = session.get(User, current_user.id)
     organization_name = "Unknown Organization"
@@ -64,7 +47,9 @@ async def generate_reconciliation_pdf_report(
         )
 
     # Return PDF as downloadable file
-    filename = f"reconciliation-report-{current_user.id}-{int(__import__('time').time())}.pdf"
+    filename = (
+        f"reconciliation-report-{current_user.id}-{int(__import__('time').time())}.pdf"
+    )
 
     return Response(
         content=pdf_bytes,
@@ -82,10 +67,7 @@ async def preview_reconciliation_pdf_report(
     current_user: CurrentUser,
     session: SessionDep,
 ) -> Response:
-    """
-    Generate a PDF report preview (inline display instead of download).
-    Same as generate_reconciliation_pdf_report but opens in browser.
-    """
+
     # Get user's organization name
     user = session.get(User, current_user.id)
     organization_name = "Unknown Organization"

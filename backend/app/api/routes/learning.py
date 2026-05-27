@@ -11,6 +11,7 @@ from app.ai_learning import (
 )
 from app.api.deps import CurrentUser, SessionDep
 from app.models import Document
+from app.utils.org_context import get_user_primary_organization
 
 router = APIRouter(prefix="/learning", tags=["learning"])
 
@@ -69,7 +70,6 @@ async def record_correction(
     current_user: CurrentUser,
     session: SessionDep,
 ):
-    from app.utils.org_context import get_user_primary_organization
 
     # Get user's organization for multi-tenant isolation
     org = get_user_primary_organization(session, current_user.id)
